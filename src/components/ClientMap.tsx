@@ -19,6 +19,7 @@ export default function ClientMap() {
   const ref = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const animationFrameRef = useRef<number | null>(null);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(
     null
   );
@@ -793,6 +794,21 @@ export default function ClientMap() {
           }
         }
 
+        @keyframes animate-ping {
+          0% {
+            transform: scale(1);
+            opacity: 1;
+          }
+          75%, 100% {
+            transform: scale(2);
+            opacity: 0;
+          }
+        }
+
+        .animate-ping {
+          animation: animate-ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
+
         .selected-bus-stop {
           animation: pulse 2s ease-in-out infinite;
         }
@@ -800,7 +816,7 @@ export default function ClientMap() {
       document.head.appendChild(style);
     }
 
-    // パルス効果の円レイヤー
+    // パルス効果の円レイヤー（アニメーション用）
     mapRef.current.addLayer({
       id: "user-location-pulse",
       type: "circle",
@@ -814,7 +830,42 @@ export default function ClientMap() {
           ],
         },
         "circle-color": "#3b82f6",
-        "circle-opacity": 0.2,
+        "circle-opacity": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          12,
+          0.3,
+          22,
+          0.1,
+        ],
+        "circle-stroke-width": 0,
+      },
+    });
+
+    // アニメーション用の追加レイヤー
+    mapRef.current.addLayer({
+      id: "user-location-pulse-2",
+      type: "circle",
+      source: "user-location",
+      paint: {
+        "circle-radius": {
+          base: 1.75,
+          stops: [
+            [12, 30],
+            [22, 200],
+          ],
+        },
+        "circle-color": "#3b82f6",
+        "circle-opacity": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          12,
+          0.2,
+          22,
+          0.05,
+        ],
         "circle-stroke-width": 0,
       },
     });
@@ -839,6 +890,40 @@ export default function ClientMap() {
     });
 
     console.log("User location marker added at:", location);
+
+    // アニメーション効果を追加
+    let startTime = Date.now();
+
+    const animatePulse = () => {
+      if (!mapRef.current) return;
+
+      const elapsed = (Date.now() - startTime) / 1000;
+      const pulse1Opacity = Math.max(0, 0.3 * Math.sin(elapsed * 2) + 0.1);
+      const pulse2Opacity = Math.max(
+        0,
+        0.2 * Math.sin(elapsed * 2 + Math.PI / 2) + 0.05
+      );
+
+      // パルスレイヤーの透明度を更新
+      if (mapRef.current.getLayer("user-location-pulse")) {
+        mapRef.current.setPaintProperty(
+          "user-location-pulse",
+          "circle-opacity",
+          pulse1Opacity
+        );
+      }
+      if (mapRef.current.getLayer("user-location-pulse-2")) {
+        mapRef.current.setPaintProperty(
+          "user-location-pulse-2",
+          "circle-opacity",
+          pulse2Opacity
+        );
+      }
+
+      animationFrameRef.current = requestAnimationFrame(animatePulse);
+    };
+
+    animatePulse();
 
     // クリックイベントを追加
     mapRef.current.on("click", "user-location-center", (e) => {
@@ -909,10 +994,17 @@ export default function ClientMap() {
 
     return () => {
       window.removeEventListener("resize", resizeMap);
+      // アニメーションフレームをキャンセル
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
       // ユーザー位置レイヤーをクリーンアップ
       if (map.getSource("user-location")) {
         if (map.getLayer("user-location-pulse")) {
           map.removeLayer("user-location-pulse");
+        }
+        if (map.getLayer("user-location-pulse-2")) {
+          map.removeLayer("user-location-pulse-2");
         }
         if (map.getLayer("user-location-center")) {
           map.removeLayer("user-location-center");
