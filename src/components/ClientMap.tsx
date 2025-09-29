@@ -3,6 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import mapboxgl, { Map } from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
+import BusStopInfoPanel from "./BusStopInfoPanel";
+import RegionSelector from "./RegionSelector";
+import BusStopDetailPanel from "./BusStopDetailPanel";
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN as string;
 
@@ -16,7 +19,13 @@ export default function ClientMap() {
     null
   );
   const [userMarker, setUserMarker] = useState<mapboxgl.Marker | null>(null);
-  const [selectedStop, setSelectedStop] = useState<any>(null);
+  const [selectedStop, setSelectedStop] = useState<{
+    properties: any;
+    geometry: {
+      type: "Point";
+      coordinates: [number, number];
+    };
+  } | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState<string>("vancouver");
   const [delayLevel, setDelayLevel] = useState<number>(0); // 0-4の遅延レベル
@@ -42,7 +51,12 @@ export default function ClientMap() {
   };
 
   // 地域データ
-  const regions = [
+  const regions: Array<{
+    id: string;
+    name: string;
+    center: [number, number];
+    zoom: number;
+  }> = [
     {
       id: "vancouver",
       name: "バンクーバー全域",
@@ -359,7 +373,10 @@ export default function ClientMap() {
             source.getClusterExpansionZoom(clusterId, (err: any, zoom: any) => {
               if (err) return;
 
-              const geometry = features[0].geometry as mapboxgl.GeoJSONGeometry;
+              const geometry = features[0].geometry as {
+                type: "Point";
+                coordinates: [number, number];
+              };
               if (geometry.type === "Point") {
                 map.easeTo({
                   center: geometry.coordinates as [number, number],
@@ -378,7 +395,10 @@ export default function ClientMap() {
 
         if (e.features && e.features.length > 0) {
           const feature = e.features[0];
-          const geometry = feature.geometry as mapboxgl.GeoJSONGeometry;
+          const geometry = feature.geometry as {
+            type: "Point";
+            coordinates: [number, number];
+          };
 
           if (geometry.type === "Point") {
             const coordinates = geometry.coordinates.slice() as [
@@ -467,500 +487,61 @@ export default function ClientMap() {
     <div className="relative h-full w-full flex flex-col md:block">
       <div ref={ref} className="h-2/3 w-full min-h-0 md:h-full flex-shrink-0" />
 
-      {/* バス停情報パネル - デスクトップ版 */}
-      {isInfoPanelVisible && (
-        <div className="hidden md:block absolute bottom-4 left-4 bg-black bg-opacity-75 text-white p-3 rounded max-w-xs">
-          <div className="flex justify-between items-start mb-2">
-            <h3 className="font-semibold text-sm">バス停クラスタリング</h3>
-            <button
-              onClick={() => setIsInfoPanelVisible(false)}
-              className="text-gray-400 hover:text-white text-lg ml-2"
-            >
-              ×
-            </button>
-          </div>
-          <p className="text-xs mb-1">Translinkの全バス停をGeoJSONで表示</p>
-          {userLocation && (
-            <div className="text-xs text-gray-300 mb-2">
-              <p className="font-semibold">あなたの位置:</p>
-              <p>緯度: {userLocation[1].toFixed(6)}</p>
-              <p>経度: {userLocation[0].toFixed(6)}</p>
-            </div>
-          )}
-          <div className="mt-2 text-xs text-gray-400">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-              <span>個別バス停</span>
-            </div>
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-3 h-3 bg-cyan-400 rounded-full"></div>
-              <span>クラスター（小）</span>
-            </div>
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
-              <span>クラスター（中）</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-pink-400 rounded-full"></div>
-              <span>クラスター（大）</span>
-            </div>
-          </div>
-          <p className="text-xs text-gray-300 mt-2">
-            ズームアウト: クラスター表示
-            <br />
-            ズームイン: 個別バス停表示
-          </p>
-        </div>
-      )}
-
-      {/* バス停情報パネル - スマホ版（下部1/3） */}
-      <div className="md:hidden h-1/3 bg-gray-900 text-white p-4 overflow-y-auto flex-shrink-0">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="font-semibold text-lg">バス停情報</h3>
-          <button
-            onClick={() => setIsInfoPanelVisible(false)}
-            className="text-gray-400 hover:text-white text-xl"
-          >
-            ×
-          </button>
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <h4 className="font-semibold text-sm mb-2">クラスタリング説明</h4>
-            <p className="text-xs text-gray-300 mb-3">
-              Translinkの全バス停をGeoJSONで表示
-            </p>
-
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                <span>個別バス停</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-cyan-400 rounded-full"></div>
-                <span>クラスター（小）</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
-                <span>クラスター（中）</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-pink-400 rounded-full"></div>
-                <span>クラスター（大）</span>
-              </div>
-            </div>
-          </div>
-
-          {userLocation && (
-            <div className="border-t pt-3">
-              <h4 className="font-semibold text-sm mb-2">あなたの位置</h4>
-              <div className="text-xs text-gray-300">
-                <p>緯度: {userLocation[1].toFixed(6)}</p>
-                <p>経度: {userLocation[0].toFixed(6)}</p>
-              </div>
-            </div>
-          )}
-
-          <div className="border-t pt-3">
-            <h4 className="font-semibold text-sm mb-2">操作方法</h4>
-            <div className="text-xs text-gray-300 space-y-1">
-              <p>• ズームアウト: クラスター表示</p>
-              <p>• ズームイン: 個別バス停表示</p>
-              <p>• バス停をタップ: 詳細情報表示</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* バス停情報パネル */}
+      <BusStopInfoPanel
+        isVisible={isInfoPanelVisible}
+        onClose={() => setIsInfoPanelVisible(false)}
+        userLocation={userLocation}
+      />
 
       {/* 地域選択パネル */}
-      <div
-        className={`absolute top-4 bg-black bg-opacity-75 text-white p-3 rounded max-w-3xs transition-all duration-300 ease-in-out ${
-          isPanelOpen ? "right-88" : "right-4"
-        }`}
-      >
-        <h3 className="font-semibold text-sm mb-3">地域表示</h3>
-        <div className="space-y-2">
-          {regions.map((region) => (
-            <button
-              key={region.id}
-              onClick={() => {
-                setSelectedRegion(region.id);
-                if (mapRef.current) {
-                  mapRef.current.flyTo({
-                    center: region.center,
-                    zoom: region.zoom,
-                    essential: true,
-                  });
-                }
-              }}
-              className={`w-full text-left p-2 rounded text-xs transition-colors ${
-                selectedRegion === region.id
-                  ? "bg-gray-700 text-white"
-                  : "bg-gray-800 text-gray-300 hover:bg-gray-700"
-              }`}
-            >
-              {region.name}
-            </button>
-          ))}
-        </div>
-      </div>
+      <RegionSelector
+        regions={regions}
+        selectedRegion={selectedRegion}
+        onRegionSelect={(regionId) => {
+          setSelectedRegion(regionId);
+          if (mapRef.current) {
+            const region = regions.find((r) => r.id === regionId);
+            if (region) {
+              mapRef.current.flyTo({
+                center: region.center,
+                zoom: region.zoom,
+                essential: true,
+              });
+            }
+          }
+        }}
+        isPanelOpen={isPanelOpen}
+      />
 
-      {/* バス停詳細パネル - デスクトップ版（右から） */}
-      <div
-        className={`hidden md:block fixed top-0 right-0 h-full w-80 bg-gray-900 text-white shadow-2xl transform transition-transform duration-300 ease-in-out z-50 ${
-          isPanelOpen ? "translate-x-0" : "translate-x-full"
-        }`}
-      >
-        <div className="h-full flex flex-col">
-          {/* ヘッダー */}
-          <div className="bg-gray-800 border-b border-gray-700 p-4 flex justify-between items-center">
-            <h2 className="text-lg font-semibold">バス停詳細</h2>
-            <button
-              onClick={() => {
-                setIsPanelOpen(false);
-                setSelectedStop(null);
-                setSelectedStopId(null);
-              }}
-              className="text-gray-400 hover:text-white text-xl"
-            >
-              ×
-            </button>
-          </div>
-
-          {/* コンテンツ */}
-          <div className="flex-1 overflow-y-auto p-4">
-            {selectedStop &&
-              selectedStop.properties &&
-              selectedStop.geometry && (
-                <div className="space-y-6">
-                  {/* 基本情報 */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-white mb-3">
-                      {selectedStop.properties.stop_name || "Unknown Stop"}
-                    </h3>
-                    <div className="space-y-2 text-sm text-gray-300">
-                      <div className="flex justify-between">
-                        <span className="font-medium">Stop ID:</span>
-                        <span className="text-gray-400">
-                          {selectedStop.properties.stop_id || "N/A"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="font-medium">Stop Code:</span>
-                        <span className="text-gray-400">
-                          {selectedStop.properties.stop_code || "N/A"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="font-medium">Wheelchair Access:</span>
-                        <span className="text-gray-400">
-                          {selectedStop.properties.wheelchair_boarding === 1
-                            ? "Yes"
-                            : selectedStop.properties.wheelchair_boarding === 2
-                            ? "No"
-                            : "Unknown"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 位置情報 */}
-                  <div className="border-t pt-4">
-                    <h4 className="font-semibold text-white mb-2">位置情報</h4>
-                    <div className="space-y-1 text-sm text-gray-400">
-                      <div className="flex justify-between">
-                        <span>緯度:</span>
-                        <span>
-                          {selectedStop.geometry.coordinates?.[1]?.toFixed(6) ||
-                            "不明"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>経度:</span>
-                        <span>
-                          {selectedStop.geometry.coordinates?.[0]?.toFixed(6) ||
-                            "不明"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 遅延状況 */}
-                  <div className="border-t border-gray-700 pt-4">
-                    <h4 className="font-semibold text-white mb-3">遅延状況</h4>
-                    <div className="space-y-3">
-                      <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-white font-medium">
-                            現在の状況
-                          </span>
-                          <span className="text-2xl">
-                            {getDelaySymbol(delayLevel)}
-                          </span>
-                        </div>
-                        <div className="text-sm text-gray-300">
-                          <p>{getDelayLevelName(delayLevel)}</p>
-                          <p className="text-gray-400">
-                            最終更新: {new Date().toLocaleTimeString()}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 6時間予報 */}
-                  <div className="border-t border-gray-700 pt-4">
-                    <h4 className="font-semibold text-white mb-3">6時間予報</h4>
-                    <div className="space-y-2">
-                      {Array.from({ length: 6 }, (_, i) => {
-                        const hour = new Date();
-                        hour.setHours(hour.getHours() + i + 1);
-                        const randomDelay = Math.floor(Math.random() * 5);
-                        return (
-                          <div
-                            key={i}
-                            className="flex justify-between items-center bg-gray-800 p-3 rounded"
-                          >
-                            <span className="text-gray-300">
-                              {hour.getHours()}:00
-                            </span>
-                            <div className="flex items-center gap-2">
-                              <span className="text-lg">
-                                {getDelaySymbol(randomDelay)}
-                              </span>
-                              <span className="text-sm text-gray-400">
-                                {getDelayLevelName(randomDelay)}
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* 地域表示 */}
-                  <div className="border-t border-gray-700 pt-4">
-                    <h4 className="font-semibold text-white mb-3">地域表示</h4>
-                    <div className="space-y-2">
-                      {regions.map((region) => (
-                        <button
-                          key={region.id}
-                          onClick={() => {
-                            setSelectedRegion(region.id);
-                            if (mapRef.current) {
-                              mapRef.current.flyTo({
-                                center: region.center,
-                                zoom: region.zoom,
-                                essential: true,
-                              });
-                            }
-                          }}
-                          className={`w-full text-left p-2 rounded text-sm transition-colors ${
-                            selectedRegion === region.id
-                              ? "bg-gray-700 text-white"
-                              : "bg-gray-800 text-gray-300 hover:bg-gray-700"
-                          }`}
-                        >
-                          {region.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* アラート */}
-                  <div className="border-t border-gray-700 pt-4">
-                    <h4 className="font-semibold text-white mb-3">アラート</h4>
-                    <div className="space-y-2">
-                      <div className="bg-yellow-900 border border-yellow-700 rounded p-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-yellow-400">⚠️</span>
-                          <span className="text-yellow-200 text-sm">
-                            2時間後に遅延のピークが予想されます
-                          </span>
-                        </div>
-                      </div>
-                      <div className="bg-red-900 border border-red-700 rounded p-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-red-400">🚨</span>
-                          <span className="text-red-200 text-sm">
-                            Route 2で重大な遅延が発生中
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-          </div>
-        </div>
-      </div>
-
-      {/* バス停詳細パネル - モバイル版（下から） */}
-      <div
-        className={`md:hidden fixed bottom-0 left-0 right-0 bg-gray-900 text-white shadow-2xl transform transition-transform duration-300 ease-in-out z-50 ${
-          isPanelOpen ? "translate-y-0" : "translate-y-full"
-        }`}
-      >
-        <div className="h-96 flex flex-col">
-          {/* ヘッダー */}
-          <div className="bg-gray-800 border-b border-gray-700 p-4 flex justify-between items-center">
-            <h2 className="text-lg font-semibold">バス停詳細</h2>
-            <button
-              onClick={() => {
-                setIsPanelOpen(false);
-                setSelectedStop(null);
-                setSelectedStopId(null);
-              }}
-              className="text-gray-400 hover:text-white text-xl"
-            >
-              ×
-            </button>
-          </div>
-
-          {/* コンテンツ */}
-          <div className="flex-1 overflow-y-auto p-4">
-            {selectedStop &&
-              selectedStop.properties &&
-              selectedStop.geometry && (
-                <div className="space-y-4">
-                  {/* 基本情報 */}
-                  <div>
-                    <h3 className="font-semibold text-white mb-2">基本情報</h3>
-                    <div className="space-y-1 text-sm text-gray-400">
-                      <div className="flex justify-between">
-                        <span>バス停名:</span>
-                        <span className="text-white">
-                          {selectedStop.properties.stop_name || "不明"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>バス停ID:</span>
-                        <span className="text-white">
-                          {selectedStop.properties.stop_id || "不明"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>バス停コード:</span>
-                        <span className="text-white">
-                          {selectedStop.properties.stop_code || "不明"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>車椅子対応:</span>
-                        <span className="text-white">
-                          {selectedStop.properties.wheelchair_boarding === 1
-                            ? "対応"
-                            : "非対応"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 位置情報 */}
-                  <div className="border-t pt-4">
-                    <h4 className="font-semibold text-white mb-2">位置情報</h4>
-                    <div className="space-y-1 text-sm text-gray-400">
-                      <div className="flex justify-between">
-                        <span>緯度:</span>
-                        <span className="text-white">
-                          {selectedStop.geometry.coordinates?.[1]?.toFixed(6) ||
-                            "不明"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>経度:</span>
-                        <span className="text-white">
-                          {selectedStop.geometry.coordinates?.[0]?.toFixed(6) ||
-                            "不明"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 遅延状況 */}
-                  <div className="border-t pt-4">
-                    <h4 className="font-semibold text-white mb-2">遅延状況</h4>
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl">
-                        {getDelaySymbol(delayLevel)}
-                      </span>
-                      <span className="text-white">
-                        {getDelayLevelName(delayLevel)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* 6時間予報 */}
-                  <div className="border-t pt-4">
-                    <h4 className="font-semibold text-white mb-2">6時間予報</h4>
-                    <div className="grid grid-cols-3 gap-2 text-sm">
-                      {Array.from({ length: 6 }, (_, i) => {
-                        const hour = new Date().getHours() + i;
-                        const randomDelay = Math.floor(Math.random() * 5);
-                        return (
-                          <div key={i} className="text-center">
-                            <div className="text-gray-400">{hour % 24}時</div>
-                            <div className="text-lg">
-                              {getDelaySymbol(randomDelay)}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {getDelayLevelName(randomDelay)}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* 地域表示 */}
-                  <div className="border-t pt-4">
-                    <h4 className="font-semibold text-white mb-2">地域表示</h4>
-                    <div className="grid grid-cols-2 gap-2">
-                      {regions.map((region) => (
-                        <button
-                          key={region.id}
-                          onClick={() => {
-                            setSelectedRegion(region.id);
-                            if (mapRef.current) {
-                              mapRef.current.flyTo({
-                                center: region.center,
-                                zoom: region.zoom,
-                                essential: true,
-                              });
-                            }
-                          }}
-                          className={`p-2 rounded text-xs transition-colors ${
-                            selectedRegion === region.id
-                              ? "bg-gray-700 text-white"
-                              : "bg-gray-800 text-gray-300 hover:bg-gray-700"
-                          }`}
-                        >
-                          {region.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* アラート */}
-                  <div className="border-t pt-4">
-                    <h4 className="font-semibold text-white mb-2">アラート</h4>
-                    <div className="space-y-2 text-sm text-gray-400">
-                      <div className="bg-red-900 bg-opacity-30 p-2 rounded">
-                        <span className="text-red-400">⚠️</span>{" "}
-                        2時間後に遅延のピークが予想されます
-                      </div>
-                      <div className="bg-yellow-900 bg-opacity-30 p-2 rounded">
-                        <span className="text-yellow-400">ℹ️</span>{" "}
-                        工事の影響で一部路線が迂回運行中
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-          </div>
-        </div>
-      </div>
+      {/* バス停詳細パネル */}
+      <BusStopDetailPanel
+        isOpen={isPanelOpen}
+        onClose={() => {
+          setIsPanelOpen(false);
+          setSelectedStop(null);
+          setSelectedStopId(null);
+        }}
+        selectedStop={selectedStop}
+        delayLevel={delayLevel}
+        regions={regions}
+        selectedRegion={selectedRegion}
+        onRegionSelect={(regionId) => {
+          setSelectedRegion(regionId);
+          if (mapRef.current) {
+            const region = regions.find((r) => r.id === regionId);
+            if (region) {
+              mapRef.current.flyTo({
+                center: region.center,
+                zoom: region.zoom,
+                essential: true,
+              });
+            }
+          }
+        }}
+        getDelaySymbol={getDelaySymbol}
+        getDelayLevelName={getDelayLevelName}
+      />
     </div>
   );
 }
