@@ -17,6 +17,8 @@ interface BusStopDetailPanelProps {
   onRegionSelect: (regionId: string) => void;
   getDelaySymbol: (level: number) => string;
   getDelayLevelName: (level: number) => string;
+  pinnedStops: Set<string>;
+  onTogglePin: (stopId: string, stopData: any) => void;
 }
 
 export default function BusStopDetailPanel({
@@ -29,25 +31,48 @@ export default function BusStopDetailPanel({
   onRegionSelect,
   getDelaySymbol,
   getDelayLevelName,
+  pinnedStops,
+  onTogglePin,
 }: BusStopDetailPanelProps) {
   return (
     <>
-      {/* デスクトップ版（右から） */}
+      {/* Desktop Version (from right) */}
       <div
         className={`hidden md:block fixed top-0 right-0 h-full w-80 bg-gray-900 text-white shadow-2xl transform transition-transform duration-300 ease-in-out z-50 ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
         <div className="h-full flex flex-col">
-          {/* ヘッダー */}
+          {/* Header */}
           <div className="bg-gray-800 border-b border-gray-700 p-4 flex justify-between items-center">
-            <h2 className="text-lg font-semibold">バス停詳細</h2>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-white text-xl"
-            >
-              ×
-            </button>
+            <h2 className="text-lg font-semibold">Bus Stop Details</h2>
+            <div className="flex items-center gap-2">
+              {selectedStop && selectedStop.properties && (
+                <button
+                  onClick={() =>
+                    onTogglePin(selectedStop.properties.stop_id, selectedStop)
+                  }
+                  className={`p-2 rounded transition-colors ${
+                    pinnedStops.has(selectedStop.properties.stop_id)
+                      ? "bg-gray-600 text-white"
+                      : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                  }`}
+                  title={
+                    pinnedStops.has(selectedStop.properties.stop_id)
+                      ? "Unpin"
+                      : "Pin"
+                  }
+                >
+                  📍
+                </button>
+              )}
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-white text-xl"
+              >
+                ×
+              </button>
+            </div>
           </div>
 
           {/* コンテンツ */}
@@ -56,11 +81,18 @@ export default function BusStopDetailPanel({
               selectedStop.properties &&
               selectedStop.geometry && (
                 <div className="space-y-6">
-                  {/* 基本情報 */}
+                  {/* Basic Info */}
                   <div>
-                    <h3 className="text-lg font-semibold text-white mb-3">
-                      {selectedStop.properties.stop_name || "Unknown Stop"}
-                    </h3>
+                    <div className="flex items-center gap-2 mb-3">
+                      <h3 className="text-lg font-semibold text-white">
+                        {selectedStop.properties.stop_name || "Unknown Stop"}
+                      </h3>
+                      {pinnedStops.has(selectedStop.properties.stop_id) && (
+                        <span className="text-gray-400 text-sm" title="Pinned">
+                          📍
+                        </span>
+                      )}
+                    </div>
                     <div className="space-y-2 text-sm text-gray-300">
                       <div className="flex justify-between">
                         <span className="font-medium">Stop ID:</span>
@@ -89,20 +121,20 @@ export default function BusStopDetailPanel({
 
                   {/* 位置情報 */}
                   <div className="border-t pt-4">
-                    <h4 className="font-semibold text-white mb-2">位置情報</h4>
+                    <h4 className="font-semibold text-white mb-2">Location</h4>
                     <div className="space-y-1 text-sm text-gray-400">
                       <div className="flex justify-between">
-                        <span>緯度:</span>
+                        <span>Latitude:</span>
                         <span>
                           {selectedStop.geometry.coordinates?.[1]?.toFixed(6) ||
-                            "不明"}
+                            "Unknown"}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span>経度:</span>
+                        <span>Longitude:</span>
                         <span>
                           {selectedStop.geometry.coordinates?.[0]?.toFixed(6) ||
-                            "不明"}
+                            "Unknown"}
                         </span>
                       </div>
                     </div>
@@ -110,7 +142,9 @@ export default function BusStopDetailPanel({
 
                   {/* 遅延状況 */}
                   <div className="border-t border-gray-700 pt-4">
-                    <h4 className="font-semibold text-white mb-3">遅延状況</h4>
+                    <h4 className="font-semibold text-white mb-3">
+                      Delay Status
+                    </h4>
                     <div className="space-y-3">
                       <div className="flex items-center gap-3">
                         <span className="text-3xl">
@@ -121,7 +155,7 @@ export default function BusStopDetailPanel({
                             {getDelayLevelName(delayLevel)}
                           </div>
                           <div className="text-gray-400 text-sm">
-                            最終更新: {new Date().toLocaleTimeString()}
+                            Last updated: {new Date().toLocaleTimeString()}
                           </div>
                         </div>
                       </div>
@@ -130,7 +164,9 @@ export default function BusStopDetailPanel({
 
                   {/* 6時間予報 */}
                   <div className="border-t border-gray-700 pt-4">
-                    <h4 className="font-semibold text-white mb-3">6時間予報</h4>
+                    <h4 className="font-semibold text-white mb-3">
+                      6-Hour Forecast
+                    </h4>
                     <div className="space-y-2">
                       {Array.from({ length: 6 }, (_, i) => {
                         const hour = new Date();
@@ -160,7 +196,9 @@ export default function BusStopDetailPanel({
 
                   {/* 地域表示 */}
                   <div className="border-t border-gray-700 pt-4">
-                    <h4 className="font-semibold text-white mb-3">地域表示</h4>
+                    <h4 className="font-semibold text-white mb-3">
+                      Region Display
+                    </h4>
                     <div className="space-y-2">
                       {regions.map((region) => (
                         <button
@@ -180,13 +218,13 @@ export default function BusStopDetailPanel({
 
                   {/* アラート */}
                   <div className="border-t border-gray-700 pt-4">
-                    <h4 className="font-semibold text-white mb-3">アラート</h4>
+                    <h4 className="font-semibold text-white mb-3">Alerts</h4>
                     <div className="space-y-2">
                       <div className="bg-yellow-900 border border-yellow-700 rounded p-3">
                         <div className="flex items-center gap-2">
                           <span className="text-yellow-400">⚠️</span>
                           <span className="text-yellow-200 text-sm">
-                            2時間後に遅延のピークが予想されます
+                            Peak delay expected in 2 hours
                           </span>
                         </div>
                       </div>
@@ -194,7 +232,7 @@ export default function BusStopDetailPanel({
                         <div className="flex items-center gap-2">
                           <span className="text-red-400">🚨</span>
                           <span className="text-red-200 text-sm">
-                            Route 2で重大な遅延が発生中
+                            Major delays on Route 2
                           </span>
                         </div>
                       </div>
@@ -206,7 +244,7 @@ export default function BusStopDetailPanel({
         </div>
       </div>
 
-      {/* モバイル版（下から） */}
+      {/* Mobile Version (from bottom) */}
       <div
         className={`md:hidden fixed bottom-0 left-0 right-0 bg-gray-900 text-white shadow-2xl transform transition-transform duration-300 ease-in-out z-50 ${
           isOpen ? "translate-y-0" : "translate-y-full"
@@ -215,13 +253,34 @@ export default function BusStopDetailPanel({
         <div className="h-96 flex flex-col">
           {/* ヘッダー */}
           <div className="bg-gray-800 border-b border-gray-700 p-4 flex justify-between items-center">
-            <h2 className="text-lg font-semibold">バス停詳細</h2>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-white text-xl"
-            >
-              ×
-            </button>
+            <h2 className="text-lg font-semibold">Bus Stop Details</h2>
+            <div className="flex items-center gap-2">
+              {selectedStop && selectedStop.properties && (
+                <button
+                  onClick={() =>
+                    onTogglePin(selectedStop.properties.stop_id, selectedStop)
+                  }
+                  className={`p-2 rounded transition-colors ${
+                    pinnedStops.has(selectedStop.properties.stop_id)
+                      ? "bg-gray-600 text-white"
+                      : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                  }`}
+                  title={
+                    pinnedStops.has(selectedStop.properties.stop_id)
+                      ? "Unpin"
+                      : "Pin"
+                  }
+                >
+                  📍
+                </button>
+              )}
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-white text-xl"
+              >
+                ×
+              </button>
+            </div>
           </div>
 
           {/* コンテンツ */}
@@ -232,58 +291,47 @@ export default function BusStopDetailPanel({
                 <div className="space-y-4">
                   {/* 基本情報 */}
                   <div>
-                    <h3 className="font-semibold text-white mb-2">基本情報</h3>
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="font-semibold text-white">Basic Info</h3>
+                      {selectedStop.properties &&
+                        pinnedStops.has(selectedStop.properties.stop_id) && (
+                          <span
+                            className="text-gray-400 text-sm"
+                            title="Pinned"
+                          >
+                            📍
+                          </span>
+                        )}
+                    </div>
                     <div className="space-y-1 text-sm text-gray-400">
                       <div className="flex justify-between">
-                        <span>バス停名:</span>
+                        <span>Stop Name:</span>
                         <span className="text-white">
                           {selectedStop.properties.stop_name || "不明"}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span>バス停ID:</span>
+                        <span>Stop ID:</span>
                         <span className="text-white">
                           {selectedStop.properties.stop_id || "不明"}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span>バス停コード:</span>
+                        <span>Stop Code:</span>
                         <span className="text-white">
                           {selectedStop.properties.stop_code || "不明"}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span>車椅子対応:</span>
+                        <span>Wheelchair Access:</span>
                         <span className="text-white">
                           {selectedStop.properties.wheelchair_boarding === 1
-                            ? "対応"
-                            : "非対応"}
+                            ? "Yes"
+                            : "No"}
                         </span>
                       </div>
                     </div>
                   </div>
-
-                  {/* 位置情報 */}
-                  <div className="border-t pt-4">
-                    <h4 className="font-semibold text-white mb-2">位置情報</h4>
-                    <div className="space-y-1 text-sm text-gray-400">
-                      <div className="flex justify-between">
-                        <span>緯度:</span>
-                        <span className="text-white">
-                          {selectedStop.geometry.coordinates?.[1]?.toFixed(6) ||
-                            "不明"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>経度:</span>
-                        <span className="text-white">
-                          {selectedStop.geometry.coordinates?.[0]?.toFixed(6) ||
-                            "不明"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
                   {/* 遅延状況 */}
                   <div className="border-t pt-4">
                     <h4 className="font-semibold text-white mb-2">遅延状況</h4>
@@ -306,7 +354,7 @@ export default function BusStopDetailPanel({
                         const randomDelay = Math.floor(Math.random() * 5);
                         return (
                           <div key={i} className="text-center">
-                            <div className="text-gray-400">{hour % 24}時</div>
+                            <div className="text-gray-400">{hour % 24}:00</div>
                             <div className="text-lg">
                               {getDelaySymbol(randomDelay)}
                             </div>
@@ -316,6 +364,27 @@ export default function BusStopDetailPanel({
                           </div>
                         );
                       })}
+                    </div>
+                  </div>
+
+                  {/* 位置情報 */}
+                  <div className="border-t pt-4">
+                    <h4 className="font-semibold text-white mb-2">Location</h4>
+                    <div className="space-y-1 text-sm text-gray-400">
+                      <div className="flex justify-between">
+                        <span>Latitude:</span>
+                        <span className="text-white">
+                          {selectedStop.geometry.coordinates?.[1]?.toFixed(6) ||
+                            "Unknown"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Longitude:</span>
+                        <span className="text-white">
+                          {selectedStop.geometry.coordinates?.[0]?.toFixed(6) ||
+                            "Unknown"}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
@@ -344,12 +413,12 @@ export default function BusStopDetailPanel({
                     <h4 className="font-semibold text-white mb-2">アラート</h4>
                     <div className="space-y-2 text-sm text-gray-400">
                       <div className="bg-red-900 bg-opacity-30 p-2 rounded">
-                        <span className="text-red-400">⚠️</span>{" "}
-                        2時間後に遅延のピークが予想されます
+                        <span className="text-red-400">⚠️</span> Peak delay
+                        expected in 2 hours
                       </div>
                       <div className="bg-yellow-900 bg-opacity-30 p-2 rounded">
-                        <span className="text-yellow-400">ℹ️</span>{" "}
-                        工事の影響で一部路線が迂回運行中
+                        <span className="text-yellow-400">ℹ️</span> Some routes
+                        diverted due to construction
                       </div>
                     </div>
                   </div>

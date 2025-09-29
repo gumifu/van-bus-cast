@@ -6,7 +6,7 @@ export default function Home() {
   return (
     <main className="h-screen w-full bg-black text-white md:h-dvh">
       <div className="h-full flex flex-col">
-        <h1 className="p-4 text-xl font-semibold flex-shrink-0 md:block hidden">
+        <h1 className="p-4 text-xl font-semibold flex-shrink-0 md:block hidden bg-gray-900 text-white border-b border-gray-700">
           Vancouver Map (Mapbox)
         </h1>
         <div className="flex-1 min-h-0 md:flex-1">

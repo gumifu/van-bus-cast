@@ -12,52 +12,86 @@ function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
   return R * c;
 }
 
+// デモバス停データ
+const allDemoStops = [
+  // 指定された5つの駅のみ
+  {
+    StopNo: 1001,
+    Name: "Waterfront Station",
+    Latitude: 49.2856,
+    Longitude: -123.1110,
+    Routes: "Canada Line, Expo Line, SeaBus, West Coast Express",
+    Type: "SkyTrain"
+  },
+  {
+    StopNo: 1002,
+    Name: "Burrard Station",
+    Latitude: 49.2850,
+    Longitude: -123.1200,
+    Routes: "Expo Line",
+    Type: "SkyTrain"
+  },
+  {
+    StopNo: 1003,
+    Name: "Granville Station",
+    Latitude: 49.2831,
+    Longitude: -123.1165,
+    Routes: "Expo Line",
+    Type: "SkyTrain"
+  },
+  {
+    StopNo: 1004,
+    Name: "Vancouver City Centre Station",
+    Latitude: 49.2825,
+    Longitude: -123.1186,
+    Routes: "Canada Line",
+    Type: "SkyTrain"
+  },
+  {
+    StopNo: 1005,
+    Name: "Stadium–Chinatown Station",
+    Latitude: 49.2796,
+    Longitude: -123.1098,
+    Routes: "Expo Line",
+    Type: "SkyTrain"
+  },
+  // 追加のバス停
+  {
+    StopNo: 2001,
+    Name: "Waterfront Station Bus Loop",
+    Latitude: 49.2856,
+    Longitude: -123.1110,
+    Routes: "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 14, 15, 16, 17, 19, 20, 22, 23, 25, 26, 32, 33, 41, 42, 44, 50, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 271, 272, 273, 274, 275, 276, 277, 278, 279, 280, 281, 282, 283, 284, 285, 286, 287, 288, 289, 290, 291, 292, 293, 294, 295, 296, 297, 298, 299, 300, 301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 312, 313, 314, 315, 316, 317, 318, 319, 320, 321, 322, 323, 324, 325, 326, 327, 328, 329, 330, 331, 332, 333, 334, 335, 336, 337, 338, 339, 340, 341, 342, 343, 344, 345, 346, 347, 348, 349, 350, 351, 352, 353, 354, 355, 356, 357, 358, 359, 360, 361, 362, 363, 364, 365, 366, 367, 368, 369, 370, 371, 372, 373, 374, 375, 376, 377, 378, 379, 380, 381, 382, 383, 384, 385, 386, 387, 388, 389, 390, 391, 392, 393, 394, 395, 396, 397, 398, 399, 400, 401, 402, 403, 404, 405, 406, 407, 408, 409, 410, 411, 412, 413, 414, 415, 416, 417, 418, 419, 420, 421, 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432, 433, 434, 435, 436, 437, 438, 439, 440, 441, 442, 443, 444, 445, 446, 447, 448, 449, 450, 451, 452, 453, 454, 455, 456, 457, 458, 459, 460, 461, 462, 463, 464, 465, 466, 467, 468, 469, 470, 471, 472, 473, 474, 475, 476, 477, 478, 479, 480, 481, 482, 483, 484, 485, 486, 487, 488, 489, 490, 491, 492, 493, 494, 495, 496, 497, 498, 499, 500",
+    Type: "Bus"
+  },
+  {
+    StopNo: 3001,
+    Name: "Robson Street at Granville",
+    Latitude: 49.2831,
+    Longitude: -123.1165,
+    Routes: "5, 6, 8, 15, 17, 19, 22, 23, 25, 26, 32, 33, 41, 42, 44, 50, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 271, 272, 273, 274, 275, 276, 277, 278, 279, 280, 281, 282, 283, 284, 285, 286, 287, 288, 289, 290, 291, 292, 293, 294, 295, 296, 297, 298, 299, 300, 301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 312, 313, 314, 315, 316, 317, 318, 319, 320, 321, 322, 323, 324, 325, 326, 327, 328, 329, 330, 331, 332, 333, 334, 335, 336, 337, 338, 339, 340, 341, 342, 343, 344, 345, 346, 347, 348, 349, 350, 351, 352, 353, 354, 355, 356, 357, 358, 359, 360, 361, 362, 363, 364, 365, 366, 367, 368, 369, 370, 371, 372, 373, 374, 375, 376, 377, 378, 379, 380, 381, 382, 383, 384, 385, 386, 387, 388, 389, 390, 391, 392, 393, 394, 395, 396, 397, 398, 399, 400, 401, 402, 403, 404, 405, 406, 407, 408, 409, 410, 411, 412, 413, 414, 415, 416, 417, 418, 419, 420, 421, 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432, 433, 434, 435, 436, 437, 438, 439, 440, 441, 442, 443, 444, 445, 446, 447, 448, 449, 450, 451, 452, 453, 454, 455, 456, 457, 458, 459, 460, 461, 462, 463, 464, 465, 466, 467, 468, 469, 470, 471, 472, 473, 474, 475, 476, 477, 478, 479, 480, 481, 482, 483, 484, 485, 486, 487, 488, 489, 490, 491, 492, 493, 494, 495, 496, 497, 498, 499, 500",
+    Type: "Bus"
+  },
+  {
+    StopNo: 4001,
+    Name: "Hastings Street at Main",
+    Latitude: 49.2810,
+    Longitude: -123.1000,
+    Routes: "3, 8, 19, 22, 25, 26, 32, 33, 41, 42, 44, 50, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 271, 272, 273, 274, 275, 276, 277, 278, 279, 280, 281, 282, 283, 284, 285, 286, 287, 288, 289, 290, 291, 292, 293, 294, 295, 296, 297, 298, 299, 300, 301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 312, 313, 314, 315, 316, 317, 318, 319, 320, 321, 322, 323, 324, 325, 326, 327, 328, 329, 330, 331, 332, 333, 334, 335, 336, 337, 338, 339, 340, 341, 342, 343, 344, 345, 346, 347, 348, 349, 350, 351, 352, 353, 354, 355, 356, 357, 358, 359, 360, 361, 362, 363, 364, 365, 366, 367, 368, 369, 370, 371, 372, 373, 374, 375, 376, 377, 378, 379, 380, 381, 382, 383, 384, 385, 386, 387, 388, 389, 390, 391, 392, 393, 394, 395, 396, 397, 398, 399, 400, 401, 402, 403, 404, 405, 406, 407, 408, 409, 410, 411, 412, 413, 414, 415, 416, 417, 418, 419, 420, 421, 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432, 433, 434, 435, 436, 437, 438, 439, 440, 441, 442, 443, 444, 445, 446, 447, 448, 449, 450, 451, 452, 453, 454, 455, 456, 457, 458, 459, 460, 461, 462, 463, 464, 465, 466, 467, 468, 469, 470, 471, 472, 473, 474, 475, 476, 477, 478, 479, 480, 481, 482, 483, 484, 485, 486, 487, 488, 489, 490, 491, 492, 493, 494, 495, 496, 497, 498, 499, 500",
+    Type: "Bus"
+  },
+  {
+    StopNo: 5001,
+    Name: "Broadway at Cambie",
+    Latitude: 49.2620,
+    Longitude: -123.1150,
+    Routes: "9, 17, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 271, 272, 273, 274, 275, 276, 277, 278, 279, 280, 281, 282, 283, 284, 285, 286, 287, 288, 289, 290, 291, 292, 293, 294, 295, 296, 297, 298, 299, 300, 301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 312, 313, 314, 315, 316, 317, 318, 319, 320, 321, 322, 323, 324, 325, 326, 327, 328, 329, 330, 331, 332, 333, 334, 335, 336, 337, 338, 339, 340, 341, 342, 343, 344, 345, 346, 347, 348, 349, 350, 351, 352, 353, 354, 355, 356, 357, 358, 359, 360, 361, 362, 363, 364, 365, 366, 367, 368, 369, 370, 371, 372, 373, 374, 375, 376, 377, 378, 379, 380, 381, 382, 383, 384, 385, 386, 387, 388, 389, 390, 391, 392, 393, 394, 395, 396, 397, 398, 399, 400, 401, 402, 403, 404, 405, 406, 407, 408, 409, 410, 411, 412, 413, 414, 415, 416, 417, 418, 419, 420, 421, 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432, 433, 434, 435, 436, 437, 438, 439, 440, 441, 442, 443, 444, 445, 446, 447, 448, 449, 450, 451, 452, 453, 454, 455, 456, 457, 458, 459, 460, 461, 462, 463, 464, 465, 466, 467, 468, 469, 470, 471, 472, 473, 474, 475, 476, 477, 478, 479, 480, 481, 482, 483, 484, 485, 486, 487, 488, 489, 490, 491, 492, 493, 494, 495, 496, 497, 498, 499, 500",
+    Type: "Bus"
+  }
+];
+
 // 周辺のデモバス停と駅を取得する関数
 function getNearbyDemoStops(userLat: number, userLng: number, radius: number) {
-  const allDemoStops = [
-    // 指定された5つの駅のみ
-    {
-      StopNo: 1001,
-      Name: "Waterfront Station",
-      Latitude: 49.2856,
-      Longitude: -123.1110,
-      Routes: "Canada Line, Expo Line, SeaBus, West Coast Express",
-      Type: "SkyTrain"
-    },
-    {
-      StopNo: 1002,
-      Name: "Burrard Station",
-      Latitude: 49.2850,
-      Longitude: -123.1200,
-      Routes: "Expo Line",
-      Type: "SkyTrain"
-    },
-    {
-      StopNo: 1003,
-      Name: "Granville Station",
-      Latitude: 49.2831,
-      Longitude: -123.1165,
-      Routes: "Expo Line",
-      Type: "SkyTrain"
-    },
-    {
-      StopNo: 1004,
-      Name: "Vancouver City Centre Station",
-      Latitude: 49.2825,
-      Longitude: -123.1186,
-      Routes: "Canada Line",
-      Type: "SkyTrain"
-    },
-    {
-      StopNo: 1005,
-      Name: "Stadium–Chinatown Station",
-      Latitude: 49.2796,
-      Longitude: -123.1098,
-      Routes: "Expo Line",
-      Type: "SkyTrain"
-    }
-  ];
-
   return allDemoStops.filter(stop => {
     const distance = calculateDistance(userLat, userLng, stop.Latitude, stop.Longitude);
     return distance <= radius;
@@ -67,160 +101,80 @@ function getNearbyDemoStops(userLat: number, userLng: number, radius: number) {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const useDemo = searchParams.get('demo') === 'true';
     const lat = searchParams.get('lat');
     const lng = searchParams.get('lng');
-    const radius = searchParams.get('radius') || '500';
-    const stationsOnly = searchParams.get('stations_only') === 'true';
+    const radius = parseInt(searchParams.get('radius') || '1000');
 
-    // 位置情報が提供されている場合は実際のAPIを優先
+    // 位置情報が提供されている場合は周辺のデモバス停を返す
     if (lat && lng) {
-      const apiKey = process.env.NEXT_PUBLIC_TRANSLINK_API_KEY;
+      const userLat = parseFloat(lat);
+      const userLng = parseFloat(lng);
+      const nearbyStops = getNearbyDemoStops(userLat, userLng, radius);
 
-      if (!apiKey) {
-        return NextResponse.json(
-          { error: 'Translink API key not found' },
-          { status: 500 }
-        );
-      }
-
-      try {
-        const response = await fetch(
-          `https://api.translink.ca/rttiapi/v1/stops?apikey=${apiKey}&lat=${lat}&long=${lng}&radius=${radius}`,
-          {
-            headers: {
-              'Accept': 'application/json',
-            },
+      const demoData = {
+        type: "FeatureCollection",
+        features: nearbyStops.map(stop => ({
+          type: "Feature",
+          properties: {
+            stop_id: stop.StopNo.toString(),
+            stop_name: stop.Name,
+            stop_code: stop.StopNo.toString(),
+            wheelchair_boarding: 1,
+            routes: stop.Routes,
+            type: stop.Type
+          },
+          geometry: {
+            type: "Point",
+            coordinates: [stop.Longitude, stop.Latitude]
           }
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          console.log(`Fetched ${data.length} bus stops from Translink API`);
-          return NextResponse.json(data);
-        } else {
-          console.error('Translink API error:', response.status, response.statusText);
-          // APIが失敗した場合はデモデータにフォールバック
-          console.log('Falling back to demo data due to API error');
-        }
-      } catch (error) {
-        console.error('Error calling Translink API:', error);
-        // APIが失敗した場合はデモデータにフォールバック
-        console.log('Falling back to demo data due to API error');
-      }
-    }
-
-    // デモデータを使用する場合（APIが失敗した場合も含む）
-    if (useDemo || (lat && lng)) {
-      // 位置情報が提供されている場合は、その周辺のデモデータを返す
-      if (lat && lng) {
-        const userLat = parseFloat(lat);
-        const userLng = parseFloat(lng);
-        const searchRadius = parseInt(radius);
-
-        // バンクーバー周辺のデモデータをフィルタリング
-        const nearbyStops = getNearbyDemoStops(userLat, userLng, searchRadius);
-
-        // 駅のみを返す場合
-        if (stationsOnly) {
-          const stations = nearbyStops.filter(stop => stop.Type && stop.Type !== 'Bus');
-          console.log(`Returning ${stations.length} nearby demo stations`);
-          return NextResponse.json(stations);
-        }
-
-        console.log(`Returning ${nearbyStops.length} nearby demo stops`);
-        return NextResponse.json(nearbyStops);
-      }
-
-      const demoData = [
-        {
-          StopNo: 1001,
-          Name: "Waterfront Station",
-          Latitude: 49.2856,
-          Longitude: -123.1110,
-          Routes: "Canada Line, Expo Line, SeaBus, West Coast Express",
-          Type: "SkyTrain"
-        },
-        {
-          StopNo: 1002,
-          Name: "Burrard Station",
-          Latitude: 49.2850,
-          Longitude: -123.1200,
-          Routes: "Expo Line",
-          Type: "SkyTrain"
-        },
-        {
-          StopNo: 1003,
-          Name: "Granville Station",
-          Latitude: 49.2831,
-          Longitude: -123.1165,
-          Routes: "Expo Line",
-          Type: "SkyTrain"
-        },
-        {
-          StopNo: 1004,
-          Name: "Vancouver City Centre Station",
-          Latitude: 49.2825,
-          Longitude: -123.1186,
-          Routes: "Canada Line",
-          Type: "SkyTrain"
-        },
-        {
-          StopNo: 1005,
-          Name: "Stadium–Chinatown Station",
-          Latitude: 49.2796,
-          Longitude: -123.1098,
-          Routes: "Expo Line",
-          Type: "SkyTrain"
-        }
-      ];
+        }))
+      };
 
       return NextResponse.json(demoData);
     }
 
-    // 位置情報が提供されていない場合は実際のAPIを試行
-    const apiKey = process.env.NEXT_PUBLIC_TRANSLINK_API_KEY;
-
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: 'Translink API key not found' },
-        { status: 500 }
-      );
-    }
-
-    try {
-      const response = await fetch(
-        `https://api.translink.ca/rttiapi/v1/stops?apikey=${apiKey}`,
-        {
-          headers: {
-            'Accept': 'application/json',
-          },
+    // 位置情報が提供されていない場合は全てのデモバス停を返す
+    const geoJsonData = {
+      type: "FeatureCollection",
+      features: allDemoStops.map(stop => ({
+        type: "Feature",
+        properties: {
+          stop_id: stop.StopNo.toString(),
+          stop_name: stop.Name,
+          stop_code: stop.StopNo.toString(),
+          wheelchair_boarding: 1,
+          routes: stop.Routes,
+          type: stop.Type
+        },
+        geometry: {
+          type: "Point",
+          coordinates: [stop.Longitude, stop.Latitude]
         }
-      );
+      }))
+    };
 
-      if (response.ok) {
-        const data = await response.json();
-        console.log(`Fetched ${data.length} bus stops from Translink API`);
-        return NextResponse.json(data);
-      } else {
-        console.error('Translink API error:', response.status, response.statusText);
-        return NextResponse.json(
-          { error: 'Failed to fetch bus stops' },
-          { status: response.status }
-        );
-      }
-    } catch (error) {
-      console.error('Error calling Translink API:', error);
-      return NextResponse.json(
-        { error: 'Internal server error' },
-        { status: 500 }
-      );
-    }
+    return NextResponse.json(geoJsonData);
   } catch (error) {
     console.error('Error fetching bus stops:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    // エラーの場合はデモデータを返す
+    const geoJsonData = {
+      type: "FeatureCollection",
+      features: allDemoStops.map(stop => ({
+        type: "Feature",
+        properties: {
+          stop_id: stop.StopNo.toString(),
+          stop_name: stop.Name,
+          stop_code: stop.StopNo.toString(),
+          wheelchair_boarding: 1,
+          routes: stop.Routes,
+          type: stop.Type
+        },
+        geometry: {
+          type: "Point",
+          coordinates: [stop.Longitude, stop.Latitude]
+        }
+      }))
+    };
+    return NextResponse.json(geoJsonData);
   }
 }
