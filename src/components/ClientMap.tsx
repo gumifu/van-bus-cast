@@ -18,6 +18,55 @@ export default function ClientMap() {
   const [userMarker, setUserMarker] = useState<mapboxgl.Marker | null>(null);
   const [selectedStop, setSelectedStop] = useState<any>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [selectedRegion, setSelectedRegion] = useState<string>("vancouver");
+  const [delayLevel, setDelayLevel] = useState<number>(0); // 0-4の遅延レベル
+
+  // 遅延シンボルを取得
+  const getDelaySymbol = (level: number) => {
+    const symbols = ["☀️", "🌤️", "☁️", "🌧️", "⛈️"];
+    return symbols[level] || "☀️";
+  };
+
+  // 遅延レベル名を取得
+  const getDelayLevelName = (level: number) => {
+    const names = [
+      "定時運行",
+      "1-3分遅延",
+      "3-5分遅延",
+      "5-10分遅延",
+      "10分以上遅延",
+    ];
+    return names[level] || "定時運行";
+  };
+
+  // 地域データ
+  const regions = [
+    {
+      id: "vancouver",
+      name: "バンクーバー全域",
+      center: [-123.1207, 49.2827],
+      zoom: 11,
+    },
+    {
+      id: "downtown",
+      name: "ダウンタウン",
+      center: [-123.1158, 49.2778],
+      zoom: 14,
+    },
+    {
+      id: "richmond",
+      name: "リッチモンド",
+      center: [-123.1338, 49.1666],
+      zoom: 12,
+    },
+    {
+      id: "burnaby",
+      name: "バーナビー",
+      center: [-122.9749, 49.2488],
+      zoom: 12,
+    },
+    { id: "surrey", name: "サレー", center: [-122.849, 49.1913], zoom: 12 },
+  ];
 
   // ユーザーの位置情報を取得
   const getUserLocation = () => {
@@ -293,6 +342,9 @@ export default function ClientMap() {
                 zoom: 16,
                 essential: true,
               });
+
+              // ランダムな遅延レベルを設定（デモ用）
+              setDelayLevel(Math.floor(Math.random() * 5));
             }
           }
         }
@@ -366,20 +418,20 @@ export default function ClientMap() {
 
       {/* バス停詳細パネル */}
       <div
-        className={`fixed top-0 right-0 h-full w-96 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out z-50 ${
+        className={`fixed top-0 right-0 h-full w-96 bg-gray-900 text-white shadow-2xl transform transition-transform duration-300 ease-in-out z-50 ${
           isPanelOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
         <div className="h-full flex flex-col">
           {/* ヘッダー */}
-          <div className="bg-blue-600 text-white p-4 flex justify-between items-center">
+          <div className="bg-gray-800 border-b border-gray-700 p-4 flex justify-between items-center">
             <h2 className="text-lg font-semibold">バス停詳細</h2>
             <button
               onClick={() => {
                 setIsPanelOpen(false);
                 setSelectedStop(null);
               }}
-              className="text-white hover:text-gray-200 text-xl"
+              className="text-gray-400 hover:text-white text-xl"
             >
               ×
             </button>
@@ -388,24 +440,28 @@ export default function ClientMap() {
           {/* コンテンツ */}
           <div className="flex-1 overflow-y-auto p-4">
             {selectedStop && (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {/* 基本情報 */}
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                  <h3 className="text-lg font-semibold text-white mb-3">
                     {selectedStop.stop_name || "Unknown Stop"}
                   </h3>
-                  <div className="space-y-2 text-sm text-gray-600">
+                  <div className="space-y-2 text-sm text-gray-300">
                     <div className="flex justify-between">
                       <span className="font-medium">Stop ID:</span>
-                      <span>{selectedStop.stop_id || "N/A"}</span>
+                      <span className="text-gray-400">
+                        {selectedStop.stop_id || "N/A"}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="font-medium">Stop Code:</span>
-                      <span>{selectedStop.stop_code || "N/A"}</span>
+                      <span className="text-gray-400">
+                        {selectedStop.stop_code || "N/A"}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="font-medium">Wheelchair Access:</span>
-                      <span>
+                      <span className="text-gray-400">
                         {selectedStop.wheelchair_boarding === 1
                           ? "Yes"
                           : selectedStop.wheelchair_boarding === 2
@@ -431,70 +487,108 @@ export default function ClientMap() {
                   </div>
                 </div>
 
-                {/* 遅延状況（デモデータ） */}
-                <div className="border-t pt-4">
-                  <h4 className="font-semibold text-gray-800 mb-2">遅延状況</h4>
-                  <div className="space-y-2">
-                    <div className="bg-green-100 border border-green-300 rounded p-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-green-800 font-medium">
+                {/* 遅延状況 */}
+                <div className="border-t border-gray-700 pt-4">
+                  <h4 className="font-semibold text-white mb-3">遅延状況</h4>
+                  <div className="space-y-3">
+                    <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-white font-medium">
                           現在の状況
                         </span>
-                        <span className="text-green-600 text-sm">正常運行</span>
+                        <span className="text-2xl">
+                          {getDelaySymbol(delayLevel)}
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-300">
+                        <p>{getDelayLevelName(delayLevel)}</p>
+                        <p className="text-gray-400">
+                          最終更新: {new Date().toLocaleTimeString()}
+                        </p>
                       </div>
                     </div>
-                    <div className="text-sm text-gray-600">
-                      <p>最終更新: {new Date().toLocaleTimeString()}</p>
-                      <p>予定時刻との差: 0分</p>
+                  </div>
+                </div>
+
+                {/* 6時間予報 */}
+                <div className="border-t border-gray-700 pt-4">
+                  <h4 className="font-semibold text-white mb-3">6時間予報</h4>
+                  <div className="space-y-2">
+                    {Array.from({ length: 6 }, (_, i) => {
+                      const hour = new Date();
+                      hour.setHours(hour.getHours() + i + 1);
+                      const randomDelay = Math.floor(Math.random() * 5);
+                      return (
+                        <div
+                          key={i}
+                          className="flex justify-between items-center bg-gray-800 p-3 rounded"
+                        >
+                          <span className="text-gray-300">
+                            {hour.getHours()}:00
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg">
+                              {getDelaySymbol(randomDelay)}
+                            </span>
+                            <span className="text-sm text-gray-400">
+                              {getDelayLevelName(randomDelay)}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* アラート */}
+                <div className="border-t border-gray-700 pt-4">
+                  <h4 className="font-semibold text-white mb-3">アラート</h4>
+                  <div className="space-y-2">
+                    <div className="bg-yellow-900 border border-yellow-700 rounded p-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-yellow-400">⚠️</span>
+                        <span className="text-yellow-200 text-sm">
+                          2時間後に遅延のピークが予想されます
+                        </span>
+                      </div>
+                    </div>
+                    <div className="bg-red-900 border border-red-700 rounded p-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-red-400">🚨</span>
+                        <span className="text-red-200 text-sm">
+                          Route 2で重大な遅延が発生中
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* 路線情報（デモデータ） */}
-                <div className="border-t pt-4">
-                  <h4 className="font-semibold text-gray-800 mb-2">
-                    利用可能な路線
-                  </h4>
+                {/* 地域選択 */}
+                <div className="border-t border-gray-700 pt-4">
+                  <h4 className="font-semibold text-white mb-3">地域表示</h4>
                   <div className="space-y-2">
-                    <div className="bg-blue-100 border border-blue-300 rounded p-2">
-                      <span className="text-blue-800 font-medium">Route 1</span>
-                      <span className="text-blue-600 text-sm ml-2">
-                        → Downtown
-                      </span>
-                    </div>
-                    <div className="bg-red-100 border border-red-300 rounded p-2">
-                      <span className="text-red-800 font-medium">Route 2</span>
-                      <span className="text-red-600 text-sm ml-2">
-                        → Airport
-                      </span>
-                    </div>
-                    <div className="bg-green-100 border border-green-300 rounded p-2">
-                      <span className="text-green-800 font-medium">
-                        Route 3
-                      </span>
-                      <span className="text-green-600 text-sm ml-2">
-                        → University
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 次のバス情報（デモデータ） */}
-                <div className="border-t pt-4">
-                  <h4 className="font-semibold text-gray-800 mb-2">次のバス</h4>
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center bg-gray-50 p-2 rounded">
-                      <span className="font-medium">Route 1</span>
-                      <span className="text-blue-600">3分</span>
-                    </div>
-                    <div className="flex justify-between items-center bg-gray-50 p-2 rounded">
-                      <span className="font-medium">Route 2</span>
-                      <span className="text-red-600">7分</span>
-                    </div>
-                    <div className="flex justify-between items-center bg-gray-50 p-2 rounded">
-                      <span className="font-medium">Route 3</span>
-                      <span className="text-green-600">12分</span>
-                    </div>
+                    {regions.map((region) => (
+                      <button
+                        key={region.id}
+                        onClick={() => {
+                          setSelectedRegion(region.id);
+                          if (mapRef.current) {
+                            mapRef.current.flyTo({
+                              center: region.center,
+                              zoom: region.zoom,
+                              essential: true,
+                            });
+                          }
+                        }}
+                        className={`w-full text-left p-3 rounded border transition-colors ${
+                          selectedRegion === region.id
+                            ? "bg-gray-700 border-gray-600 text-white"
+                            : "bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700"
+                        }`}
+                      >
+                        {region.name}
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>
