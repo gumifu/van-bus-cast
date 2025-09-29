@@ -59,6 +59,11 @@ export default function ClientMap() {
   }>({});
   const [isPinnedPanelVisible, setIsPinnedPanelVisible] = useState(false);
 
+  // 路線表示機能の状態
+  const [showRoutes, setShowRoutes] = useState(false);
+  const [routeData, setRouteData] = useState<any>(null);
+  const [routeIndex, setRouteIndex] = useState<any[]>([]);
+
   // 遅延シンボルを取得
   const getDelaySymbol = (level: number) => {
     const symbols = ["☀️", "🌤️", "☁️", "🌧️", "⛈️"];
@@ -339,6 +344,161 @@ export default function ClientMap() {
     }
   };
 
+  // 路線インデックスを読み込み
+  const loadRouteIndex = async () => {
+    try {
+      const response = await fetch("/data/routes_by_shape_index.json");
+      const data = await response.json();
+      console.log("Raw route index data:", data);
+      console.log(
+        "Route index type:",
+        typeof data,
+        "Is array:",
+        Array.isArray(data)
+      );
+      setRouteIndex(data);
+      console.log("Route index loaded:", data.length, "routes");
+      return data;
+    } catch (error) {
+      console.error("Error loading route index:", error);
+      return null;
+    }
+  };
+
+  // 特定の路線データを読み込み
+  const loadRouteData = async (shapeIds: number[]) => {
+    try {
+      const routePromises = shapeIds.map(async (shapeId) => {
+        try {
+          const response = await fetch(
+            `/data/routes_by_shape/${shapeId}.geojson`
+          );
+          if (!response.ok) {
+            console.warn(`Failed to load route ${shapeId}: ${response.status}`);
+            return null;
+          }
+          const json = await response.json();
+          // 返却形式がFeatureCollectionの場合はfeatures配列を返す
+          if (
+            json &&
+            json.type === "FeatureCollection" &&
+            Array.isArray(json.features)
+          ) {
+            return json.features;
+          }
+          // 返却形式が単一Featureの場合
+          if (json && json.type === "Feature") {
+            return [json];
+          }
+          return null;
+        } catch (error) {
+          console.warn(`Error loading route ${shapeId}:`, error);
+          return null;
+        }
+      });
+
+      const routesNested = await Promise.all(routePromises);
+      const features: any[] = [];
+      routesNested.forEach((arr) => {
+        if (Array.isArray(arr)) {
+          arr.forEach((f) => features.push(f));
+        }
+      });
+      console.log(`Loaded ${features.length} route features after flattening`);
+      return features;
+    } catch (error) {
+      console.error("Error loading route data:", error);
+      return [];
+    }
+  };
+
+  // バス停の近くを通る路線を取得（インデックスベース）
+  const getNearbyRoutes = async (
+    stopCoordinates: [number, number],
+    radiusKm: number = 2.0
+  ) => {
+    console.log("getNearbyRoutes called with routeIndex:", routeIndex);
+    console.log(
+      "routeIndex type:",
+      typeof routeIndex,
+      "Is array:",
+      Array.isArray(routeIndex)
+    );
+    console.log("routeIndex length:", routeIndex?.length);
+
+    if (!routeIndex || routeIndex.length === 0) {
+      console.log("No route index available, using test route");
+      // テスト用の路線データを作成
+      const testRoute = {
+        type: "Feature",
+        properties: {
+          shape_id: "test-route",
+          route_name: "Test Route",
+        },
+        geometry: {
+          type: "LineString",
+          coordinates: [
+            [stopCoordinates[0] - 0.01, stopCoordinates[1] - 0.01],
+            [stopCoordinates[0] + 0.01, stopCoordinates[1] + 0.01],
+          ],
+        },
+      };
+      return [testRoute];
+    }
+
+    const [stopLng, stopLat] = stopCoordinates;
+    const nearbyShapeIds: number[] = [];
+
+    console.log(`Searching for routes near stop: ${stopLat}, ${stopLng}`);
+    console.log(`Total routes to check: ${routeIndex.length}`);
+
+    // インデックスから近くの路線を検索
+    routeIndex.forEach((routeInfo: any) => {
+      const bbox = routeInfo.bbox;
+      const [minLng, minLat, maxLng, maxLat] = bbox;
+
+      // バウンディングボックス内かチェック
+      if (
+        stopLng >= minLng &&
+        stopLng <= maxLng &&
+        stopLat >= minLat &&
+        stopLat <= maxLat
+      ) {
+        nearbyShapeIds.push(routeInfo.shape_id);
+      }
+    });
+
+    console.log(`Found ${nearbyShapeIds.length} nearby routes by bbox`);
+
+    // 近くの路線データを読み込み
+    if (nearbyShapeIds.length > 0) {
+      const routes = await loadRouteData(nearbyShapeIds);
+      return routes;
+    }
+
+    return [];
+  };
+
+  // 距離計算関数（ハヴァサイン公式）
+  const calculateDistance = (
+    lat1: number,
+    lng1: number,
+    lat2: number,
+    lng2: number
+  ): number => {
+    const R = 6371000; // 地球の半径（メートル）
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLng = ((lng2 - lng1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLng / 2) *
+        Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
   // ピン留め機能
   const togglePinStop = (stopId: string, stopData: any) => {
     if (!mapRef.current) return;
@@ -386,6 +546,18 @@ export default function ClientMap() {
       zoom: 18,
       essential: true,
     });
+
+    // 近くの路線を表示
+    getNearbyRoutes(coordinates)
+      .then((nearbyRoutes) => {
+        if (nearbyRoutes.length > 0) {
+          addRouteLayer(nearbyRoutes);
+          setShowRoutes(true);
+        }
+      })
+      .catch((error) => {
+        console.error("Error getting nearby routes:", error);
+      });
   };
 
   const handleRemovePin = (stopId: string) => {
@@ -471,6 +643,326 @@ export default function ClientMap() {
     });
   };
 
+  // 路線レイヤーを追加
+  const addRouteLayer = (routes: any[]) => {
+    if (!mapRef.current) {
+      console.log("Map not available");
+      return;
+    }
+
+    if (routes.length === 0) {
+      console.log("No routes to display");
+      return;
+    }
+
+    console.log(`Adding ${routes.length} route lines to map`);
+
+    // 既存の路線レイヤーを削除
+    removeRouteLayer();
+
+    // 路線データをGeoJSON形式に変換
+    const routeGeoJSON = {
+      type: "FeatureCollection" as const,
+      features: routes
+        .filter(
+          (feature: any) =>
+            feature &&
+            feature.geometry &&
+            feature.geometry.type === "LineString"
+        )
+        .map((feature: any, index: number) => ({
+          type: "Feature" as const,
+          properties: {
+            shape_id: feature.properties?.shape_id || `route-${index}`,
+            route_index: index,
+            color: getStableColorByShapeId(feature.properties?.shape_id, index),
+            route_name: getRouteNameFromShapeId(
+              feature.properties?.shape_id,
+              index
+            ),
+          },
+          geometry: feature.geometry,
+        })),
+    };
+
+    console.log("Route GeoJSON created:", routeGeoJSON);
+    console.log("Number of features:", routeGeoJSON.features.length);
+    console.log("First feature sample:", routeGeoJSON.features[0]);
+
+    // 路線の座標を確認
+    if (routeGeoJSON.features.length > 0) {
+      const firstFeature = routeGeoJSON.features[0];
+      console.log("First feature geometry:", firstFeature.geometry);
+      console.log(
+        "First feature coordinates:",
+        firstFeature.geometry?.coordinates
+      );
+      console.log(
+        "Number of coordinates in first feature:",
+        firstFeature.geometry?.coordinates?.length
+      );
+
+      // 座標の範囲を確認
+      if (firstFeature.geometry?.coordinates?.length > 0) {
+        const coords = firstFeature.geometry.coordinates;
+        const lngs = coords.map((coord) => coord[0]);
+        const lats = coords.map((coord) => coord[1]);
+        console.log(
+          "Longitude range:",
+          Math.min(...lngs),
+          "to",
+          Math.max(...lngs)
+        );
+        console.log(
+          "Latitude range:",
+          Math.min(...lats),
+          "to",
+          Math.max(...lats)
+        );
+      }
+    }
+
+    try {
+      // 地図のスタイルが読み込まれているかチェック
+      if (!mapRef.current.isStyleLoaded()) {
+        console.log("Map style not loaded, waiting...");
+        mapRef.current.on("style.load", () => {
+          addRouteLayerToMap(routeGeoJSON, routes);
+        });
+        return;
+      }
+
+      addRouteLayerToMap(routeGeoJSON, routes);
+    } catch (error) {
+      console.error("Error adding route layer:", error);
+    }
+  };
+
+  const addRouteLayerToMap = (routeGeoJSON: any, routes: any[]) => {
+    try {
+      // 路線ソースを追加
+      mapRef.current.addSource("routes", {
+        type: "geojson",
+        data: routeGeoJSON,
+      });
+
+      // 路線レイヤーを追加（色は各Featureのproperties.color、なければshape_idで安定ハッシュ）
+      mapRef.current.addLayer({
+        id: "routes",
+        type: "line",
+        source: "routes",
+        layout: {
+          "line-join": "round",
+          "line-cap": "round",
+        },
+        paint: {
+          // 各Featureに埋め込んだ色を使用
+          "line-color": ["get", "color"],
+          // ズームに応じて線幅を変更
+          "line-width": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            10,
+            1.5,
+            12,
+            3,
+            14,
+            5,
+            16,
+            8,
+          ],
+          "line-opacity": 0.95,
+        },
+      }); // 最前面に挿入
+
+      // 路線ラベルレイヤーを追加
+      mapRef.current.addLayer({
+        id: "route-labels",
+        type: "symbol",
+        source: "routes",
+        layout: {
+          "text-field": ["get", "route_name"],
+          "text-font": ["DIN Offc Pro Medium", "Arial Unicode MS Bold"],
+          "text-size": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            10,
+            10,
+            12,
+            12,
+            14,
+            14,
+            16,
+            16,
+          ],
+          "text-offset": [0, 1.5],
+          "text-anchor": "center",
+          "text-allow-overlap": false,
+          "text-ignore-placement": false,
+        },
+        paint: {
+          "text-color": "#ffffff",
+          "text-halo-color": "#000000",
+          "text-halo-width": 2,
+          "text-halo-blur": 1,
+        },
+      });
+
+      console.log(`Successfully added ${routes.length} route lines`);
+      console.log("Route layer added to map");
+
+      // 地図を強制的に再描画
+      mapRef.current.triggerRepaint();
+
+      // レイヤーが正しく追加されたかチェック
+      const layerExists = mapRef.current.getLayer("routes");
+      console.log("Route layer exists:", !!layerExists);
+      if (layerExists) {
+        console.log("Route layer details:", layerExists);
+      }
+
+      // ソースが正しく追加されたかチェック
+      const sourceExists = mapRef.current.getSource("routes");
+      console.log("Route source exists:", !!sourceExists);
+      if (sourceExists) {
+        console.log("Route source details:", sourceExists);
+        // ソースのデータを確認
+        const sourceData = (sourceExists as any).serialize();
+        console.log("Source data:", sourceData);
+      }
+
+      // 地図の全レイヤーを確認
+      const allLayers = mapRef.current.getStyle().layers;
+      console.log(
+        "All map layers:",
+        allLayers.map((layer) => layer.id)
+      );
+
+      // 路線レイヤーの位置を確認
+      const routeLayerIndex = allLayers.findIndex(
+        (layer) => layer.id === "routes"
+      );
+      console.log("Route layer index:", routeLayerIndex);
+
+      // 路線レイヤーの描画設定を確認
+      if (layerExists) {
+        const layerPaint = mapRef.current.getPaintProperty(
+          "routes",
+          "line-color"
+        );
+        const layerWidth = mapRef.current.getPaintProperty(
+          "routes",
+          "line-width"
+        );
+        const layerOpacity = mapRef.current.getPaintProperty(
+          "routes",
+          "line-opacity"
+        );
+        console.log("Route layer paint properties:");
+        console.log("- line-color:", layerPaint);
+        console.log("- line-width:", layerWidth);
+        console.log("- line-opacity:", layerOpacity);
+      }
+
+      // 地図の範囲を調整して路線が見えるようにする
+      if (routes.length > 0) {
+        const coordinates = routes
+          .filter((route) => route.geometry && route.geometry.coordinates)
+          .flatMap((route) => route.geometry.coordinates);
+
+        if (coordinates.length > 0) {
+          const bounds = coordinates.reduce((bounds, coord) => {
+            return bounds.extend(coord);
+          }, new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]));
+
+          mapRef.current.fitBounds(bounds, {
+            padding: 50,
+            maxZoom: 16,
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error adding route layer to map:", error);
+    }
+  };
+
+  // 路線レイヤーを削除
+  const removeRouteLayer = () => {
+    if (!mapRef.current) return;
+
+    console.log("Removing route layer");
+
+    if (mapRef.current.getLayer("route-labels")) {
+      mapRef.current.removeLayer("route-labels");
+      console.log("Route labels layer removed");
+    }
+    if (mapRef.current.getLayer("routes")) {
+      mapRef.current.removeLayer("routes");
+      console.log("Route layer removed");
+    }
+    if (mapRef.current.getSource("routes")) {
+      mapRef.current.removeSource("routes");
+      console.log("Route source removed");
+    }
+  };
+
+  // 路線の色を取得
+  const getRouteColor = (index: number) => {
+    const colors = [
+      "#3b82f6", // 青
+      "#ef4444", // 赤
+      "#10b981", // 緑
+      "#f59e0b", // オレンジ
+      "#8b5cf6", // 紫
+      "#06b6d4", // シアン
+      "#84cc16", // ライム
+      "#f97316", // オレンジ
+      "#ec4899", // ピンク
+      "#6b7280", // グレー
+    ];
+    return colors[index % colors.length];
+  };
+
+  // shape_idから安定色を取得
+  const getStableColorByShapeId = (
+    shapeId: number | string | undefined,
+    fallbackIndex: number
+  ): string => {
+    if (shapeId === undefined || shapeId === null) {
+      return getRouteColor(fallbackIndex);
+    }
+    const numeric = Number(shapeId);
+    if (Number.isFinite(numeric)) {
+      return getRouteColor(Math.abs(numeric) % 10);
+    }
+    // 文字列の場合は簡易ハッシュ
+    let hash = 0;
+    const str = String(shapeId);
+    for (let i = 0; i < str.length; i += 1) {
+      hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
+    }
+    return getRouteColor(hash % 10);
+  };
+
+  // shape_idから路線名を生成
+  const getRouteNameFromShapeId = (
+    shapeId: number | string | undefined,
+    fallbackIndex: number
+  ): string => {
+    if (shapeId === undefined || shapeId === null) {
+      return `Route ${fallbackIndex + 1}`;
+    }
+    const numeric = Number(shapeId);
+    if (Number.isFinite(numeric)) {
+      // 数字のshape_idから路線名を生成
+      const routeNumber = Math.abs(numeric) % 1000;
+      return `Route ${routeNumber}`;
+    }
+    return `Route ${String(shapeId)}`;
+  };
+
   // 地域データ
   const regions: Array<{
     id: string;
@@ -538,7 +1030,9 @@ export default function ClientMap() {
 
     // 既存のユーザーマーカーを削除
     if (userMarker) {
-      userMarker.remove();
+      try {
+        userMarker.remove();
+      } catch {}
     }
 
     // ピンアニメーション用のHTML要素を作成
@@ -551,77 +1045,11 @@ export default function ClientMap() {
     el.style.border = "3px solid white";
     el.style.cursor = "pointer";
     el.style.position = "relative";
-    el.style.zIndex = "1000";
+    el.style.zIndex = "1002"; // 他レイヤーより前
 
-    // アニメーション用のCSSを追加
-    if (!document.getElementById("user-location-styles")) {
-      const style = document.createElement("style");
-      style.id = "user-location-styles";
-      style.textContent = `
-        .user-location-marker::before,
-        .user-location-marker::after {
-          content: '';
-          position: absolute;
-          top: -8px;
-          left: -8px;
-          right: -8px;
-          bottom: -8px;
-          border-radius: 50%;
-          border: 2px solid #3b82f6;
-          animation: ping-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-
-        .user-location-marker::after {
-          animation-delay: 1s;
-        }
-
-
-        @keyframes ping-ring {
-          0% {
-            transform: scale(0.8);
-            opacity: 1;
-          }
-          100% {
-            transform: scale(2.5);
-            opacity: 0;
-          }
-        }
-
-        @keyframes pulse {
-          0% {
-            transform: scale(1);
-            opacity: 1;
-          }
-          50% {
-            transform: scale(1.2);
-            opacity: 0.8;
-          }
-          100% {
-            transform: scale(1);
-            opacity: 1;
-          }
-        }
-
-        .selected-bus-stop {
-          animation: pulse 2s ease-in-out infinite;
-        }
-      `;
-      document.head.appendChild(style);
-    }
-
-    // マーカーを作成して地図に追加
-    const marker = new mapboxgl.Marker(el)
+    // マーカーを作成して地図に追加（アンカー中心、ドラッグ不可）
+    const marker = new mapboxgl.Marker({ element: el, anchor: "center" })
       .setLngLat(location)
-      .setPopup(
-        new mapboxgl.Popup({ offset: 25 }).setHTML(`
-            <div class="p-2">
-              <h3 class="font-semibold text-sm text-blue-600">あなたの位置</h3>
-              <p class="text-xs text-gray-600">${location[1].toFixed(
-                4
-              )}, ${location[0].toFixed(4)}</p>
-            </div>
-          `)
-      )
       .addTo(mapRef.current);
 
     setUserMarker(marker);
@@ -811,50 +1239,7 @@ export default function ClientMap() {
         }
       });
 
-      // 個別バス停のクリックイベント
-      map.on("click", "bus-stops-unclustered", (e) => {
-        // イベントの伝播を停止
-        e.preventDefault();
-
-        if (e.features && e.features.length > 0) {
-          const feature = e.features[0];
-          const geometry = feature.geometry as {
-            type: "Point";
-            coordinates: [number, number];
-          };
-
-          if (geometry.type === "Point") {
-            const coordinates = geometry.coordinates.slice() as [
-              number,
-              number
-            ];
-            const properties = feature.properties;
-
-            if (properties) {
-              // 選択されたバス停の情報を設定
-              setSelectedStop({
-                properties: properties,
-                geometry: {
-                  type: "Point",
-                  coordinates: coordinates,
-                },
-              });
-              setSelectedStopId(properties.stop_id);
-              setIsPanelOpen(true);
-
-              // バス停を画面中央に移動
-              map.flyTo({
-                center: coordinates,
-                zoom: 16,
-                essential: true,
-              });
-
-              // ランダムな遅延レベルを設定（デモ用）
-              setDelayLevel(Math.floor(Math.random() * 5));
-            }
-          }
-        }
-      });
+      // 個別バス停のクリックイベントはuseEffectで管理
 
       // カーソルスタイルの変更
       map.on("mouseenter", "bus-stops-clusters", () => {
@@ -905,6 +1290,108 @@ export default function ClientMap() {
       ]);
     }
   }, [selectedStopId]);
+
+  // 路線インデックスが読み込まれた時のデバッグ
+  useEffect(() => {
+    console.log("Route index useEffect triggered, routeIndex:", routeIndex);
+    console.log(
+      "routeIndex type:",
+      typeof routeIndex,
+      "Is array:",
+      Array.isArray(routeIndex)
+    );
+    if (routeIndex && routeIndex.length > 0) {
+      console.log(
+        "Route index loaded in useEffect:",
+        routeIndex.length,
+        "routes"
+      );
+    } else {
+      console.log("Route index not ready in useEffect");
+    }
+  }, [routeIndex]);
+
+  // コンポーネントマウント時に路線インデックスを読み込み
+  useEffect(() => {
+    loadRouteIndex();
+  }, []);
+
+  // バス停クリックイベントを管理（クロージャ問題を解決）
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const clickHandler = (
+      e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] }
+    ) => {
+      e.preventDefault();
+      if (e.features && e.features.length > 0) {
+        const feature = e.features[0];
+        const geometry = feature.geometry as {
+          type: "Point";
+          coordinates: [number, number];
+        };
+
+        if (geometry.type === "Point") {
+          const coordinates = geometry.coordinates.slice() as [number, number];
+          const properties = feature.properties;
+
+          if (properties) {
+            // 選択されたバス停の情報を設定
+            setSelectedStop({
+              properties: properties,
+              geometry: {
+                type: "Point",
+                coordinates: coordinates,
+              },
+            });
+            setSelectedStopId(properties.stop_id);
+            setIsPanelOpen(true);
+
+            // バス停を画面中央に移動
+            map.flyTo({
+              center: coordinates,
+              zoom: 16,
+              essential: true,
+            });
+
+            // ランダムな遅延レベルを設定（デモ用）
+            setDelayLevel(Math.floor(Math.random() * 5));
+
+            // 近くの路線を表示
+            console.log(
+              "Route index available:",
+              !!routeIndex,
+              "Routes:",
+              routeIndex?.length
+            );
+            // 路線を表示（常に試行）
+            getNearbyRoutes(coordinates)
+              .then((nearbyRoutes) => {
+                if (nearbyRoutes.length > 0) {
+                  addRouteLayer(nearbyRoutes);
+                  setShowRoutes(true);
+                  console.log(`Found ${nearbyRoutes.length} nearby routes`);
+                } else {
+                  console.log("No nearby routes found");
+                }
+              })
+              .catch((error) => {
+                console.error("Error getting nearby routes:", error);
+              });
+          }
+        }
+      }
+    };
+
+    // イベントリスナーを登録
+    map.on("click", "bus-stops-unclustered", clickHandler);
+
+    // クリーンアップ関数でイベントリスナーを解除
+    return () => {
+      map.off("click", "bus-stops-unclustered", clickHandler);
+    };
+  }, [routeIndex]); // routeIndexが変更されたら再登録
 
   return (
     <div className="relative h-full w-full flex flex-col md:block">
@@ -991,6 +1478,18 @@ export default function ClientMap() {
                     setIsPanelOpen(true);
                     setSelectedStopId(stop.properties.stop_id);
                     setDelayLevel(Math.floor(Math.random() * 5));
+
+                    // 近くの路線を表示
+                    getNearbyRoutes(stop.geometry.coordinates)
+                      .then((nearbyRoutes) => {
+                        if (nearbyRoutes.length > 0) {
+                          addRouteLayer(nearbyRoutes);
+                          setShowRoutes(true);
+                        }
+                      })
+                      .catch((error) => {
+                        console.error("Error getting nearby routes:", error);
+                      });
                   }}
                   className="w-full text-left p-2 rounded text-xs transition-colors hover:bg-gray-800 text-gray-300"
                 >
@@ -1076,6 +1575,9 @@ export default function ClientMap() {
           setIsPanelOpen(false);
           setSelectedStop(null);
           setSelectedStopId(null);
+          // 路線を非表示にする
+          removeRouteLayer();
+          setShowRoutes(false);
         }}
         selectedStop={selectedStop}
         delayLevel={delayLevel}
