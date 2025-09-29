@@ -27,10 +27,18 @@ export default function PinnedStopsPanel({
   isVisible,
   onToggleVisibility,
 }: PinnedStopsPanelProps) {
-  const pinnedStopsList = Array.from(pinnedStops).map((stopId) => ({
-    stopId,
-    ...pinnedStopsData[stopId],
-  }));
+  const pinnedStopsList = Array.from(pinnedStops).map((stopId) => {
+    const stopData = pinnedStopsData[stopId];
+    console.log(`Pinned stop ${stopId}:`, stopData);
+    return {
+      stopId,
+      ...stopData,
+    };
+  });
+
+  console.log("PinnedStopsPanel - pinnedStops:", pinnedStops);
+  console.log("PinnedStopsPanel - pinnedStopsData:", pinnedStopsData);
+  console.log("PinnedStopsPanel - pinnedStopsList:", pinnedStopsList);
 
   return (
     <>
@@ -42,7 +50,9 @@ export default function PinnedStopsPanel({
       >
         <div className="flex items-center gap-2">
           <span className="text-lg">📍</span>
-          <span className="text-sm font-medium">{pinnedStops.size} Pinned</span>
+          <span className="text-sm font-medium">
+            {pinnedStopsList.length} Pinned
+          </span>
           <span className="text-xs">{isVisible ? "▼" : "▲"}</span>
         </div>
       </button>
@@ -52,7 +62,7 @@ export default function PinnedStopsPanel({
         <div className="fixed bottom-20 left-4 z-20 w-80 max-h-96 bg-gray-900 rounded-lg shadow-lg border border-gray-700 overflow-hidden">
           <div className="p-3 border-b border-gray-700">
             <h3 className="text-sm font-semibold text-white">
-              Pinned Bus Stops ({pinnedStops.size})
+              Pinned Bus Stops ({pinnedStopsList.length})
             </h3>
           </div>
 
@@ -72,11 +82,22 @@ export default function PinnedStopsPanel({
                         <span className="text-gray-400 text-sm">📍</span>
                         <div className="flex-1 min-w-0">
                           <div className="text-white text-sm font-medium truncate">
-                            {stop.properties?.stop_name || "Unknown Stop"}
+                            {stop.properties?.stop_name ||
+                              stop.stop_name ||
+                              stop.name ||
+                              "Unknown Stop"}
                           </div>
                           <div className="text-gray-400 text-xs">
-                            ID: {stop.properties?.stop_id || "N/A"} | Code:{" "}
-                            {stop.properties?.stop_code || "N/A"}
+                            ID:{" "}
+                            {stop.properties?.stop_id ||
+                              stop.stop_id ||
+                              stop.id ||
+                              "N/A"}{" "}
+                            | Code:{" "}
+                            {stop.properties?.stop_code ||
+                              stop.stop_code ||
+                              stop.code ||
+                              "N/A"}
                           </div>
                         </div>
                       </div>

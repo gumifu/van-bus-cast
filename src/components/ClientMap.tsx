@@ -22,7 +22,6 @@ export default function ClientMap() {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(
     null
   );
-  const [userMarker, setUserMarker] = useState<mapboxgl.Marker | null>(null);
   const [selectedStop, setSelectedStop] = useState<{
     properties: any;
     geometry: {
@@ -53,7 +52,6 @@ export default function ClientMap() {
 
   // ピン留め機能の状態
   const [pinnedStops, setPinnedStops] = useState<Set<string>>(new Set());
-  const [pinnedMarkers, setPinnedMarkers] = useState<mapboxgl.Marker[]>([]);
   const [pinnedStopsData, setPinnedStopsData] = useState<{
     [key: string]: any;
   }>({});
@@ -299,19 +297,48 @@ export default function ClientMap() {
   // ローカルストレージからピンデータを読み込み
   const loadPinnedStops = () => {
     try {
+      console.log("=== ローカルストレージの状況確認 ===");
+
+      // 全てのローカルストレージキーを確認
+      console.log("全てのローカルストレージキー:");
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key) {
+          console.log(key + ":", localStorage.getItem(key));
+        }
+      }
+
       const savedPins = localStorage.getItem("pinnedBusStops");
       if (savedPins) {
         const pinsData = JSON.parse(savedPins);
-        const pinnedSet = new Set<string>(pinsData.stopIds);
-        const pinnedDataMap = pinsData.stopsData || {};
+        console.log("ピン留めデータが存在します:", pinsData);
 
+        const pinnedSet = new Set<string>(pinsData.stopIds);
+        console.log("ピン留めされたバス停ID:", Array.from(pinnedSet));
+
+        // データ構造を修正：stopsDataをオブジェクト形式に変換
+        const pinnedDataMap: { [key: string]: any } = {};
+        if (pinsData.stopsData && Array.isArray(pinsData.stopsData)) {
+          pinsData.stopsData.forEach((stopData: any) => {
+            if (stopData.stopId) {
+              pinnedDataMap[stopData.stopId] = stopData;
+            }
+          });
+        }
+
+        console.log("処理後のピンデータマップ:", pinnedDataMap);
         setPinnedStops(pinnedSet);
         setPinnedStopsData(pinnedDataMap);
 
-        // 保存されたピンマーカーを復元
-        pinsData.stopsData.forEach((stopData: any) => {
-          addPinnedMarker(stopData.stopId, stopData);
-        });
+        // ピンマーカーを復元（遅延実行）
+        setTimeout(() => {
+          console.log("ピンマーカーを復元中...");
+          Object.values(pinnedDataMap).forEach((stopData: any) => {
+            addPinnedMarker(stopData.stopId, stopData);
+          });
+        }, 1500);
+      } else {
+        console.log("ピン留めデータが見つかりません");
       }
     } catch (error) {
       console.error("Error loading pinned stops:", error);
@@ -369,15 +396,56 @@ export default function ClientMap() {
   const handlePinnedStopClick = (stopData: any) => {
     if (!mapRef.current) return;
 
-    const coordinates = stopData.geometry.coordinates;
+    console.log("handlePinnedStopClick - stopData:", stopData);
+
+    // データ構造を確認して適切にアクセス
+    const coordinates = stopData.geometry?.coordinates || stopData.coordinates;
+    const properties = stopData.properties || stopData;
+
+    if (!coordinates) {
+      console.error("No coordinates found in stopData:", stopData);
+      // ピン留めデータから直接取得を試行
+      const stopId = stopData.stopId;
+      if (stopId && pinnedStopsData[stopId]) {
+        const savedData = pinnedStopsData[stopId];
+        console.log("Trying to get data from pinnedStopsData:", savedData);
+        const savedCoordinates =
+          savedData.geometry?.coordinates || savedData.coordinates;
+        const savedProperties = savedData.properties || savedData;
+
+        if (savedCoordinates) {
+          setSelectedStop({
+            properties: savedProperties,
+            geometry: {
+              type: "Point",
+              coordinates: savedCoordinates,
+            },
+          });
+          setIsPanelOpen(true);
+          setSelectedStopId(savedProperties?.stop_id || null);
+          setDelayLevel(Math.floor(Math.random() * 5));
+
+          mapRef.current.flyTo({
+            center: savedCoordinates,
+            zoom: 18,
+            essential: true,
+          });
+          return;
+        }
+      }
+      return;
+    }
 
     // バス停詳細パネルを開く
     setSelectedStop({
-      properties: stopData.properties,
-      geometry: stopData.geometry,
+      properties: properties,
+      geometry: {
+        type: "Point",
+        coordinates: coordinates,
+      },
     });
     setIsPanelOpen(true);
-    setSelectedStopId(stopData.properties?.stop_id || null);
+    setSelectedStopId(properties?.stop_id || null);
     setDelayLevel(Math.floor(Math.random() * 5));
 
     // マップをクリックしたバス停に移動
@@ -406,69 +474,127 @@ export default function ClientMap() {
   };
 
   const addPinnedMarker = (stopId: string, stopData: any) => {
-    if (!mapRef.current) return;
+    if (!mapRef.current) {
+      console.error("Map not available for pinned marker");
+      return;
+    }
+
+    console.log("Adding pinned marker for stop:", stopId, stopData);
+
+    // ピンアイコンを追加
+    addPinIcon();
 
     const coordinates = stopData.geometry.coordinates;
 
-    // ピン留めマーカーのHTML要素を作成（モノトーン）
-    const el = document.createElement("div");
-    el.className = "pinned-marker";
-    el.style.width = "16px";
-    el.style.height = "16px";
-    el.style.borderRadius = "50%";
-    el.style.backgroundColor = "#6b7280"; // グレー色（モノトーン）
-    el.style.border = "2px solid white";
-    el.style.cursor = "pointer";
-    el.style.position = "relative";
-    el.style.zIndex = "1001";
-    el.style.boxShadow = "0 2px 4px rgba(0,0,0,0.3)";
+    // ピン留めマーカーのGeoJSONデータを作成
+    const pinnedMarkerGeoJSON: GeoJSON.FeatureCollection = {
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          geometry: {
+            type: "Point",
+            coordinates: coordinates,
+          },
+          properties: {
+            id: `pinned-${stopId}`,
+            stopId: stopId,
+            stopName: stopData.properties?.stop_name || "Unknown Stop",
+            stopCode: stopData.properties?.stop_id || "N/A",
+          },
+        },
+      ],
+    };
 
-    // ピンアイコンを追加（モノトーン）
-    el.innerHTML = "📍";
-    el.style.fontSize = "10px";
-    el.style.display = "flex";
-    el.style.alignItems = "center";
-    el.style.justifyContent = "center";
+    // ピン留めマーカーのソースを追加
+    mapRef.current.addSource(`pinned-${stopId}`, {
+      type: "geojson",
+      data: pinnedMarkerGeoJSON,
+    });
 
-    // マーカーを作成して地図に追加
-    const marker = new mapboxgl.Marker(el)
-      .setLngLat(coordinates)
-      .setPopup(
-        new mapboxgl.Popup({ offset: 25 }).setHTML(`
-          <div class="p-2 bg-gray-900 text-white rounded shadow-lg">
-            <div class="flex items-center gap-2 mb-2">
-              <span class="text-gray-400">📍</span>
-              <h3 class="font-semibold text-sm text-white">Pinned Stop</h3>
+    // ピン留めマーカーのレイヤーを追加（📍アイコン）
+    // ピンアイコンが読み込まれるまで待機
+    const addPinnedLayer = () => {
+      if (mapRef.current?.hasImage("pin-icon")) {
+        mapRef.current.addLayer({
+          id: `pinned-${stopId}`,
+          type: "symbol",
+          source: `pinned-${stopId}`,
+          layout: {
+            "icon-image": "pin-icon",
+            "icon-size": {
+              base: 1.75,
+              stops: [
+                [12, 0.8],
+                [22, 1.5],
+              ],
+            },
+            "icon-allow-overlap": true,
+            "icon-ignore-placement": true,
+            "icon-anchor": "bottom",
+          },
+          paint: {
+            "icon-opacity": 0.9,
+          },
+        });
+        console.log(`Pinned marker added for stop ${stopId} at:`, coordinates);
+      } else {
+        // ピンアイコンがまだ読み込まれていない場合は少し待って再試行
+        setTimeout(addPinnedLayer, 100);
+      }
+    };
+
+    addPinnedLayer();
+
+    // クリックイベントを追加
+    mapRef.current.on("click", `pinned-${stopId}`, (e) => {
+      if (e.features && e.features.length > 0 && mapRef.current) {
+        new mapboxgl.Popup({ offset: 25 })
+          .setLngLat(coordinates)
+          .setHTML(
+            `
+            <div class="p-2 bg-gray-900 text-white rounded shadow-lg">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="text-gray-400">📍</span>
+                <h3 class="font-semibold text-sm text-white">Pinned Stop</h3>
+              </div>
+              <p class="text-xs text-gray-300 mb-1">${
+                stopData.properties?.stop_name || "Unknown Stop"
+              }</p>
+              <p class="text-xs text-gray-400">ID: ${
+                stopData.properties?.stop_id || "N/A"
+              }</p>
             </div>
-            <p class="text-xs text-gray-300 mb-1">${
-              stopData.properties?.stop_name || "Unknown Stop"
-            }</p>
-            <p class="text-xs text-gray-400">ID: ${
-              stopData.properties?.stop_id || "N/A"
-            }</p>
-          </div>
-        `)
-      )
-      .addTo(mapRef.current);
+          `
+          )
+          .addTo(mapRef.current);
+      }
+    });
 
-    setPinnedMarkers((prev) => [...prev, marker]);
+    // ホバー効果
+    mapRef.current.on("mouseenter", `pinned-${stopId}`, () => {
+      if (mapRef.current) {
+        mapRef.current.getCanvas().style.cursor = "pointer";
+      }
+    });
+
+    mapRef.current.on("mouseleave", `pinned-${stopId}`, () => {
+      if (mapRef.current) {
+        mapRef.current.getCanvas().style.cursor = "";
+      }
+    });
   };
 
   const removePinnedMarker = (stopId: string) => {
-    setPinnedMarkers((prev) => {
-      const markerToRemove = prev.find((marker) => {
-        const popup = marker.getPopup();
-        const content = popup?.getElement()?.innerHTML;
-        return content?.includes(stopId);
-      });
+    if (!mapRef.current) return;
 
-      if (markerToRemove) {
-        markerToRemove.remove();
-        return prev.filter((marker) => marker !== markerToRemove);
-      }
-
-      return prev;
-    });
+    // ピン留めマーカーのレイヤーとソースを削除
+    if (mapRef.current.getLayer(`pinned-${stopId}`)) {
+      mapRef.current.removeLayer(`pinned-${stopId}`);
+    }
+    if (mapRef.current.getSource(`pinned-${stopId}`)) {
+      mapRef.current.removeSource(`pinned-${stopId}`);
+    }
   };
 
   // 地域データ
@@ -515,67 +641,132 @@ export default function ClientMap() {
           setUserLocation([lng, lat]);
           console.log("User location:", lat, lng);
 
-          // ユーザーの位置にピンアニメーションを追加
-          addUserLocationMarker([lng, lat]);
+          // 現在地マーカーを追加（スタイル読み込みを待たない）
+          setTimeout(() => {
+            addUserLocationMarker([lng, lat]);
+          }, 1000);
         },
         (error) => {
           console.error("Error getting user location:", error);
           // デフォルトでバンクーバー中心部を使用
           setUserLocation(VANCOUVER);
-          addUserLocationMarker(VANCOUVER);
+          setTimeout(() => {
+            addUserLocationMarker(VANCOUVER);
+          }, 1000);
         }
       );
     } else {
       console.log("Geolocation not supported");
       setUserLocation(VANCOUVER);
-      addUserLocationMarker(VANCOUVER);
+      setTimeout(() => {
+        addUserLocationMarker(VANCOUVER);
+      }, 1000);
     }
   };
 
-  // ユーザーの位置にピンアニメーションを追加
-  const addUserLocationMarker = (location: [number, number]) => {
-    if (!mapRef.current) return;
-
-    // 既存のユーザーマーカーを削除
-    if (userMarker) {
-      userMarker.remove();
+  // ピンアイコンをマップに追加
+  const addPinIcon = () => {
+    if (!mapRef.current) {
+      console.error("Map not available for pin icon");
+      return;
     }
 
-    // ピンアニメーション用のHTML要素を作成
-    const el = document.createElement("div");
-    el.className = "user-location-marker";
-    el.style.width = "16px";
-    el.style.height = "16px";
-    el.style.borderRadius = "50%";
-    el.style.backgroundColor = "#3b82f6";
-    el.style.border = "3px solid white";
-    el.style.cursor = "pointer";
-    el.style.position = "relative";
-    el.style.zIndex = "1000";
+    // ピンアイコンが既に追加されているかチェック
+    if (mapRef.current.hasImage("pin-icon")) {
+      console.log("Pin icon already exists");
+      return;
+    }
+
+    console.log("Creating pin icon...");
+
+    // Canvasでピンアイコンを作成
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      console.error("Failed to get canvas context");
+      return;
+    }
+
+    canvas.width = 24;
+    canvas.height = 24;
+
+    // ピンの形状を描画
+    ctx.fillStyle = "#ef4444"; // 赤色
+    ctx.beginPath();
+    ctx.arc(12, 8, 6, 0, 2 * Math.PI); // 上部の円
+    ctx.fill();
+
+    // ピンの下部（三角形）
+    ctx.beginPath();
+    ctx.moveTo(12, 14);
+    ctx.lineTo(8, 22);
+    ctx.lineTo(16, 22);
+    ctx.closePath();
+    ctx.fill();
+
+    // 白い中心点
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.arc(12, 8, 2, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // CanvasをImageDataに変換して追加
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    mapRef.current.addImage("pin-icon", imageData);
+    console.log("Pin icon added successfully");
+  };
+
+  // ユーザーの位置をMapboxレイヤーとして追加
+  const addUserLocationMarker = (location: [number, number]) => {
+    if (!mapRef.current) {
+      console.error("Map not available");
+      return;
+    }
+
+    console.log("Adding user location marker at:", location);
+
+    // ピンアイコンを追加
+    addPinIcon();
+
+    // 既存のユーザー位置ソースとレイヤーを削除
+    if (mapRef.current.getSource("user-location")) {
+      if (mapRef.current.getLayer("user-location-pulse")) {
+        mapRef.current.removeLayer("user-location-pulse");
+      }
+      if (mapRef.current.getLayer("user-location-center")) {
+        mapRef.current.removeLayer("user-location-center");
+      }
+      mapRef.current.removeSource("user-location");
+    }
+
+    // ユーザー位置のGeoJSONデータを作成
+    const userLocationGeoJSON: GeoJSON.FeatureCollection = {
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          geometry: {
+            type: "Point",
+            coordinates: location,
+          },
+          properties: {
+            id: "user-location",
+          },
+        },
+      ],
+    };
+
+    // ユーザー位置のソースを追加
+    mapRef.current.addSource("user-location", {
+      type: "geojson",
+      data: userLocationGeoJSON,
+    });
 
     // アニメーション用のCSSを追加
     if (!document.getElementById("user-location-styles")) {
       const style = document.createElement("style");
       style.id = "user-location-styles";
       style.textContent = `
-        .user-location-marker::before,
-        .user-location-marker::after {
-          content: '';
-          position: absolute;
-          top: -8px;
-          left: -8px;
-          right: -8px;
-          bottom: -8px;
-          border-radius: 50%;
-          border: 2px solid #3b82f6;
-          animation: ping-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-
-        .user-location-marker::after {
-          animation-delay: 1s;
-        }
-
-
         @keyframes ping-ring {
           0% {
             transform: scale(0.8);
@@ -609,22 +800,77 @@ export default function ClientMap() {
       document.head.appendChild(style);
     }
 
-    // マーカーを作成して地図に追加
-    const marker = new mapboxgl.Marker(el)
-      .setLngLat(location)
-      .setPopup(
-        new mapboxgl.Popup({ offset: 25 }).setHTML(`
+    // パルス効果の円レイヤー
+    mapRef.current.addLayer({
+      id: "user-location-pulse",
+      type: "circle",
+      source: "user-location",
+      paint: {
+        "circle-radius": {
+          base: 1.75,
+          stops: [
+            [12, 20],
+            [22, 180],
+          ],
+        },
+        "circle-color": "#3b82f6",
+        "circle-opacity": 0.2,
+        "circle-stroke-width": 0,
+      },
+    });
+
+    // 中心の円レイヤー
+    mapRef.current.addLayer({
+      id: "user-location-center",
+      type: "circle",
+      source: "user-location",
+      paint: {
+        "circle-radius": {
+          base: 1.75,
+          stops: [
+            [12, 8],
+            [22, 24],
+          ],
+        },
+        "circle-color": "#3b82f6",
+        "circle-stroke-width": 3,
+        "circle-stroke-color": "#ffffff",
+      },
+    });
+
+    console.log("User location marker added at:", location);
+
+    // クリックイベントを追加
+    mapRef.current.on("click", "user-location-center", (e) => {
+      if (e.features && e.features.length > 0 && mapRef.current) {
+        new mapboxgl.Popup({ offset: 25 })
+          .setLngLat(location)
+          .setHTML(
+            `
             <div class="p-2">
               <h3 class="font-semibold text-sm text-blue-600">あなたの位置</h3>
               <p class="text-xs text-gray-600">${location[1].toFixed(
                 4
               )}, ${location[0].toFixed(4)}</p>
             </div>
-          `)
-      )
-      .addTo(mapRef.current);
+          `
+          )
+          .addTo(mapRef.current);
+      }
+    });
 
-    setUserMarker(marker);
+    // ホバー効果
+    mapRef.current.on("mouseenter", "user-location-center", () => {
+      if (mapRef.current) {
+        mapRef.current.getCanvas().style.cursor = "pointer";
+      }
+    });
+
+    mapRef.current.on("mouseleave", "user-location-center", () => {
+      if (mapRef.current) {
+        mapRef.current.getCanvas().style.cursor = "";
+      }
+    });
   };
 
   useEffect(() => {
@@ -663,21 +909,41 @@ export default function ClientMap() {
 
     return () => {
       window.removeEventListener("resize", resizeMap);
-      if (userMarker) {
-        userMarker.remove();
+      // ユーザー位置レイヤーをクリーンアップ
+      if (map.getSource("user-location")) {
+        if (map.getLayer("user-location-pulse")) {
+          map.removeLayer("user-location-pulse");
+        }
+        if (map.getLayer("user-location-center")) {
+          map.removeLayer("user-location-center");
+        }
+        map.removeSource("user-location");
       }
+      // ピン留めマーカーのレイヤーをクリーンアップ
+      Object.keys(pinnedStopsData).forEach((stopId) => {
+        if (map.getLayer(`pinned-${stopId}`)) {
+          map.removeLayer(`pinned-${stopId}`);
+        }
+        if (map.getSource(`pinned-${stopId}`)) {
+          map.removeSource(`pinned-${stopId}`);
+        }
+      });
       map.remove();
     };
   }, []);
 
-  // ユーザーの位置情報が取得できたら、地図の中心を移動
+  // ユーザーの位置情報が取得できたら、地図の中心を移動（初回のみ）
   useEffect(() => {
     if (userLocation && mapRef.current) {
-      mapRef.current.flyTo({
-        center: userLocation,
-        zoom: 15,
-        essential: true,
-      });
+      // 現在のズームレベルがデフォルト（15）の場合のみ移動
+      const currentZoom = mapRef.current.getZoom();
+      if (Math.abs(currentZoom - 15) < 0.1) {
+        mapRef.current.flyTo({
+          center: userLocation,
+          zoom: 15,
+          essential: true,
+        });
+      }
     }
   }, [userLocation]);
 
