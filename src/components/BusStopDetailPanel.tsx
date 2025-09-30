@@ -1,12 +1,5 @@
 "use client";
 
-interface Region {
-  id: string;
-  name: string;
-  center: [number, number];
-  zoom: number;
-}
-
 interface BusArrival {
   routeNumber: string;
   destination: string;
@@ -20,9 +13,6 @@ interface BusStopDetailPanelProps {
   onClose: () => void;
   selectedStop: any;
   delayLevel: number;
-  regions: Region[];
-  selectedRegion: string;
-  onRegionSelect: (regionId: string) => void;
   getDelaySymbol: (level: number) => string;
   getDelayLevelName: (level: number) => string;
   pinnedStops: Set<string>;
@@ -36,9 +26,6 @@ export default function BusStopDetailPanel({
   onClose,
   selectedStop,
   delayLevel,
-  regions,
-  selectedRegion,
-  onRegionSelect,
   getDelaySymbol,
   getDelayLevelName,
   pinnedStops,
@@ -321,27 +308,6 @@ export default function BusStopDetailPanel({
                     </div>
                   </div>
 
-                  {/* 地域表示 */}
-                  <div className="border-t border-gray-700 pt-4">
-                    <h4 className="font-semibold text-white mb-3">
-                      Region Display
-                    </h4>
-                    <div className="space-y-2">
-                      {regions.map((region) => (
-                        <button
-                          key={region.id}
-                          onClick={() => onRegionSelect(region.id)}
-                          className={`w-full text-left p-2 rounded text-sm transition-colors ${
-                            selectedRegion === region.id
-                              ? "bg-gray-700 text-white"
-                              : "bg-gray-800 text-gray-300 hover:bg-gray-700"
-                          }`}
-                        >
-                          {region.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
 
                   {/* アラート */}
                   <div className="border-t border-gray-700 pt-4">
@@ -629,25 +595,6 @@ export default function BusStopDetailPanel({
                     </div>
                   </div>
 
-                  {/* 地域表示 */}
-                  <div className="border-t pt-4">
-                    <h4 className="font-semibold text-white mb-2">地域表示</h4>
-                    <div className="grid grid-cols-2 gap-2">
-                      {regions.map((region) => (
-                        <button
-                          key={region.id}
-                          onClick={() => onRegionSelect(region.id)}
-                          className={`p-2 rounded text-xs transition-colors ${
-                            selectedRegion === region.id
-                              ? "bg-gray-700 text-white"
-                              : "bg-gray-800 text-gray-300 hover:bg-gray-700"
-                          }`}
-                        >
-                          {region.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
 
                   {/* アラート */}
                   <div className="border-t pt-4">

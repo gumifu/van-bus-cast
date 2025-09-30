@@ -1582,21 +1582,6 @@ export default function ClientMap() {
         }}
         selectedStop={selectedStop}
         delayLevel={delayLevel}
-        regions={regions}
-        selectedRegion={selectedRegion}
-        onRegionSelect={(regionId) => {
-          setSelectedRegion(regionId);
-          if (mapRef.current) {
-            const region = regions.find((r) => r.id === regionId);
-            if (region) {
-              mapRef.current.flyTo({
-                center: region.center,
-                zoom: region.zoom,
-                essential: true,
-              });
-            }
-          }
-        }}
         getDelaySymbol={getDelaySymbol}
         getDelayLevelName={getDelayLevelName}
         pinnedStops={pinnedStops}
