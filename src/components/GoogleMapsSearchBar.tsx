@@ -234,7 +234,7 @@ export default function GoogleMapsSearchBar({
             {/* 検索ボタン */}
             <button
               type="submit"
-              className="px-4 py-3 bg-gray-700 text-white hover:bg-gray-600 transition-colors"
+              className="px-4 py-3 bg-gray-700 text-white hover:bg-gray-600 transition-colors cursor-pointer"
             >
               Search
             </button>
@@ -255,7 +255,7 @@ export default function GoogleMapsSearchBar({
               <button
                 key={`${suggestion.stop_id}-${index}`}
                 onClick={() => handleSuggestionClick(suggestion)}
-                className="w-full text-left p-3 hover:bg-gray-800 transition-colors border-b border-gray-700 last:border-b-0"
+                className="w-full text-left p-3 hover:bg-gray-800 transition-colors border-b border-gray-700 last:border-b-0 cursor-pointer"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1">

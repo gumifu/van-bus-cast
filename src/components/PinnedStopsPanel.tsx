@@ -76,7 +76,7 @@ export default function PinnedStopsPanel({
                   >
                     <button
                       onClick={() => onStopClick(stop)}
-                      className="flex-1 text-left"
+                      className="flex-1 text-left cursor-pointer"
                     >
                       <div className="flex items-center gap-2">
                         <span className="text-gray-400 text-sm">📍</span>
@@ -108,7 +108,7 @@ export default function PinnedStopsPanel({
                         e.stopPropagation();
                         onRemovePin(stop.stopId);
                       }}
-                      className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-400 transition-all p-1"
+                      className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-400 transition-all p-1 cursor-pointer"
                       title="Remove Pin"
                     >
                       ×

@@ -376,8 +376,6 @@ export default function ClientMap() {
     // ストリートビュー機能の実装（必要に応じて）
   };
 
-
-
   // ローカルストレージからピンデータを読み込み
   const loadPinnedStops = () => {
     try {
@@ -477,7 +475,7 @@ export default function ClientMap() {
   };
 
   // ピン留めパネル用のハンドラー
-  const handlePinnedStopClick = (stopData: any) => {
+  const handlePinnedStopClick = async (stopData: any) => {
     if (!mapRef.current) return;
 
     console.log("handlePinnedStopClick - stopData:", stopData);
@@ -485,71 +483,88 @@ export default function ClientMap() {
     // データ構造を確認して適切にアクセス
     const coordinates = stopData.geometry?.coordinates || stopData.coordinates;
     const properties = stopData.properties || stopData;
+    const stopId = properties?.stop_id || stopData.stopId;
 
-    if (!coordinates) {
-      console.error("No coordinates found in stopData:", stopData);
-      // ピン留めデータから直接取得を試行
-      const stopId = stopData.stopId;
-      if (stopId && pinnedStopsData[stopId]) {
-        const savedData = pinnedStopsData[stopId];
-        console.log("Trying to get data from pinnedStopsData:", savedData);
-        const savedCoordinates =
-          savedData.geometry?.coordinates || savedData.coordinates;
-        const savedProperties = savedData.properties || savedData;
-
-        if (savedCoordinates) {
-          setSelectedStop({
-            properties: savedProperties,
-            geometry: {
-              type: "Point",
-              coordinates: savedCoordinates,
-            },
-          });
-          setIsPanelOpen(true);
-          setSelectedStopId(savedProperties?.stop_id || null);
-          setDelayLevel(Math.floor(Math.random() * 5));
-
-          // バス到着情報を読み込む
-          if (savedProperties?.stop_id) {
-            loadBusArrivals(savedProperties.stop_id);
-          }
-
-          mapRef.current.flyTo({
-            center: savedCoordinates,
-            zoom: 18,
-            essential: true,
-          });
-
-          return;
-        }
-      }
+    if (!coordinates || !stopId) {
+      console.error("No coordinates or stopId found in stopData:", stopData);
       return;
     }
 
-    // バス停詳細パネルを開く
-    setSelectedStop({
-      properties: properties,
-      geometry: {
-        type: "Point",
-        coordinates: coordinates,
-      },
-    });
-    setIsPanelOpen(true);
-    setSelectedStopId(properties?.stop_id || null);
-    setDelayLevel(Math.floor(Math.random() * 5));
+    try {
+      // 最新のstops_route.geojsonから完全なデータを取得
+      const response = await fetch("/data/stops_route.geojson");
+      const data = await response.json();
 
-    // バス到着情報を読み込む
-    if (properties?.stop_id) {
-      loadBusArrivals(properties.stop_id);
+      const fullStopData = data.features.find(
+        (feature: any) => feature.properties?.stop_id === stopId
+      );
+
+      if (fullStopData) {
+        console.log("Found full stop data:", fullStopData);
+
+        setSelectedStop({
+          properties: fullStopData.properties,
+          geometry: fullStopData.geometry,
+        });
+        setIsPanelOpen(true);
+        setSelectedStopId(stopId);
+        setDelayLevel(Math.floor(Math.random() * 5));
+
+        // バス到着情報を読み込む
+        loadBusArrivals(stopId);
+
+        mapRef.current.flyTo({
+          center: fullStopData.geometry.coordinates,
+          zoom: 18,
+          essential: true,
+        });
+      } else {
+        console.warn("Full stop data not found, using saved data");
+
+        // フォールバック: 保存されたデータを使用
+        setSelectedStop({
+          properties: properties,
+          geometry: {
+            type: "Point",
+            coordinates: coordinates,
+          },
+        });
+        setIsPanelOpen(true);
+        setSelectedStopId(stopId);
+        setDelayLevel(Math.floor(Math.random() * 5));
+
+        // バス到着情報を読み込む
+        loadBusArrivals(stopId);
+
+        mapRef.current.flyTo({
+          center: coordinates,
+          zoom: 18,
+          essential: true,
+        });
+      }
+    } catch (error) {
+      console.error("Error loading full stop data:", error);
+
+      // エラー時は保存されたデータを使用
+      setSelectedStop({
+        properties: properties,
+        geometry: {
+          type: "Point",
+          coordinates: coordinates,
+        },
+      });
+      setIsPanelOpen(true);
+      setSelectedStopId(stopId);
+      setDelayLevel(Math.floor(Math.random() * 5));
+
+      loadBusArrivals(stopId);
+
+      mapRef.current.flyTo({
+        center: coordinates,
+        zoom: 18,
+        essential: true,
+      });
     }
-
-    // マップをクリックしたバス停に移動
-    mapRef.current.flyTo({
-      center: coordinates,
-      zoom: 18,
-      essential: true,
-    });
-
   };
 
   const handleRemovePin = (stopId: string) => {
@@ -1307,7 +1322,6 @@ export default function ClientMap() {
 
               // バス到着情報を読み込む
               loadBusArrivals(properties.stop_id);
-
             }
           }
         }
@@ -1422,7 +1436,7 @@ export default function ClientMap() {
               </h3>
               <button
                 onClick={clearSearchResults}
-                className="text-gray-400 hover:text-gray-200 text-lg ml-2"
+                className="text-gray-400 hover:text-gray-200 text-lg ml-2 cursor-pointer"
               >
                 ×
               </button>
@@ -1448,9 +1462,8 @@ export default function ClientMap() {
                     setIsPanelOpen(true);
                     setSelectedStopId(stop.properties.stop_id);
                     setDelayLevel(Math.floor(Math.random() * 5));
-
                   }}
-                  className="w-full text-left p-2 rounded text-xs transition-colors hover:bg-gray-800 text-gray-300"
+                  className="w-full text-left p-2 rounded text-xs transition-colors hover:bg-gray-800 text-gray-300 cursor-pointer"
                 >
                   <div className="font-medium text-white">
                     {stop.properties.stop_name || "Unknown Stop"}
@@ -1479,7 +1492,7 @@ export default function ClientMap() {
               </h3>
               <button
                 onClick={() => setIsInfoPanelVisible(false)}
-                className="text-gray-400 hover:text-gray-200 text-lg ml-2"
+                className="text-gray-400 hover:text-gray-200 text-lg ml-2 cursor-pointer"
               >
                 ×
               </button>
@@ -1561,7 +1574,6 @@ export default function ClientMap() {
           setIsPinnedPanelVisible(!isPinnedPanelVisible)
         }
       />
-
     </div>
   );
 }

@@ -27,7 +27,7 @@ export default function GoogleMapsControls({
       <div className="bg-gray-900 rounded-lg shadow-lg border border-gray-700 overflow-hidden">
         <button
           onClick={onZoomIn}
-          className="w-10 h-10 flex items-center justify-center hover:bg-gray-800 transition-colors border-b border-gray-700"
+          className="w-10 h-10 flex items-center justify-center hover:bg-gray-800 transition-colors border-b border-gray-700 cursor-pointer"
           title="ズームイン"
         >
           <svg
@@ -46,7 +46,7 @@ export default function GoogleMapsControls({
         </button>
         <button
           onClick={onZoomOut}
-          className="w-10 h-10 flex items-center justify-center hover:bg-gray-800 transition-colors"
+          className="w-10 h-10 flex items-center justify-center hover:bg-gray-800 transition-colors cursor-pointer"
           title="ズームアウト"
         >
           <svg
@@ -68,7 +68,7 @@ export default function GoogleMapsControls({
       {/* 現在地ボタン */}
       <button
         onClick={onMyLocation}
-        className="w-10 h-10 bg-gray-900 rounded-lg shadow-lg border border-gray-700 flex items-center justify-center hover:bg-gray-800 transition-colors"
+        className="w-10 h-10 bg-gray-900 rounded-lg shadow-lg border border-gray-700 flex items-center justify-center hover:bg-gray-800 transition-colors cursor-pointer"
         title="現在地"
       >
         <svg
@@ -120,7 +120,7 @@ export default function GoogleMapsControls({
       {/* ストリートビューボタン */}
       {/* <button
         onClick={onStreetView}
-        className="w-10 h-10 bg-gray-900 rounded-lg shadow-lg border border-gray-700 flex items-center justify-center hover:bg-gray-800 transition-colors"
+        className="w-10 h-10 bg-gray-900 rounded-lg shadow-lg border border-gray-700 flex items-center justify-center hover:bg-gray-800 transition-colors cursor-pointer"
         title="ストリートビュー"
       >
         <svg
@@ -141,7 +141,7 @@ export default function GoogleMapsControls({
       {/* フルスクリーンボタン */}
       <button
         onClick={onFullscreen}
-        className="w-10 h-10 bg-gray-900 rounded-lg shadow-lg border border-gray-700 flex items-center justify-center hover:bg-gray-800 transition-colors"
+        className="w-10 h-10 bg-gray-900 rounded-lg shadow-lg border border-gray-700 flex items-center justify-center hover:bg-gray-800 transition-colors cursor-pointer"
         title={isFullscreen ? "フルスクリーン終了" : "フルスクリーン"}
       >
         {isFullscreen ? (

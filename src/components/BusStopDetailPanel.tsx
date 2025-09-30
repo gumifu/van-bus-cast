@@ -73,7 +73,7 @@ export default function BusStopDetailPanel({
                               selectedStop
                             )
                           }
-                          className={`p-1.5 rounded transition-colors ${
+                          className={`p-1.5 rounded transition-colors cursor-pointer ${
                             pinnedStops.has(selectedStop.properties.stop_id)
                               ? "bg-gray-600 text-white"
                               : "bg-gray-700 text-gray-300 hover:bg-gray-600"
@@ -180,7 +180,7 @@ export default function BusStopDetailPanel({
                       <h4 className="font-semibold text-white">Bus Arrivals</h4>
                       <button
                         onClick={onRefreshArrivals}
-                        className="text-blue-400 hover:text-blue-300 text-sm"
+                          className="text-blue-400 hover:text-blue-300 text-sm cursor-pointer"
                       >
                         🔄 Refresh
                       </button>
@@ -381,7 +381,7 @@ export default function BusStopDetailPanel({
                                   selectedStop
                                 )
                               }
-                              className={`p-1 rounded transition-colors ${
+                              className={`p-1 rounded transition-colors cursor-pointer ${
                                 pinnedStops.has(selectedStop.properties.stop_id)
                                   ? "bg-gray-600 text-white"
                                   : "bg-gray-700 text-gray-300 hover:bg-gray-600"
@@ -486,7 +486,7 @@ export default function BusStopDetailPanel({
                       <h4 className="font-semibold text-white">Bus Arrivals</h4>
                       <button
                         onClick={onRefreshArrivals}
-                        className="text-blue-400 hover:text-blue-300 text-sm"
+                          className="text-blue-400 hover:text-blue-300 text-sm cursor-pointer"
                       >
                         🔄
                       </button>
