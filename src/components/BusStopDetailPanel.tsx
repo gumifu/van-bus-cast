@@ -39,13 +39,13 @@ export default function BusStopDetailPanel({
     return demoRoutes;
   };
 
-  if (!isOpen || !selectedStop) return null;
+  if (!selectedStop) return null;
 
   return (
     <>
       {/* Desktop Version (from right) */}
       <div
-        className={`hidden md:block fixed top-0 right-0 h-full w-80 bg-gray-900 text-white shadow-2xl transform transition-transform duration-300 ease-in-out z-50 ${
+        className={`hidden md:block fixed top-0 right-0 h-full w-80 bg-gray-900 text-white shadow-2xl transform transition-transform duration-300 ease-out z-50 ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
@@ -144,23 +144,47 @@ export default function BusStopDetailPanel({
                 Route Delays
               </h5>
               <div className="space-y-2">
-                {getStopRoutes().map((route) => {
+                {getStopRoutes().map((route, index) => {
                   const delay = routeDelays[route] || 0;
+                  const colors = [
+                    "#0066CC", // 青
+                    "#FF6600", // オレンジ
+                    "#00AA44", // 緑
+                    "#CC0066", // ピンク
+                    "#6600CC", // 紫
+                    "#00CCAA", // シアン
+                  ];
+                  const color = colors[index % colors.length];
+
                   return (
                     <div
                       key={route}
-                      className="flex items-center justify-between bg-gray-800 p-2 rounded cursor-pointer hover:bg-gray-700 transition-colors"
+                      className="bg-gray-800 rounded-lg p-3 border border-gray-700 cursor-pointer hover:bg-gray-700 transition-colors"
                       onClick={() => {
                         setSelectedRoute(route);
                         setShowForecast(true);
                       }}
                     >
-                      <span className="text-gray-300">Route {route}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{getDelaySymbol(delay)}</span>
-                        <span className="text-sm text-gray-400">
-                          {getDelayLevelName(delay)}
-                        </span>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="px-2.5 py-1 rounded-md font-bold text-sm text-white"
+                            style={{ backgroundColor: color }}
+                          >
+                            {route}
+                          </span>
+                          <span className="text-gray-300 text-sm">
+                            Route {route}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">
+                            {getDelaySymbol(delay)}
+                          </span>
+                          <span className="text-sm text-gray-400">
+                            {getDelayLevelName(delay)}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   );
@@ -192,7 +216,7 @@ export default function BusStopDetailPanel({
 
       {/* Mobile Version (from bottom) */}
       <div
-        className={`md:hidden fixed bottom-0 left-0 right-0 bg-gray-900 text-white shadow-2xl transform transition-transform duration-300 ease-in-out z-50 ${
+        className={`md:hidden fixed bottom-0 left-0 right-0 bg-gray-900 text-white shadow-2xl transform transition-transform duration-300 ease-out z-50 ${
           isOpen ? "translate-y-0" : "translate-y-full"
         }`}
       >
@@ -292,24 +316,48 @@ export default function BusStopDetailPanel({
               <h5 className="text-xs font-medium text-gray-300 mb-2">
                 路線遅延
               </h5>
-              <div className="space-y-1">
-                {getStopRoutes().map((route) => {
+              <div className="space-y-2">
+                {getStopRoutes().map((route, index) => {
                   const delay = routeDelays[route] || 0;
+                  const colors = [
+                    "#0066CC", // 青
+                    "#FF6600", // オレンジ
+                    "#00AA44", // 緑
+                    "#CC0066", // ピンク
+                    "#6600CC", // 紫
+                    "#00CCAA", // シアン
+                  ];
+                  const color = colors[index % colors.length];
+
                   return (
                     <div
                       key={route}
-                      className="flex items-center justify-between bg-gray-800 p-2 rounded text-xs cursor-pointer hover:bg-gray-700 transition-colors"
+                      className="bg-gray-800 rounded-lg p-2 border border-gray-700 cursor-pointer hover:bg-gray-700 transition-colors"
                       onClick={() => {
                         setSelectedRoute(route);
                         setShowForecast(true);
                       }}
                     >
-                      <span className="text-gray-300">Route {route}</span>
-                      <div className="flex items-center gap-1">
-                        <span className="text-sm">{getDelaySymbol(delay)}</span>
-                        <span className="text-xs text-gray-400">
-                          {getDelayLevelName(delay)}
-                        </span>
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="px-2 py-0.5 rounded-md font-bold text-xs text-white"
+                            style={{ backgroundColor: color }}
+                          >
+                            {route}
+                          </span>
+                          <span className="text-gray-300 text-xs">
+                            Route {route}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-sm">
+                            {getDelaySymbol(delay)}
+                          </span>
+                          <span className="text-xs text-gray-400">
+                            {getDelayLevelName(delay)}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   );
