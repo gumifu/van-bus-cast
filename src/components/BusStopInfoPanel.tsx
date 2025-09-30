@@ -52,6 +52,7 @@ export default function BusStopInfoPanel({
             <span>クラスター（大）</span>
           </div>
         </div>
+
         <p className="text-xs text-gray-300 mt-2">
           ズームアウト: クラスター表示
           <br />

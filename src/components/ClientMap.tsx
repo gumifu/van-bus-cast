@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import mapboxgl, { Map } from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import BusStopInfoPanel from "./BusStopInfoPanel";
 import RegionSelector from "./RegionSelector";
 import BusStopDetailPanel from "./BusStopDetailPanel";
 import GoogleMapsSearchBar from "./GoogleMapsSearchBar";
@@ -32,9 +31,13 @@ export default function ClientMap() {
   } | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState<string>("vancouver");
-  const [delayLevel, setDelayLevel] = useState<number>(0); // 0-4の遅延レベル
+  // 遅延予測の状態
+  const [regionDelays, setRegionDelays] = useState<{ [key: string]: number }>(
+    {}
+  );
+  const [stopDelays, setStopDelays] = useState<{ [key: string]: number }>({});
+  const [routeDelays, setRouteDelays] = useState<{ [key: string]: number }>({});
   const [selectedStopId, setSelectedStopId] = useState<string | null>(null);
-  const [isInfoPanelVisible, setIsInfoPanelVisible] = useState(true);
 
   // Google Maps風の状態管理
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -58,25 +61,49 @@ export default function ClientMap() {
   }>({});
   const [isPinnedPanelVisible, setIsPinnedPanelVisible] = useState(false);
 
-  // バス到着情報の状態
-  const [busArrivals, setBusArrivals] = useState<any[]>([]);
+  // 遅延予測データを生成
+  const generateDelayPredictions = () => {
+    // 地域別遅延予測（デモデータ）
+    const regionDelayData = {
+      vancouver: Math.floor(Math.random() * 3), // 0-2分
+      burnaby: Math.floor(Math.random() * 5), // 0-4分
+      richmond: Math.floor(Math.random() * 4), // 0-3分
+      surrey: Math.floor(Math.random() * 6), // 0-5分
+    };
+    setRegionDelays(regionDelayData);
 
-  // 遅延シンボルを取得
+    // バス停別遅延予測（デモデータ）
+    const stopDelayData: { [key: string]: number } = {};
+    // ランダムに選択されたバス停に遅延を設定
+    for (let i = 0; i < 20; i++) {
+      const stopId = Math.floor(Math.random() * 10000).toString();
+      stopDelayData[stopId] = Math.floor(Math.random() * 8); // 0-7分
+    }
+    setStopDelays(stopDelayData);
+
+    // 路線別遅延予測（デモデータ）
+    const routeDelayData: { [key: string]: number } = {};
+    const routes = ["023", "025", "041", "099", "410", "416"];
+    routes.forEach((route) => {
+      routeDelayData[route] = Math.floor(Math.random() * 5); // 0-4分
+    });
+    setRouteDelays(routeDelayData);
+  };
+
+  // 遅延レベルに基づく天気アイコン取得
   const getDelaySymbol = (level: number) => {
-    const symbols = ["☀️", "🌤️", "☁️", "🌧️", "⛈️"];
-    return symbols[level] || "☀️";
+    if (level === 0) return "☀️"; // On Time
+    if (level <= 2) return "🌤️"; // 軽微な遅延
+    if (level <= 5) return "☁️"; // 中程度の遅延
+    return "⛈️"; // 重大な遅延
   };
 
   // 遅延レベル名を取得
   const getDelayLevelName = (level: number) => {
-    const names = [
-      "On Time",
-      "1-3 min delay",
-      "3-5 min delay",
-      "5-10 min delay",
-      "10+ min delay",
-    ];
-    return names[level] || "On Time";
+    if (level === 0) return "On Time";
+    if (level <= 2) return `${level} min delay`;
+    if (level <= 5) return `${level} min delay`;
+    return `${level}+ min delay`;
   };
 
   // 検索状態を管理
@@ -208,12 +235,6 @@ export default function ClientMap() {
           });
           setIsPanelOpen(true);
           setSelectedStopId(properties?.stop_id || null);
-          setDelayLevel(Math.floor(Math.random() * 5));
-
-          // バス到着情報を読み込む
-          if (properties?.stop_id) {
-            loadBusArrivals(properties.stop_id);
-          }
 
           // マップをクリックしたバス停に移動
           mapRef.current?.flyTo({
@@ -288,79 +309,6 @@ export default function ClientMap() {
 
   const handleLayerToggle = () => {
     setShowLayers(!showLayers);
-  };
-
-  // バス到着情報を読み込む
-  const loadBusArrivals = async (stopId: string) => {
-    try {
-      // まずstops_route.geojsonから実際の路線データを取得
-      const response = await fetch("/data/stops_route.geojson");
-      const data = await response.json();
-
-      // 該当するバス停を検索
-      const stop = data.features.find(
-        (feature: any) => feature.properties?.stop_id === stopId
-      );
-
-      if (stop && stop.properties) {
-        const routes = stop.properties.route_short_names || [];
-        const headsigns = stop.properties.trip_headsigns || [];
-
-        console.log("Found stop:", stop.properties.stop_name);
-        console.log("Routes:", routes);
-        console.log("Headsigns:", headsigns);
-
-        // 路線データから到着情報を生成
-        const arrivals = routes.map((route: string, index: number) => {
-          // その路線の行き先を取得
-          const routeHeadsigns = headsigns.filter(
-            (h: string) => h.startsWith(route) || h.includes(route)
-          );
-
-          // ランダムな到着時間を生成（1-15分）
-          const arrivalMinutes = Math.floor(Math.random() * 15) + 1;
-          const arrivalTime =
-            arrivalMinutes === 1 ? "1 min" : `${arrivalMinutes} min`;
-
-          // ランダムなステータス
-          const statuses = ["on-time", "delayed", "cancelled"];
-          const status = statuses[
-            Math.floor(Math.random() * statuses.length)
-          ] as "on-time" | "delayed" | "cancelled";
-
-          // 路線ごとの色を生成
-          const colors = [
-            "#0066CC",
-            "#FF6600",
-            "#00AA44",
-            "#CC0066",
-            "#6600CC",
-            "#00CCAA",
-          ];
-          const color = colors[index % colors.length];
-
-          return {
-            routeNumber: route,
-            destination:
-              routeHeadsigns.length > 0
-                ? routeHeadsigns[0].replace(`${route} `, "") // 路線番号を除去
-                : "Unknown Destination",
-            arrivalTime: arrivalTime,
-            status: status,
-            color: color,
-          };
-        });
-
-        console.log("Generated arrivals:", arrivals);
-        setBusArrivals(arrivals);
-      } else {
-        // バス停が見つからない場合は空の配列
-        setBusArrivals([]);
-      }
-    } catch (error) {
-      console.error("Error loading bus arrivals:", error);
-      setBusArrivals([]);
-    }
   };
 
   const handleLayerChange = (layerId: string) => {
@@ -508,10 +456,6 @@ export default function ClientMap() {
         });
         setIsPanelOpen(true);
         setSelectedStopId(stopId);
-        setDelayLevel(Math.floor(Math.random() * 5));
-
-        // バス到着情報を読み込む
-        loadBusArrivals(stopId);
 
         mapRef.current.flyTo({
           center: fullStopData.geometry.coordinates,
@@ -531,10 +475,6 @@ export default function ClientMap() {
         });
         setIsPanelOpen(true);
         setSelectedStopId(stopId);
-        setDelayLevel(Math.floor(Math.random() * 5));
-
-        // バス到着情報を読み込む
-        loadBusArrivals(stopId);
 
         mapRef.current.flyTo({
           center: coordinates,
@@ -555,9 +495,6 @@ export default function ClientMap() {
       });
       setIsPanelOpen(true);
       setSelectedStopId(stopId);
-      setDelayLevel(Math.floor(Math.random() * 5));
-
-      loadBusArrivals(stopId);
 
       mapRef.current.flyTo({
         center: coordinates,
@@ -1071,6 +1008,9 @@ export default function ClientMap() {
   useEffect(() => {
     if (!ref.current || mapRef.current) return;
 
+    // 遅延予測データを初期化
+    generateDelayPredictions();
+
     const map = new mapboxgl.Map({
       container: ref.current,
       style: "mapbox://styles/mapbox/dark-v11",
@@ -1316,12 +1256,6 @@ export default function ClientMap() {
                 zoom: 16,
                 essential: true,
               });
-
-              // ランダムな遅延レベルを設定（デモ用）
-              setDelayLevel(Math.floor(Math.random() * 5));
-
-              // バス到着情報を読み込む
-              loadBusArrivals(properties.stop_id);
             }
           }
         }
@@ -1420,7 +1354,17 @@ export default function ClientMap() {
                       : "text-gray-300 hover:bg-gray-800"
                   }`}
                 >
-                  {region.name}
+                  <div className="flex items-center justify-between">
+                    <span>{region.name}</span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm">
+                        {getDelaySymbol(regionDelays[region.id] || 0)}
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        {getDelayLevelName(regionDelays[region.id] || 0)}
+                      </span>
+                    </div>
+                  </div>
                 </button>
               ))}
             </div>
@@ -1461,7 +1405,6 @@ export default function ClientMap() {
                     });
                     setIsPanelOpen(true);
                     setSelectedStopId(stop.properties.stop_id);
-                    setDelayLevel(Math.floor(Math.random() * 5));
                   }}
                   className="w-full text-left p-2 rounded text-xs transition-colors hover:bg-gray-800 text-gray-300 cursor-pointer"
                 >
@@ -1480,34 +1423,6 @@ export default function ClientMap() {
                 </div>
               )}
             </div>
-          </div>
-        )}
-
-        {/* Bus Stop Info Panel */}
-        {isInfoPanelVisible && searchResults.length === 0 && !isSearching && (
-          <div className="bg-gray-900 rounded-lg shadow-lg border border-gray-700 p-3 w-80 transition-all duration-300">
-            <div className="flex justify-between items-start mb-2">
-              <h3 className="font-semibold text-sm text-white">
-                Bus Stop Info
-              </h3>
-              <button
-                onClick={() => setIsInfoPanelVisible(false)}
-                className="text-gray-400 hover:text-gray-200 text-lg ml-2 cursor-pointer"
-              >
-                ×
-              </button>
-            </div>
-            <p className="text-xs text-gray-300 mb-2">
-              Displaying all Translink bus stops
-            </p>
-            {userLocation && (
-              <div className="text-xs text-gray-400">
-                <p>
-                  Current location: {userLocation[1].toFixed(4)},{" "}
-                  {userLocation[0].toFixed(4)}
-                </p>
-              </div>
-            )}
           </div>
         )}
       </div>
@@ -1532,6 +1447,44 @@ export default function ClientMap() {
         showLayers={showLayers}
       />
 
+      {/* Information Button */}
+      <div className="absolute bottom-4 right-4 z-10">
+        <div className="relative group">
+          <button className="w-10 h-10 bg-gray-900 rounded-lg shadow-lg border border-gray-700 flex items-center justify-center hover:bg-gray-800 transition-colors cursor-help">
+            <span className="text-gray-400 hover:text-white text-lg">i</span>
+          </button>
+          <div className="absolute bottom-full right-0 mb-2 w-64 bg-gray-800 text-white text-xs rounded-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+            <div className="space-y-2">
+              <p className="font-semibold">バス停クラスタリング</p>
+              <p>Translinkの全バス停をGeoJSONで表示</p>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                  <span>個別バス停</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-cyan-400 rounded-full"></div>
+                  <span>クラスター（小）</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
+                  <span>クラスター（中）</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-pink-400 rounded-full"></div>
+                  <span>クラスター（大）</span>
+                </div>
+              </div>
+              <p className="text-gray-300">
+                ズームアウト: クラスター表示
+                <br />
+                ズームイン: 個別バス停表示
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Google Maps-style Layers Panel */}
       <GoogleMapsLayersPanel
         isVisible={showLayers}
@@ -1549,18 +1502,13 @@ export default function ClientMap() {
           setSelectedStopId(null);
         }}
         selectedStop={selectedStop}
-        delayLevel={delayLevel}
+        regionDelays={regionDelays}
+        stopDelays={stopDelays}
+        routeDelays={routeDelays}
         getDelaySymbol={getDelaySymbol}
         getDelayLevelName={getDelayLevelName}
         pinnedStops={pinnedStops}
         onTogglePin={togglePinStop}
-        busArrivals={busArrivals}
-        onRefreshArrivals={() => {
-          // バス到着情報を再読み込み
-          if (selectedStop?.properties?.stop_id) {
-            loadBusArrivals(selectedStop.properties.stop_id);
-          }
-        }}
       />
 
       {/* Pinned Stops Panel */}
