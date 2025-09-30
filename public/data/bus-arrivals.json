@@ -1,0 +1,737 @@
+{
+  "11543": [
+    {
+      "routeNumber": "99",
+      "destination": "UBC",
+      "arrivalTime": "2 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "25",
+      "destination": "Brentwood Station",
+      "arrivalTime": "5 min",
+      "status": "delayed",
+      "color": "#FF6600"
+    },
+    {
+      "routeNumber": "41",
+      "destination": "Joyce Station",
+      "arrivalTime": "8 min",
+      "status": "on-time",
+      "color": "#00AA44"
+    }
+  ],
+  "11540": [
+    {
+      "routeNumber": "403",
+      "destination": "Richmond Centre",
+      "arrivalTime": "1 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "410",
+      "destination": "22nd Street Station",
+      "arrivalTime": "4 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    }
+  ],
+  "11541": [
+    {
+      "routeNumber": "17",
+      "destination": "Oakridge",
+      "arrivalTime": "3 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "49",
+      "destination": "Metrotown Station",
+      "arrivalTime": "7 min",
+      "status": "delayed",
+      "color": "#FF6600"
+    },
+    {
+      "routeNumber": "99",
+      "destination": "Commercial-Broadway",
+      "arrivalTime": "12 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    }
+  ],
+  "11546": [
+    {
+      "routeNumber": "250",
+      "destination": "Horseshoe Bay",
+      "arrivalTime": "6 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "257",
+      "destination": "Park Royal",
+      "arrivalTime": "9 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    }
+  ],
+  "11547": [
+    {
+      "routeNumber": "250",
+      "destination": "Horseshoe Bay",
+      "arrivalTime": "4 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    }
+  ],
+  "11544": [
+    {
+      "routeNumber": "403",
+      "destination": "Richmond Centre",
+      "arrivalTime": "2 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "410",
+      "destination": "22nd Street Station",
+      "arrivalTime": "5 min",
+      "status": "delayed",
+      "color": "#FF6600"
+    },
+    {
+      "routeNumber": "430",
+      "destination": "Brighouse Station",
+      "arrivalTime": "8 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    }
+  ],
+  "11545": [
+    {
+      "routeNumber": "160",
+      "destination": "Burquitlam Station",
+      "arrivalTime": "3 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "169",
+      "destination": "Metrotown Station",
+      "arrivalTime": "6 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    }
+  ],
+  "11548": [
+    {
+      "routeNumber": "250",
+      "destination": "Horseshoe Bay",
+      "arrivalTime": "1 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "257",
+      "destination": "Park Royal",
+      "arrivalTime": "4 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    }
+  ],
+  "11549": [
+    {
+      "routeNumber": "250",
+      "destination": "Horseshoe Bay",
+      "arrivalTime": "7 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    }
+  ],
+  "5989": [
+    {
+      "routeNumber": "22",
+      "destination": "Knight St",
+      "arrivalTime": "2 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "N19",
+      "destination": "Surrey Central",
+      "arrivalTime": "5 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "106",
+      "destination": "New Westminster Station",
+      "arrivalTime": "8 min",
+      "status": "delayed",
+      "color": "#FF6600"
+    }
+  ],
+  "5982": [
+    {
+      "routeNumber": "319",
+      "destination": "Scott Road Station",
+      "arrivalTime": "3 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "321",
+      "destination": "Newton Exchange",
+      "arrivalTime": "6 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    }
+  ],
+  "5983": [
+    {
+      "routeNumber": "319",
+      "destination": "Scott Road Station",
+      "arrivalTime": "1 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "321",
+      "destination": "Newton Exchange",
+      "arrivalTime": "4 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    }
+  ],
+  "5980": [
+    {
+      "routeNumber": "319",
+      "destination": "Scott Road Station",
+      "arrivalTime": "5 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "321",
+      "destination": "Newton Exchange",
+      "arrivalTime": "8 min",
+      "status": "delayed",
+      "color": "#FF6600"
+    }
+  ],
+  "5981": [
+    {
+      "routeNumber": "319",
+      "destination": "Scott Road Station",
+      "arrivalTime": "2 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "321",
+      "destination": "Newton Exchange",
+      "arrivalTime": "5 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    }
+  ],
+  "6487": [
+    {
+      "routeNumber": "403",
+      "destination": "Richmond Centre",
+      "arrivalTime": "3 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "410",
+      "destination": "22nd Street Station",
+      "arrivalTime": "6 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    }
+  ],
+  "6796": [
+    {
+      "routeNumber": "17",
+      "destination": "Oakridge",
+      "arrivalTime": "4 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "49",
+      "destination": "Metrotown Station",
+      "arrivalTime": "7 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    }
+  ],
+  "6797": [
+    {
+      "routeNumber": "17",
+      "destination": "Oakridge",
+      "arrivalTime": "2 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "49",
+      "destination": "Metrotown Station",
+      "arrivalTime": "5 min",
+      "status": "delayed",
+      "color": "#FF6600"
+    }
+  ],
+  "6794": [
+    {
+      "routeNumber": "403",
+      "destination": "Richmond Centre",
+      "arrivalTime": "1 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "410",
+      "destination": "22nd Street Station",
+      "arrivalTime": "4 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    }
+  ],
+  "6795": [
+    {
+      "routeNumber": "403",
+      "destination": "Richmond Centre",
+      "arrivalTime": "3 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "410",
+      "destination": "22nd Street Station",
+      "arrivalTime": "6 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    }
+  ],
+  "6792": [
+    {
+      "routeNumber": "403",
+      "destination": "Richmond Centre",
+      "arrivalTime": "2 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "410",
+      "destination": "22nd Street Station",
+      "arrivalTime": "5 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    }
+  ],
+  "6793": [
+    {
+      "routeNumber": "403",
+      "destination": "Richmond Centre",
+      "arrivalTime": "4 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "410",
+      "destination": "22nd Street Station",
+      "arrivalTime": "7 min",
+      "status": "delayed",
+      "color": "#FF6600"
+    }
+  ],
+  "6790": [
+    {
+      "routeNumber": "319",
+      "destination": "Scott Road Station",
+      "arrivalTime": "3 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "321",
+      "destination": "Newton Exchange",
+      "arrivalTime": "6 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    }
+  ],
+  "6791": [
+    {
+      "routeNumber": "319",
+      "destination": "Scott Road Station",
+      "arrivalTime": "1 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "321",
+      "destination": "Newton Exchange",
+      "arrivalTime": "4 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    }
+  ],
+  "6798": [
+    {
+      "routeNumber": "17",
+      "destination": "Oakridge",
+      "arrivalTime": "5 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "49",
+      "destination": "Metrotown Station",
+      "arrivalTime": "8 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    }
+  ],
+  "6799": [
+    {
+      "routeNumber": "17",
+      "destination": "Oakridge",
+      "arrivalTime": "2 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "49",
+      "destination": "Metrotown Station",
+      "arrivalTime": "5 min",
+      "status": "delayed",
+      "color": "#FF6600"
+    }
+  ],
+  "271": [
+    {
+      "routeNumber": "99",
+      "destination": "UBC",
+      "arrivalTime": "3 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "25",
+      "destination": "Brentwood Station",
+      "arrivalTime": "6 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    }
+  ],
+  "273": [
+    {
+      "routeNumber": "99",
+      "destination": "UBC",
+      "arrivalTime": "1 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "25",
+      "destination": "Brentwood Station",
+      "arrivalTime": "4 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    }
+  ],
+  "274": [
+    {
+      "routeNumber": "99",
+      "destination": "UBC",
+      "arrivalTime": "2 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "25",
+      "destination": "Brentwood Station",
+      "arrivalTime": "5 min",
+      "status": "delayed",
+      "color": "#FF6600"
+    }
+  ],
+  "275": [
+    {
+      "routeNumber": "99",
+      "destination": "UBC",
+      "arrivalTime": "4 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "25",
+      "destination": "Brentwood Station",
+      "arrivalTime": "7 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    }
+  ],
+  "276": [
+    {
+      "routeNumber": "99",
+      "destination": "UBC",
+      "arrivalTime": "6 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "25",
+      "destination": "Brentwood Station",
+      "arrivalTime": "9 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    }
+  ],
+  "277": [
+    {
+      "routeNumber": "99",
+      "destination": "UBC",
+      "arrivalTime": "3 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "25",
+      "destination": "Brentwood Station",
+      "arrivalTime": "6 min",
+      "status": "delayed",
+      "color": "#FF6600"
+    }
+  ],
+  "278": [
+    {
+      "routeNumber": "99",
+      "destination": "UBC",
+      "arrivalTime": "1 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "25",
+      "destination": "Brentwood Station",
+      "arrivalTime": "4 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    }
+  ],
+  "279": [
+    {
+      "routeNumber": "99",
+      "destination": "UBC",
+      "arrivalTime": "5 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "25",
+      "destination": "Brentwood Station",
+      "arrivalTime": "8 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    }
+  ],
+  "12018": [
+    {
+      "routeNumber": "701",
+      "destination": "Haney Place",
+      "arrivalTime": "2 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "791",
+      "destination": "Haney Place",
+      "arrivalTime": "5 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    }
+  ],
+  "2146": [
+    {
+      "routeNumber": "17",
+      "destination": "Oakridge",
+      "arrivalTime": "3 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "49",
+      "destination": "Metrotown Station",
+      "arrivalTime": "6 min",
+      "status": "delayed",
+      "color": "#FF6600"
+    }
+  ],
+  "12015": [
+    {
+      "routeNumber": "403",
+      "destination": "Richmond Centre",
+      "arrivalTime": "4 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "410",
+      "destination": "22nd Street Station",
+      "arrivalTime": "7 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    }
+  ],
+  "12016": [
+    {
+      "routeNumber": "319",
+      "destination": "Scott Road Station",
+      "arrivalTime": "2 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "321",
+      "destination": "Newton Exchange",
+      "arrivalTime": "5 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    }
+  ],
+  "12011": [
+    {
+      "routeNumber": "99",
+      "destination": "UBC",
+      "arrivalTime": "1 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "25",
+      "destination": "Brentwood Station",
+      "arrivalTime": "4 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    }
+  ],
+  "12010": [
+    {
+      "routeNumber": "99",
+      "destination": "UBC",
+      "arrivalTime": "3 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "25",
+      "destination": "Brentwood Station",
+      "arrivalTime": "6 min",
+      "status": "delayed",
+      "color": "#FF6600"
+    }
+  ],
+  "12013": [
+    {
+      "routeNumber": "99",
+      "destination": "UBC",
+      "arrivalTime": "2 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "25",
+      "destination": "Brentwood Station",
+      "arrivalTime": "5 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    }
+  ],
+  "12012": [
+    {
+      "routeNumber": "99",
+      "destination": "UBC",
+      "arrivalTime": "4 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "25",
+      "destination": "Brentwood Station",
+      "arrivalTime": "7 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    }
+  ],
+  "9528": [
+    {
+      "routeNumber": "319",
+      "destination": "Scott Road Station",
+      "arrivalTime": "3 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "321",
+      "destination": "Newton Exchange",
+      "arrivalTime": "6 min",
+      "status": "delayed",
+      "color": "#FF6600"
+    }
+  ],
+  "9259": [
+    {
+      "routeNumber": "701",
+      "destination": "Haney Place",
+      "arrivalTime": "1 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "791",
+      "destination": "Haney Place",
+      "arrivalTime": "4 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    }
+  ],
+  "10703": [
+    {
+      "routeNumber": "319",
+      "destination": "Scott Road Station",
+      "arrivalTime": "2 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "321",
+      "destination": "Newton Exchange",
+      "arrivalTime": "5 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    }
+  ],
+  "10702": [
+    {
+      "routeNumber": "319",
+      "destination": "Scott Road Station",
+      "arrivalTime": "4 min",
+      "status": "on-time",
+      "color": "#0066CC"
+    },
+    {
+      "routeNumber": "321",
+      "destination": "Newton Exchange",
+      "arrivalTime": "7 min",
+      "status": "delayed",
+      "color": "#FF6600"
+    }
+  ]
+}
+

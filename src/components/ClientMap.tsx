@@ -10,6 +10,7 @@ import GoogleMapsSearchBar from "./GoogleMapsSearchBar";
 import GoogleMapsControls from "./GoogleMapsControls";
 import GoogleMapsLayersPanel from "./GoogleMapsLayersPanel";
 import PinnedStopsPanel from "./PinnedStopsPanel";
+import BusArrivalsPanel from "./BusArrivalsPanel";
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN as string;
 
@@ -58,6 +59,11 @@ export default function ClientMap() {
   }>({});
   const [isPinnedPanelVisible, setIsPinnedPanelVisible] = useState(false);
 
+  // バス到着情報の状態
+  const [isBusArrivalsVisible, setIsBusArrivalsVisible] = useState(false);
+  const [busArrivals, setBusArrivals] = useState<any[]>([]);
+  const [currentStopName, setCurrentStopName] = useState("");
+
   // 遅延シンボルを取得
   const getDelaySymbol = (level: number) => {
     const symbols = ["☀️", "🌤️", "☁️", "🌧️", "⛈️"];
@@ -93,8 +99,8 @@ export default function ClientMap() {
     if (!mapRef.current) return;
 
     try {
-      // stops.geojsonファイルからデータを取得
-      const response = await fetch("/data/stops.geojson");
+      // stops_route.geojsonファイルからデータを取得（路線情報を含む）
+      const response = await fetch("/data/stops_route.geojson");
       const data = await response.json();
 
       if (data.features) {
@@ -207,6 +213,11 @@ export default function ClientMap() {
           setSelectedStopId(properties?.stop_id || null);
           setDelayLevel(Math.floor(Math.random() * 5));
 
+          // バス到着情報を読み込む
+          if (properties?.stop_id) {
+            loadBusArrivals(properties.stop_id);
+          }
+
           // マップをクリックしたバス停に移動
           mapRef.current?.flyTo({
             center: coordinates,
@@ -282,6 +293,79 @@ export default function ClientMap() {
     setShowLayers(!showLayers);
   };
 
+  // バス到着情報を読み込む
+  const loadBusArrivals = async (stopId: string) => {
+    try {
+      // まずstops_route.geojsonから実際の路線データを取得
+      const response = await fetch("/data/stops_route.geojson");
+      const data = await response.json();
+
+      // 該当するバス停を検索
+      const stop = data.features.find(
+        (feature: any) => feature.properties?.stop_id === stopId
+      );
+
+      if (stop && stop.properties) {
+        const routes = stop.properties.route_short_names || [];
+        const headsigns = stop.properties.trip_headsigns || [];
+
+        console.log("Found stop:", stop.properties.stop_name);
+        console.log("Routes:", routes);
+        console.log("Headsigns:", headsigns);
+
+        // 路線データから到着情報を生成
+        const arrivals = routes.map((route: string, index: number) => {
+          // その路線の行き先を取得
+          const routeHeadsigns = headsigns.filter(
+            (h: string) => h.startsWith(route) || h.includes(route)
+          );
+
+          // ランダムな到着時間を生成（1-15分）
+          const arrivalMinutes = Math.floor(Math.random() * 15) + 1;
+          const arrivalTime =
+            arrivalMinutes === 1 ? "1 min" : `${arrivalMinutes} min`;
+
+          // ランダムなステータス
+          const statuses = ["on-time", "delayed", "cancelled"];
+          const status = statuses[
+            Math.floor(Math.random() * statuses.length)
+          ] as "on-time" | "delayed" | "cancelled";
+
+          // 路線ごとの色を生成
+          const colors = [
+            "#0066CC",
+            "#FF6600",
+            "#00AA44",
+            "#CC0066",
+            "#6600CC",
+            "#00CCAA",
+          ];
+          const color = colors[index % colors.length];
+
+          return {
+            routeNumber: route,
+            destination:
+              routeHeadsigns.length > 0
+                ? routeHeadsigns[0].replace(`${route} `, "") // 路線番号を除去
+                : "Unknown Destination",
+            arrivalTime: arrivalTime,
+            status: status,
+            color: color,
+          };
+        });
+
+        console.log("Generated arrivals:", arrivals);
+        setBusArrivals(arrivals);
+      } else {
+        // バス停が見つからない場合は空の配列
+        setBusArrivals([]);
+      }
+    } catch (error) {
+      console.error("Error loading bus arrivals:", error);
+      setBusArrivals([]);
+    }
+  };
+
   const handleLayerChange = (layerId: string) => {
     setLayers((prev) =>
       prev.map((layer) =>
@@ -293,6 +377,36 @@ export default function ClientMap() {
   const handleStreetView = () => {
     console.log("Street View");
     // ストリートビュー機能の実装（必要に応じて）
+  };
+
+  // バス到着情報を取得
+  const fetchBusArrivals = async (stopId: string, stopName: string) => {
+    try {
+      const response = await fetch("/data/bus-arrivals.json");
+      const arrivalsData = await response.json();
+
+      const arrivals = arrivalsData[stopId] || [];
+      setBusArrivals(arrivals);
+      setCurrentStopName(stopName);
+      setIsBusArrivalsVisible(true);
+
+      console.log(`Bus arrivals for stop ${stopId}:`, arrivals);
+    } catch (error) {
+      console.error("Error fetching bus arrivals:", error);
+      setBusArrivals([]);
+      setCurrentStopName(stopName);
+      setIsBusArrivalsVisible(true);
+    }
+  };
+
+  // バス到着情報を更新
+  const refreshBusArrivals = () => {
+    if (selectedStop) {
+      fetchBusArrivals(
+        selectedStop.properties.stop_id,
+        selectedStop.properties.stop_name
+      );
+    }
   };
 
   // ローカルストレージからピンデータを読み込み
@@ -426,11 +540,22 @@ export default function ClientMap() {
           setSelectedStopId(savedProperties?.stop_id || null);
           setDelayLevel(Math.floor(Math.random() * 5));
 
+          // バス到着情報を読み込む
+          if (savedProperties?.stop_id) {
+            loadBusArrivals(savedProperties.stop_id);
+          }
+
           mapRef.current.flyTo({
             center: savedCoordinates,
             zoom: 18,
             essential: true,
           });
+
+          // バス到着情報を取得
+          fetchBusArrivals(
+            savedProperties?.stop_id,
+            savedProperties?.stop_name
+          );
           return;
         }
       }
@@ -449,12 +574,20 @@ export default function ClientMap() {
     setSelectedStopId(properties?.stop_id || null);
     setDelayLevel(Math.floor(Math.random() * 5));
 
+    // バス到着情報を読み込む
+    if (properties?.stop_id) {
+      loadBusArrivals(properties.stop_id);
+    }
+
     // マップをクリックしたバス停に移動
     mapRef.current.flyTo({
       center: coordinates,
       zoom: 18,
       essential: true,
     });
+
+    // バス到着情報を取得
+    fetchBusArrivals(properties?.stop_id, properties?.stop_name);
   };
 
   const handleRemovePin = (stopId: string) => {
@@ -1062,7 +1195,7 @@ export default function ClientMap() {
       // GeoJSONデータをソースとして追加
       map.addSource("bus-stops", {
         type: "geojson",
-        data: "/data/stops.geojson",
+        data: "/data/stops_route.geojson",
         cluster: true,
         clusterMaxZoom: 14,
         clusterRadius: 50,
@@ -1209,6 +1342,12 @@ export default function ClientMap() {
 
               // ランダムな遅延レベルを設定（デモ用）
               setDelayLevel(Math.floor(Math.random() * 5));
+
+              // バス到着情報を読み込む
+              loadBusArrivals(properties.stop_id);
+
+              // バス到着情報を取得
+              fetchBusArrivals(properties.stop_id, properties.stop_name);
             }
           }
         }
@@ -1349,6 +1488,12 @@ export default function ClientMap() {
                     setIsPanelOpen(true);
                     setSelectedStopId(stop.properties.stop_id);
                     setDelayLevel(Math.floor(Math.random() * 5));
+
+                    // バス到着情報を取得
+                    fetchBusArrivals(
+                      stop.properties.stop_id,
+                      stop.properties.stop_name
+                    );
                   }}
                   className="w-full text-left p-2 rounded text-xs transition-colors hover:bg-gray-800 text-gray-300"
                 >
@@ -1456,6 +1601,13 @@ export default function ClientMap() {
         getDelayLevelName={getDelayLevelName}
         pinnedStops={pinnedStops}
         onTogglePin={togglePinStop}
+        busArrivals={busArrivals}
+        onRefreshArrivals={() => {
+          // バス到着情報を再読み込み
+          if (selectedStop?.properties?.stop_id) {
+            loadBusArrivals(selectedStop.properties.stop_id);
+          }
+        }}
       />
 
       {/* Pinned Stops Panel */}
@@ -1468,6 +1620,15 @@ export default function ClientMap() {
         onToggleVisibility={() =>
           setIsPinnedPanelVisible(!isPinnedPanelVisible)
         }
+      />
+
+      {/* Bus Arrivals Panel */}
+      <BusArrivalsPanel
+        isVisible={isBusArrivalsVisible}
+        arrivals={busArrivals}
+        stopName={currentStopName}
+        onClose={() => setIsBusArrivalsVisible(false)}
+        onRefresh={refreshBusArrivals}
       />
     </div>
   );

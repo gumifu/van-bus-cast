@@ -7,6 +7,14 @@ interface Region {
   zoom: number;
 }
 
+interface BusArrival {
+  routeNumber: string;
+  destination: string;
+  arrivalTime: string;
+  status: "on-time" | "delayed" | "cancelled";
+  color: string;
+}
+
 interface BusStopDetailPanelProps {
   isOpen: boolean;
   onClose: () => void;
@@ -19,6 +27,8 @@ interface BusStopDetailPanelProps {
   getDelayLevelName: (level: number) => string;
   pinnedStops: Set<string>;
   onTogglePin: (stopId: string, stopData: any) => void;
+  busArrivals: BusArrival[];
+  onRefreshArrivals: () => void;
 }
 
 export default function BusStopDetailPanel({
@@ -33,6 +43,8 @@ export default function BusStopDetailPanel({
   getDelayLevelName,
   pinnedStops,
   onTogglePin,
+  busArrivals,
+  onRefreshArrivals,
 }: BusStopDetailPanelProps) {
   return (
     <>
@@ -46,33 +58,12 @@ export default function BusStopDetailPanel({
           {/* Header */}
           <div className="bg-gray-800 border-b border-gray-700 p-4 flex justify-between items-center">
             <h2 className="text-lg font-semibold">Bus Stop Details</h2>
-            <div className="flex items-center gap-2">
-              {selectedStop && selectedStop.properties && (
-                <button
-                  onClick={() =>
-                    onTogglePin(selectedStop.properties.stop_id, selectedStop)
-                  }
-                  className={`p-2 rounded transition-colors ${
-                    pinnedStops.has(selectedStop.properties.stop_id)
-                      ? "bg-gray-600 text-white"
-                      : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                  }`}
-                  title={
-                    pinnedStops.has(selectedStop.properties.stop_id)
-                      ? "Unpin"
-                      : "Pin"
-                  }
-                >
-                  📍
-                </button>
-              )}
-              <button
-                onClick={onClose}
-                className="text-gray-400 hover:text-white text-xl"
-              >
-                ×
-              </button>
-            </div>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-white text-xl"
+            >
+              ×
+            </button>
           </div>
 
           {/* コンテンツ */}
@@ -87,10 +78,27 @@ export default function BusStopDetailPanel({
                       <h3 className="text-lg font-semibold text-white">
                         {selectedStop.properties.stop_name || "Unknown Stop"}
                       </h3>
-                      {pinnedStops.has(selectedStop.properties.stop_id) && (
-                        <span className="text-gray-400 text-sm" title="Pinned">
+                      {selectedStop && selectedStop.properties && (
+                        <button
+                          onClick={() =>
+                            onTogglePin(
+                              selectedStop.properties.stop_id,
+                              selectedStop
+                            )
+                          }
+                          className={`p-1.5 rounded transition-colors ${
+                            pinnedStops.has(selectedStop.properties.stop_id)
+                              ? "bg-gray-600 text-white"
+                              : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                          }`}
+                          title={
+                            pinnedStops.has(selectedStop.properties.stop_id)
+                              ? "Unpin"
+                              : "Pin"
+                          }
+                        >
                           📍
-                        </span>
+                        </button>
                       )}
                     </div>
                     <div className="space-y-2 text-sm text-gray-300">
@@ -119,8 +127,127 @@ export default function BusStopDetailPanel({
                     </div>
                   </div>
 
+                  {/* 路線情報 */}
+                  {selectedStop.properties.route_short_names &&
+                    Array.isArray(selectedStop.properties.route_short_names) &&
+                    selectedStop.properties.route_short_names.length > 0 && (
+                      <div className="border-t border-gray-700 pt-4">
+                        <h4 className="font-semibold text-white mb-3">
+                          Routes at this Stop
+                        </h4>
+                        <div className="space-y-2">
+                          {Array.isArray(
+                            selectedStop.properties.route_short_names
+                          ) &&
+                            selectedStop.properties.route_short_names.map(
+                              (route: string, index: number) => {
+                                // 対応する行き先を取得
+                                const headsigns = Array.isArray(
+                                  selectedStop.properties.trip_headsigns
+                                )
+                                  ? selectedStop.properties.trip_headsigns
+                                  : [];
+                                const routeHeadsigns = headsigns.filter(
+                                  (h: string) => h.startsWith(route)
+                                );
+
+                                return (
+                                  <div
+                                    key={`${route}-${index}`}
+                                    className="bg-gray-800 rounded-lg p-3 border border-gray-700"
+                                  >
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <span className="bg-blue-600 text-white px-2.5 py-1 rounded-md font-bold text-sm">
+                                        {route}
+                                      </span>
+                                    </div>
+                                    {routeHeadsigns.length > 0 && (
+                                      <div className="space-y-1 text-xs text-gray-400">
+                                        {Array.isArray(routeHeadsigns) &&
+                                          routeHeadsigns.map(
+                                            (
+                                              headsign: string,
+                                              hIndex: number
+                                            ) => (
+                                              <div
+                                                key={hIndex}
+                                                className="pl-2 border-l-2 border-blue-600"
+                                              >
+                                                {headsign}
+                                              </div>
+                                            )
+                                          )}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              }
+                            )}
+                        </div>
+                      </div>
+                    )}
+
+                  {/* バス到着情報 */}
+                  <div className="border-t border-gray-700 pt-4">
+                    <div className="flex justify-between items-center mb-3">
+                      <h4 className="font-semibold text-white">Bus Arrivals</h4>
+                      <button
+                        onClick={onRefreshArrivals}
+                        className="text-blue-400 hover:text-blue-300 text-sm"
+                      >
+                        🔄 Refresh
+                      </button>
+                    </div>
+                    {busArrivals && busArrivals.length > 0 ? (
+                      <div className="space-y-2">
+                        {busArrivals.map((arrival, index) => (
+                          <div
+                            key={index}
+                            className="bg-gray-800 rounded-lg p-3 border border-gray-700"
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className="px-2.5 py-1 rounded-md font-bold text-sm text-white"
+                                  style={{ backgroundColor: arrival.color }}
+                                >
+                                  {arrival.routeNumber}
+                                </span>
+                                <span className="text-gray-300 text-sm">
+                                  {arrival.destination}
+                                </span>
+                              </div>
+                              <span
+                                className={`text-xs px-2 py-1 rounded ${
+                                  arrival.status === "on-time"
+                                    ? "bg-green-900 text-green-300"
+                                    : arrival.status === "delayed"
+                                    ? "bg-yellow-900 text-yellow-300"
+                                    : "bg-red-900 text-red-300"
+                                }`}
+                              >
+                                {arrival.status === "on-time"
+                                  ? "On Time"
+                                  : arrival.status === "delayed"
+                                  ? "Delayed"
+                                  : "Cancelled"}
+                              </span>
+                            </div>
+                            <div className="text-gray-400 text-sm">
+                              Arrives in: {arrival.arrivalTime}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-gray-400 text-sm text-center py-4">
+                        No bus arrivals available
+                      </div>
+                    )}
+                  </div>
+
                   {/* 位置情報 */}
-                  <div className="border-t pt-4">
+                  <div className="border-t border-gray-700 pt-4">
                     <h4 className="font-semibold text-white mb-2">Location</h4>
                     <div className="space-y-1 text-sm text-gray-400">
                       <div className="flex justify-between">
@@ -254,33 +381,12 @@ export default function BusStopDetailPanel({
           {/* ヘッダー */}
           <div className="bg-gray-800 border-b border-gray-700 p-4 flex justify-between items-center">
             <h2 className="text-lg font-semibold">Bus Stop Details</h2>
-            <div className="flex items-center gap-2">
-              {selectedStop && selectedStop.properties && (
-                <button
-                  onClick={() =>
-                    onTogglePin(selectedStop.properties.stop_id, selectedStop)
-                  }
-                  className={`p-2 rounded transition-colors ${
-                    pinnedStops.has(selectedStop.properties.stop_id)
-                      ? "bg-gray-600 text-white"
-                      : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                  }`}
-                  title={
-                    pinnedStops.has(selectedStop.properties.stop_id)
-                      ? "Unpin"
-                      : "Pin"
-                  }
-                >
-                  📍
-                </button>
-              )}
-              <button
-                onClick={onClose}
-                className="text-gray-400 hover:text-white text-xl"
-              >
-                ×
-              </button>
-            </div>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-white text-xl"
+            >
+              ×
+            </button>
           </div>
 
           {/* コンテンツ */}
@@ -293,22 +399,37 @@ export default function BusStopDetailPanel({
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <h3 className="font-semibold text-white">Basic Info</h3>
-                      {selectedStop.properties &&
-                        pinnedStops.has(selectedStop.properties.stop_id) && (
-                          <span
-                            className="text-gray-400 text-sm"
-                            title="Pinned"
-                          >
-                            📍
-                          </span>
-                        )}
                     </div>
                     <div className="space-y-1 text-sm text-gray-400">
-                      <div className="flex justify-between">
+                      <div className="flex justify-between items-center">
                         <span>Stop Name:</span>
-                        <span className="text-white">
-                          {selectedStop.properties.stop_name || "不明"}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-white">
+                            {selectedStop.properties.stop_name || "不明"}
+                          </span>
+                          {selectedStop && selectedStop.properties && (
+                            <button
+                              onClick={() =>
+                                onTogglePin(
+                                  selectedStop.properties.stop_id,
+                                  selectedStop
+                                )
+                              }
+                              className={`p-1 rounded transition-colors ${
+                                pinnedStops.has(selectedStop.properties.stop_id)
+                                  ? "bg-gray-600 text-white"
+                                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                              }`}
+                              title={
+                                pinnedStops.has(selectedStop.properties.stop_id)
+                                  ? "Unpin"
+                                  : "Pin"
+                              }
+                            >
+                              📍
+                            </button>
+                          )}
+                        </div>
                       </div>
                       <div className="flex justify-between">
                         <span>Stop ID:</span>
@@ -332,8 +453,128 @@ export default function BusStopDetailPanel({
                       </div>
                     </div>
                   </div>
+
+                  {/* 路線情報 */}
+                  {selectedStop.properties.route_short_names &&
+                    Array.isArray(selectedStop.properties.route_short_names) &&
+                    selectedStop.properties.route_short_names.length > 0 && (
+                      <div className="border-t border-gray-700 pt-4">
+                        <h4 className="font-semibold text-white mb-3">
+                          Routes at this Stop
+                        </h4>
+                        <div className="space-y-2">
+                          {Array.isArray(
+                            selectedStop.properties.route_short_names
+                          ) &&
+                            selectedStop.properties.route_short_names.map(
+                              (route: string, index: number) => {
+                                // 対応する行き先を取得
+                                const headsigns = Array.isArray(
+                                  selectedStop.properties.trip_headsigns
+                                )
+                                  ? selectedStop.properties.trip_headsigns
+                                  : [];
+                                const routeHeadsigns = headsigns.filter(
+                                  (h: string) => h.startsWith(route)
+                                );
+
+                                return (
+                                  <div
+                                    key={`${route}-${index}`}
+                                    className="bg-gray-800 rounded-lg p-3 border border-gray-700"
+                                  >
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <span className="bg-blue-600 text-white px-2.5 py-1 rounded-md font-bold text-sm">
+                                        {route}
+                                      </span>
+                                    </div>
+                                    {routeHeadsigns.length > 0 && (
+                                      <div className="space-y-1 text-xs text-gray-400">
+                                        {Array.isArray(routeHeadsigns) &&
+                                          routeHeadsigns.map(
+                                            (
+                                              headsign: string,
+                                              hIndex: number
+                                            ) => (
+                                              <div
+                                                key={hIndex}
+                                                className="pl-2 border-l-2 border-blue-600"
+                                              >
+                                                {headsign}
+                                              </div>
+                                            )
+                                          )}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              }
+                            )}
+                        </div>
+                      </div>
+                    )}
+
+                  {/* バス到着情報 */}
+                  <div className="border-t border-gray-700 pt-4">
+                    <div className="flex justify-between items-center mb-3">
+                      <h4 className="font-semibold text-white">Bus Arrivals</h4>
+                      <button
+                        onClick={onRefreshArrivals}
+                        className="text-blue-400 hover:text-blue-300 text-sm"
+                      >
+                        🔄
+                      </button>
+                    </div>
+                    {busArrivals && busArrivals.length > 0 ? (
+                      <div className="space-y-2">
+                        {busArrivals.map((arrival, index) => (
+                          <div
+                            key={index}
+                            className="bg-gray-800 rounded-lg p-2 border border-gray-700"
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className="px-2 py-0.5 rounded-md font-bold text-xs text-white"
+                                  style={{ backgroundColor: arrival.color }}
+                                >
+                                  {arrival.routeNumber}
+                                </span>
+                                <span className="text-gray-300 text-xs">
+                                  {arrival.destination}
+                                </span>
+                              </div>
+                              <span
+                                className={`text-xs px-1.5 py-0.5 rounded ${
+                                  arrival.status === "on-time"
+                                    ? "bg-green-900 text-green-300"
+                                    : arrival.status === "delayed"
+                                    ? "bg-yellow-900 text-yellow-300"
+                                    : "bg-red-900 text-red-300"
+                                }`}
+                              >
+                                {arrival.status === "on-time"
+                                  ? "On Time"
+                                  : arrival.status === "delayed"
+                                  ? "Delayed"
+                                  : "Cancelled"}
+                              </span>
+                            </div>
+                            <div className="text-gray-400 text-xs">
+                              {arrival.arrivalTime}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-gray-400 text-xs text-center py-4">
+                        No bus arrivals available
+                      </div>
+                    )}
+                  </div>
+
                   {/* 遅延状況 */}
-                  <div className="border-t pt-4">
+                  <div className="border-t border-gray-700 pt-4">
                     <h4 className="font-semibold text-white mb-2">遅延状況</h4>
                     <div className="flex items-center gap-2">
                       <span className="text-2xl">
