@@ -10,7 +10,6 @@ import GoogleMapsSearchBar from "./GoogleMapsSearchBar";
 import GoogleMapsControls from "./GoogleMapsControls";
 import GoogleMapsLayersPanel from "./GoogleMapsLayersPanel";
 import PinnedStopsPanel from "./PinnedStopsPanel";
-import BusArrivalsPanel from "./BusArrivalsPanel";
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN as string;
 
@@ -60,9 +59,7 @@ export default function ClientMap() {
   const [isPinnedPanelVisible, setIsPinnedPanelVisible] = useState(false);
 
   // バス到着情報の状態
-  const [isBusArrivalsVisible, setIsBusArrivalsVisible] = useState(false);
   const [busArrivals, setBusArrivals] = useState<any[]>([]);
-  const [currentStopName, setCurrentStopName] = useState("");
 
   // 遅延シンボルを取得
   const getDelaySymbol = (level: number) => {
@@ -379,35 +376,7 @@ export default function ClientMap() {
     // ストリートビュー機能の実装（必要に応じて）
   };
 
-  // バス到着情報を取得
-  const fetchBusArrivals = async (stopId: string, stopName: string) => {
-    try {
-      const response = await fetch("/data/bus-arrivals.json");
-      const arrivalsData = await response.json();
 
-      const arrivals = arrivalsData[stopId] || [];
-      setBusArrivals(arrivals);
-      setCurrentStopName(stopName);
-      setIsBusArrivalsVisible(true);
-
-      console.log(`Bus arrivals for stop ${stopId}:`, arrivals);
-    } catch (error) {
-      console.error("Error fetching bus arrivals:", error);
-      setBusArrivals([]);
-      setCurrentStopName(stopName);
-      setIsBusArrivalsVisible(true);
-    }
-  };
-
-  // バス到着情報を更新
-  const refreshBusArrivals = () => {
-    if (selectedStop) {
-      fetchBusArrivals(
-        selectedStop.properties.stop_id,
-        selectedStop.properties.stop_name
-      );
-    }
-  };
 
   // ローカルストレージからピンデータを読み込み
   const loadPinnedStops = () => {
@@ -551,11 +520,6 @@ export default function ClientMap() {
             essential: true,
           });
 
-          // バス到着情報を取得
-          fetchBusArrivals(
-            savedProperties?.stop_id,
-            savedProperties?.stop_name
-          );
           return;
         }
       }
@@ -586,8 +550,6 @@ export default function ClientMap() {
       essential: true,
     });
 
-    // バス到着情報を取得
-    fetchBusArrivals(properties?.stop_id, properties?.stop_name);
   };
 
   const handleRemovePin = (stopId: string) => {
@@ -1346,8 +1308,6 @@ export default function ClientMap() {
               // バス到着情報を読み込む
               loadBusArrivals(properties.stop_id);
 
-              // バス到着情報を取得
-              fetchBusArrivals(properties.stop_id, properties.stop_name);
             }
           }
         }
@@ -1489,11 +1449,6 @@ export default function ClientMap() {
                     setSelectedStopId(stop.properties.stop_id);
                     setDelayLevel(Math.floor(Math.random() * 5));
 
-                    // バス到着情報を取得
-                    fetchBusArrivals(
-                      stop.properties.stop_id,
-                      stop.properties.stop_name
-                    );
                   }}
                   className="w-full text-left p-2 rounded text-xs transition-colors hover:bg-gray-800 text-gray-300"
                 >
@@ -1607,14 +1562,6 @@ export default function ClientMap() {
         }
       />
 
-      {/* Bus Arrivals Panel */}
-      <BusArrivalsPanel
-        isVisible={isBusArrivalsVisible}
-        arrivals={busArrivals}
-        stopName={currentStopName}
-        onClose={() => setIsBusArrivalsVisible(false)}
-        onRefresh={refreshBusArrivals}
-      />
     </div>
   );
 }
