@@ -80,8 +80,7 @@ export default function ClientMap() {
   ]);
 
   // API URL
-  // const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-  const API_URL = "http://localhost:8000";
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
   // 地域別遅延予測をAPIから取得
   const generateDelayPredictions = async () => {
