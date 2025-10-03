@@ -61,18 +61,111 @@ export default function ClientMap() {
   }>({});
   const [isPinnedPanelVisible, setIsPinnedPanelVisible] = useState(false);
 
-  // 遅延予測データを生成
-  const generateDelayPredictions = () => {
-    // 地域別遅延予測（デモデータ）
-    const regionDelayData = {
-      vancouver: Math.floor(Math.random() * 3), // 0-2分
-      burnaby: Math.floor(Math.random() * 5), // 0-4分
-      richmond: Math.floor(Math.random() * 4), // 0-3分
-      surrey: Math.floor(Math.random() * 6), // 0-5分
-    };
-    setRegionDelays(regionDelayData);
+  // 地域データの状態
+  const [regions, setRegions] = useState<
+    Array<{
+      id: string;
+      name: string;
+      center: [number, number];
+      zoom: number;
+    }>
+  >([
+    // デフォルト値（APIから取得するまでの初期値）
+    {
+      id: "vancouver",
+      name: "Vancouver",
+      center: [-123.1207, 49.2827],
+      zoom: 11,
+    },
+  ]);
 
-    // バス停別遅延予測（デモデータ）
+  // API URL
+  // const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const API_URL = "http://localhost:8000";
+
+  // 地域別遅延予測をAPIから取得
+  const generateDelayPredictions = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/v1/regional/status`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+
+      // APIレスポンスから地域別遅延データと地域リストを作成
+      const regionDelayData: { [key: string]: number } = {};
+      const regionList: Array<{
+        id: string;
+        name: string;
+        center: [number, number];
+        zoom: number;
+      }> = [];
+
+      data.regions.forEach((region: any) => {
+        regionDelayData[region.region_id] = Math.round(
+          region.avg_delay_minutes || 0
+        );
+
+        // 地域リストを作成（center_lat, center_lonから中心座標を設定）
+        if (region.center_lat && region.center_lon) {
+          regionList.push({
+            id: region.region_id,
+            name: region.region_name || region.region_id,
+            center: [region.center_lon, region.center_lat] as [number, number],
+            zoom: 12, // デフォルトズーム
+          });
+        }
+      });
+
+      setRegionDelays(regionDelayData);
+
+      // 地域リストが取得できた場合のみ更新
+      if (regionList.length > 0) {
+        setRegions(regionList);
+        console.log("Regions data fetched from API:", regionList);
+      }
+
+      console.log("Regional delays fetched from API:", regionDelayData);
+    } catch (error) {
+      console.error("Error fetching regional delays:", error);
+      // エラー時はモックデータを使用
+      const regionDelayData = {
+        vancouver: Math.floor(Math.random() * 3),
+        burnaby: Math.floor(Math.random() * 5),
+        richmond: Math.floor(Math.random() * 4),
+        surrey: Math.floor(Math.random() * 6),
+      };
+      setRegionDelays(regionDelayData);
+
+      // デフォルトの地域リストを設定
+      setRegions([
+        {
+          id: "vancouver",
+          name: "Vancouver",
+          center: [-123.1207, 49.2827],
+          zoom: 11,
+        },
+        {
+          id: "richmond",
+          name: "Richmond",
+          center: [-123.1338, 49.1666],
+          zoom: 12,
+        },
+        {
+          id: "burnaby",
+          name: "Burnaby",
+          center: [-122.9749, 49.2488],
+          zoom: 12,
+        },
+        {
+          id: "surrey",
+          name: "Surrey",
+          center: [-122.849, 49.1913],
+          zoom: 12,
+        },
+      ]);
+    }
+
     const stopDelayData: { [key: string]: number } = {};
     // ランダムに選択されたバス停に遅延を設定
     for (let i = 0; i < 20; i++) {
@@ -646,39 +739,6 @@ export default function ClientMap() {
   };
 
   // 地域データ
-  const regions: Array<{
-    id: string;
-    name: string;
-    center: [number, number];
-    zoom: number;
-  }> = [
-    {
-      id: "vancouver",
-      name: "Vancouver",
-      center: [-123.1207, 49.2827],
-      zoom: 11,
-    },
-    {
-      id: "downtown",
-      name: "Downtown",
-      center: [-123.1158, 49.2778],
-      zoom: 14,
-    },
-    {
-      id: "richmond",
-      name: "Richmond",
-      center: [-123.1338, 49.1666],
-      zoom: 12,
-    },
-    {
-      id: "burnaby",
-      name: "Burnaby",
-      center: [-122.9749, 49.2488],
-      zoom: 12,
-    },
-    { id: "surrey", name: "Surrey", center: [-122.849, 49.1913], zoom: 12 },
-  ];
-
   // ユーザーの位置情報を取得
   const getUserLocation = () => {
     if (navigator.geolocation) {
