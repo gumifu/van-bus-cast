@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database with auto-restore from dump
+  postgres:
+    image: ghcr.io/tyoshilab/gtfs-db:v1.3
+    platform: linux/amd64
+    container_name: gtfs-db-test
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      TZ: ${TZ:-America/Los_Angeles}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - devcontainer-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # FastAPI Application
+  api:
+    image: ghcr.io/tyoshilab/gtfs-api:v1.1
+    platform: linux/amd64
+    container_name: gtfs-api-test
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-postgres}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      DEBUG: ${DEBUG:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      TZ: ${TZ:-America/Los_Angeles}
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount logs directory for persistent logs
+      - ./logs:/app/logs
+    networks:
+      - devcontainer-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  devcontainer-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
