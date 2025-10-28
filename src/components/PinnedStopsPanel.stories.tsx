@@ -15,8 +15,12 @@ const meta: Meta<typeof PinnedStopsPanel> = {
     pinnedStopsData: {
       control: "object",
     },
-    onPinnedStopClick: { action: "pinned-stop-clicked" },
+    onStopClick: { action: "stop-clicked" },
     onRemovePin: { action: "pin-removed" },
+    isVisible: {
+      control: "boolean",
+    },
+    onToggleVisibility: { action: "toggle-visibility" },
   },
 };
 
@@ -27,8 +31,10 @@ export const Empty: Story = {
   args: {
     pinnedStops: new Set(),
     pinnedStopsData: {},
-    onPinnedStopClick: () => {},
+    onStopClick: () => {},
     onRemovePin: () => {},
+    isVisible: false,
+    onToggleVisibility: () => {},
   },
 };
 
@@ -55,7 +61,9 @@ export const WithPinnedStops: Story = {
         },
       },
     },
-    onPinnedStopClick: () => {},
+    onStopClick: () => {},
     onRemovePin: () => {},
+    isVisible: true,
+    onToggleVisibility: () => {},
   },
 };

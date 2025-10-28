@@ -15,6 +15,12 @@ const meta: Meta<typeof GoogleMapsControls> = {
     onFullscreen: { action: "fullscreen" },
     onLayerToggle: { action: "layer-toggle" },
     onStreetView: { action: "street-view" },
+    isFullscreen: {
+      control: "boolean",
+    },
+    showLayers: {
+      control: "boolean",
+    },
   },
 };
 
@@ -29,5 +35,7 @@ export const Default: Story = {
     onFullscreen: () => {},
     onLayerToggle: () => {},
     onStreetView: () => {},
+    isFullscreen: false,
+    showLayers: false,
   },
 };

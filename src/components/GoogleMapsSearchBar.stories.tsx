@@ -9,6 +9,7 @@ const meta: Meta<typeof GoogleMapsSearchBar> = {
   },
   tags: ["autodocs"],
   argTypes: {
+    onSearch: { action: "search" },
     onSearchStart: { action: "search-started" },
     onSearchEnd: { action: "search-ended" },
     placeholder: {
@@ -23,6 +24,7 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   args: {
     placeholder: "Search places (e.g., Downtown, Richmond)",
+    onSearch: () => {},
     onSearchStart: () => {},
     onSearchEnd: () => {},
   },
@@ -31,6 +33,7 @@ export const Default: Story = {
 export const CustomPlaceholder: Story = {
   args: {
     placeholder: "Enter your destination...",
+    onSearch: () => {},
     onSearchStart: () => {},
     onSearchEnd: () => {},
   },
@@ -39,6 +42,7 @@ export const CustomPlaceholder: Story = {
 export const BusStopSearch: Story = {
   args: {
     placeholder: "Search bus stops (e.g., Granville Station)",
+    onSearch: () => {},
     onSearchStart: () => {},
     onSearchEnd: () => {},
   },

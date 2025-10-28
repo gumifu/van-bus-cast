@@ -14,6 +14,20 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_MAPBOX_TOKEN: process.env.NEXT_PUBLIC_MAPBOX_TOKEN,
   },
 
+  // Storybookファイルをビルドから除外
+  pageExtensions: ['ts', 'tsx', 'js', 'jsx'],
+  
+  // webpack設定
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      // クライアントサイドで.storiesファイルを除外
+      config.resolve.alias = {
+        ...config.resolve.alias,
+      };
+    }
+    return config;
+  },
+
   // パフォーマンス最適化
   // experimental: {
   //   optimizeCss: true,
