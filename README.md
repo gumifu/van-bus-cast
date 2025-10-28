@@ -1,3 +1,17 @@
+# Vancouver Bus Cast
+
+Vancouver TransLinkのバス停と遅延予測を表示するNext.jsアプリケーションです。
+
+🌐 **Live URL**: [https://vanbuscast.vercel.app](https://vanbuscast.vercel.app)
+
+## 特徴
+
+- 🗺️ Mapboxを使用したインタラクティブな地図表示
+- 🚌 TransLinkのバス停データ表示
+- 📍 バス停の検索機能
+- 🔍 地域別の遅延予測表示
+- 📌 お気に入りバス停のピン留め機能
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
