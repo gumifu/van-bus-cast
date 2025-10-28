@@ -16,7 +16,7 @@ const nextConfig: NextConfig = {
 
   // Storybookファイルをビルドから除外
   pageExtensions: ['ts', 'tsx', 'js', 'jsx'],
-  
+
   // webpack設定
   webpack: (config, { isServer }) => {
     if (!isServer) {

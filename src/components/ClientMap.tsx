@@ -10,8 +10,6 @@ import GoogleMapsControls from "./GoogleMapsControls";
 import GoogleMapsLayersPanel from "./GoogleMapsLayersPanel";
 import PinnedStopsPanel from "./PinnedStopsPanel";
 
-mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN as string;
-
 const VANCOUVER: [number, number] = [-123.1207, 49.2827];
 
 export default function ClientMap() {
@@ -1066,6 +1064,12 @@ export default function ClientMap() {
 
   useEffect(() => {
     if (!ref.current || mapRef.current) return;
+
+    // Mapboxのアクセストークンを設定
+    const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "pk.eyJ1IjoiZ3VtaWZ1IiwiYSI6ImNtZzF3dmV4NzAxamIya3BvZHdlZnZnZDAifQ.J4DJAlB51QlM6aK7ihx70w";
+    if (token) {
+      mapboxgl.accessToken = token;
+    }
 
     // 遅延予測データを初期化
     generateDelayPredictions();
