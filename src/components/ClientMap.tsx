@@ -78,7 +78,41 @@ export default function ClientMap() {
   ]);
 
   // API URL
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api-production-9399.up.railway.app";
+
+  // 地域名を整形するヘルパー関数
+  const formatRegionName = (regionId: string): string => {
+    const nameMap: { [key: string]: string } = {
+      vancouver: "Vancouver",
+      north_vancouver: "North Vancouver",
+      west_vancouver: "West Vancouver",
+      burnaby: "Burnaby",
+      richmond: "Richmond",
+      surrey: "Surrey",
+      coquitlam: "Coquitlam",
+      delta: "Delta",
+      langley: "Langley",
+      new_westminster: "New Westminster",
+      port_coquitlam: "Port Coquitlam",
+      port_moody: "Port Moody",
+      maple_ridge: "Maple Ridge",
+      pitt_meadows: "Pitt Meadows",
+      white_rock: "White Rock",
+      lions_bay: "Lions Bay",
+      anmore: "Anmore",
+      belcarra: "Belcarra",
+      electoral_area_a: "Electoral Area A",
+      tsawwassen_first_nation: "Tsawwassen First Nation",
+    };
+
+    return (
+      nameMap[regionId] ||
+      regionId
+        .split("_")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ")
+    );
+  };
 
   // 地域別遅延予測をAPIから取得
   const generateDelayPredictions = async () => {
@@ -107,7 +141,7 @@ export default function ClientMap() {
         if (region.center_lat && region.center_lon) {
           regionList.push({
             id: region.region_id,
-            name: region.region_name || region.region_id,
+            name: formatRegionName(region.region_id),
             center: [region.center_lon, region.center_lat] as [number, number],
             zoom: 12, // デフォルトズーム
           });
@@ -1066,7 +1100,9 @@ export default function ClientMap() {
     if (!ref.current || mapRef.current) return;
 
     // Mapboxのアクセストークンを設定
-    const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "pk.eyJ1IjoiZ3VtaWZ1IiwiYSI6ImNtZzF3dmV4NzAxamIya3BvZHdlZnZnZDAifQ.J4DJAlB51QlM6aK7ihx70w";
+    const token =
+      process.env.NEXT_PUBLIC_MAPBOX_TOKEN ||
+      "pk.eyJ1IjoiZ3VtaWZ1IiwiYSI6ImNtZzF3dmV4NzAxamIya3BvZHdlZnZnZDAifQ.J4DJAlB51QlM6aK7ihx70w";
     if (token) {
       mapboxgl.accessToken = token;
     }
