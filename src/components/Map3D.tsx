@@ -142,22 +142,87 @@ export default function Map3D({
     "https://vanbuscast-api-prod.up.railway.app";
 
   const generateDelayPredictions = async () => {
-    console.log(
-      "Map3D: Using mock data for delay predictions (CORS issues with API)"
-    );
+    try {
+      // Next.jsのAPIルート経由でアクセス（CORS問題を回避）
+      const apiEndpoint = "/api/regional-status";
+      console.log("Map3D: Fetching delay predictions from API:", apiEndpoint);
 
-    // CORSエラーのため、モックデータのみを使用
-    const regionDelayData = {
-      vancouver: Math.floor(Math.random() * 3),
-      burnaby: Math.floor(Math.random() * 5),
-      richmond: Math.floor(Math.random() * 4),
-      surrey: Math.floor(Math.random() * 6),
-      coquitlam: Math.floor(Math.random() * 4),
-      delta: Math.floor(Math.random() * 3),
-      langley: Math.floor(Math.random() * 5),
-      new_westminster: Math.floor(Math.random() * 4),
-    };
-    setRegionDelays(regionDelayData);
+      // APIから地域別遅延情報を取得
+      const response = await fetch(apiEndpoint, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => "");
+        throw new Error(
+          `API request failed: ${response.status} ${response.statusText}${
+            errorText ? ` - ${errorText}` : ""
+          }`
+        );
+      }
+
+      const data = await response.json();
+      console.log("Map3D: API response:", data);
+
+      // APIレスポンスから地域別遅延データを抽出
+      const regionDelayData: { [key: string]: number } = {};
+      const regionList: Array<{
+        id: string;
+        name: string;
+        center: [number, number];
+        zoom: number;
+      }> = [];
+
+      if (data.regions && Array.isArray(data.regions)) {
+        data.regions.forEach((region: any) => {
+          const regionId = region.region_id;
+          // region_idを変換（例: "vancouver_city" → "vancouver"）
+          const simplifiedId = regionId.split("_")[0];
+          regionDelayData[simplifiedId] = region.avg_delay_minutes || 0;
+
+          // 地域リストに追加
+          if (region.center_lat && region.center_lon) {
+            regionList.push({
+              id: simplifiedId,
+              name: region.region_name || formatRegionName(simplifiedId),
+              center: [region.center_lon, region.center_lat],
+              zoom: 12,
+            });
+          }
+        });
+      }
+
+      setRegionDelays(regionDelayData);
+
+      // 地域リストを設定（APIから取得したデータがあればそれを使用、なければデフォルト）
+      if (regionList.length > 0) {
+        setRegions(regionList);
+      }
+    } catch (error) {
+      console.error("Map3D: Error fetching delay predictions from API:", error);
+      if (error instanceof Error) {
+        console.error("Map3D: Error message:", error.message);
+        console.error("Map3D: Error stack:", error.stack);
+      }
+      console.error("Map3D: API URL attempted:", "/api/regional-status");
+      console.log("Map3D: Falling back to mock data");
+
+      // エラー時はモックデータを使用
+      const regionDelayData = {
+        vancouver: Math.floor(Math.random() * 3),
+        burnaby: Math.floor(Math.random() * 5),
+        richmond: Math.floor(Math.random() * 4),
+        surrey: Math.floor(Math.random() * 6),
+        coquitlam: Math.floor(Math.random() * 4),
+        delta: Math.floor(Math.random() * 3),
+        langley: Math.floor(Math.random() * 5),
+        new_westminster: Math.floor(Math.random() * 4),
+      };
+      setRegionDelays(regionDelayData);
+    }
 
     // 路線別遅延予測（デモデータ）
     const routeDelayData: { [key: string]: number } = {};

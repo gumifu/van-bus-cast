@@ -164,22 +164,193 @@ export default function ClientMap({
     );
   };
 
-  // 地域別遅延予測をAPIから取得（現在はモックデータを使用）
+  // 地域別遅延予測をAPIから取得
   const generateDelayPredictions = async () => {
-    console.log("Using mock data for delay predictions (CORS issues with API)");
+    try {
+      // Next.jsのAPIルート経由でアクセス（CORS問題を回避）
+      const apiEndpoint = "/api/regional-status";
+      console.log("Fetching delay predictions from API:", apiEndpoint);
 
-    // CORSエラーのため、モックデータのみを使用
-    const regionDelayData = {
-      vancouver: Math.floor(Math.random() * 3),
-      burnaby: Math.floor(Math.random() * 5),
-      richmond: Math.floor(Math.random() * 4),
-      surrey: Math.floor(Math.random() * 6),
-      coquitlam: Math.floor(Math.random() * 4),
-      delta: Math.floor(Math.random() * 3),
-      langley: Math.floor(Math.random() * 5),
-      new_westminster: Math.floor(Math.random() * 4),
-    };
-    setRegionDelays(regionDelayData);
+      // APIから地域別遅延情報を取得
+      const response = await fetch(apiEndpoint, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => "");
+        throw new Error(
+          `API request failed: ${response.status} ${response.statusText}${
+            errorText ? ` - ${errorText}` : ""
+          }`
+        );
+      }
+
+      const data = await response.json();
+      console.log("API response:", data);
+
+      // APIレスポンスから地域別遅延データを抽出
+      const regionDelayData: { [key: string]: number } = {};
+      const regionList: Array<{
+        id: string;
+        name: string;
+        center: [number, number];
+        zoom: number;
+      }> = [];
+
+      if (data.regions && Array.isArray(data.regions)) {
+        data.regions.forEach((region: any) => {
+          const regionId = region.region_id;
+          // region_idを変換（例: "vancouver_city" → "vancouver"）
+          const simplifiedId = regionId.split("_")[0];
+          regionDelayData[simplifiedId] = region.avg_delay_minutes || 0;
+
+          // 地域リストに追加
+          if (region.center_lat && region.center_lon) {
+            regionList.push({
+              id: simplifiedId,
+              name: region.region_name || formatRegionName(simplifiedId),
+              center: [region.center_lon, region.center_lat],
+              zoom: 12,
+            });
+          }
+        });
+      }
+
+      setRegionDelays(regionDelayData);
+
+      // 地域リストを設定（APIから取得したデータがあればそれを使用、なければデフォルト）
+      if (regionList.length > 0) {
+        setRegions(regionList);
+      } else {
+        // フォールバック: デフォルトの地域リスト
+        setRegions([
+          {
+            id: "vancouver",
+            name: "Vancouver",
+            center: [-123.1207, 49.2827],
+            zoom: 11,
+          },
+          {
+            id: "richmond",
+            name: "Richmond",
+            center: [-123.1338, 49.1666],
+            zoom: 12,
+          },
+          {
+            id: "burnaby",
+            name: "Burnaby",
+            center: [-122.9749, 49.2488],
+            zoom: 12,
+          },
+          {
+            id: "surrey",
+            name: "Surrey",
+            center: [-122.849, 49.1913],
+            zoom: 12,
+          },
+          {
+            id: "coquitlam",
+            name: "Coquitlam",
+            center: [-122.8289, 49.2838],
+            zoom: 12,
+          },
+          {
+            id: "delta",
+            name: "Delta",
+            center: [-123.0857, 49.0847],
+            zoom: 12,
+          },
+          {
+            id: "langley",
+            name: "Langley",
+            center: [-122.6585, 49.1041],
+            zoom: 12,
+          },
+          {
+            id: "new_westminster",
+            name: "New Westminster",
+            center: [-122.9119, 49.2057],
+            zoom: 12,
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error("Error fetching delay predictions from API:", error);
+      if (error instanceof Error) {
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
+      }
+      console.error("API URL attempted:", "/api/regional-status");
+      console.log("Falling back to mock data");
+
+      // エラー時はモックデータを使用
+      const regionDelayData = {
+        vancouver: Math.floor(Math.random() * 3),
+        burnaby: Math.floor(Math.random() * 5),
+        richmond: Math.floor(Math.random() * 4),
+        surrey: Math.floor(Math.random() * 6),
+        coquitlam: Math.floor(Math.random() * 4),
+        delta: Math.floor(Math.random() * 3),
+        langley: Math.floor(Math.random() * 5),
+        new_westminster: Math.floor(Math.random() * 4),
+      };
+      setRegionDelays(regionDelayData);
+
+      // デフォルトの地域リストを設定
+      setRegions([
+        {
+          id: "vancouver",
+          name: "Vancouver",
+          center: [-123.1207, 49.2827],
+          zoom: 11,
+        },
+        {
+          id: "richmond",
+          name: "Richmond",
+          center: [-123.1338, 49.1666],
+          zoom: 12,
+        },
+        {
+          id: "burnaby",
+          name: "Burnaby",
+          center: [-122.9749, 49.2488],
+          zoom: 12,
+        },
+        {
+          id: "surrey",
+          name: "Surrey",
+          center: [-122.849, 49.1913],
+          zoom: 12,
+        },
+        {
+          id: "coquitlam",
+          name: "Coquitlam",
+          center: [-122.8289, 49.2838],
+          zoom: 12,
+        },
+        {
+          id: "delta",
+          name: "Delta",
+          center: [-123.0857, 49.0847],
+          zoom: 12,
+        },
+        {
+          id: "langley",
+          name: "Langley",
+          center: [-122.6585, 49.1041],
+          zoom: 12,
+        },
+        {
+          id: "new_westminster",
+          name: "New Westminster",
+          center: [-122.9119, 49.2057],
+          zoom: 12,
+        },
+      ]);
+    }
 
     // 路線別遅延予測（デモデータ）
     const routeDelayData: { [key: string]: number } = {};
