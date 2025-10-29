@@ -847,8 +847,9 @@ export default function ClientMap() {
 
   // ユーザーの位置をMapboxレイヤーとして追加
   const addUserLocationMarker = (location: [number, number]) => {
-    if (!mapRef.current) {
-      console.error("Map not available");
+    if (!mapRef.current || !mapRef.current.isStyleLoaded()) {
+      console.log("ClientMap: Map not ready, retrying in 1 second...");
+      setTimeout(() => addUserLocationMarker(location), 1000);
       return;
     }
 
@@ -1136,11 +1137,11 @@ export default function ClientMap() {
       // バス停レイヤーを追加
       addBusStopsLayer(map);
 
+      // ユーザーの位置情報を取得（マップ読み込み後）
+      getUserLocation();
+
       console.log("ClientMap: All layers added");
     });
-
-    // ユーザーの位置情報を取得
-    getUserLocation();
 
     // ピンデータを読み込み
     loadPinnedStops();
