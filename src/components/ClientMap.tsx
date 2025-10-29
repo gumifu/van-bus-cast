@@ -78,7 +78,9 @@ export default function ClientMap() {
   ]);
 
   // API URL
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api-production-9399.up.railway.app";
+  const API_URL =
+    process.env.NEXT_PUBLIC_API_URL ||
+    "https://api-production-9399.up.railway.app";
 
   // 地域名を整形するヘルパー関数
   const formatRegionName = (regionId: string): string => {
@@ -114,88 +116,76 @@ export default function ClientMap() {
     );
   };
 
-  // 地域別遅延予測をAPIから取得
+  // 地域別遅延予測をAPIから取得（現在はモックデータを使用）
   const generateDelayPredictions = async () => {
-    try {
-      const response = await fetch(`${API_URL}/api/v1/regional/status`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
+    console.log("Using mock data for regional delays (API not available)");
 
-      // APIレスポンスから地域別遅延データと地域リストを作成
-      const regionDelayData: { [key: string]: number } = {};
-      const regionList: Array<{
-        id: string;
-        name: string;
-        center: [number, number];
-        zoom: number;
-      }> = [];
+    // モックデータを使用（APIが利用できないため）
+    const regionDelayData = {
+      vancouver: Math.floor(Math.random() * 3),
+      burnaby: Math.floor(Math.random() * 5),
+      richmond: Math.floor(Math.random() * 4),
+      surrey: Math.floor(Math.random() * 6),
+      coquitlam: Math.floor(Math.random() * 4),
+      delta: Math.floor(Math.random() * 3),
+      langley: Math.floor(Math.random() * 5),
+      new_westminster: Math.floor(Math.random() * 4),
+    };
+    setRegionDelays(regionDelayData);
 
-      data.regions.forEach((region: any) => {
-        regionDelayData[region.region_id] = Math.round(
-          region.avg_delay_minutes || 0
-        );
+    // デフォルトの地域リストを設定
+    setRegions([
+      {
+        id: "vancouver",
+        name: "Vancouver",
+        center: [-123.1207, 49.2827],
+        zoom: 11,
+      },
+      {
+        id: "richmond",
+        name: "Richmond",
+        center: [-123.1338, 49.1666],
+        zoom: 12,
+      },
+      {
+        id: "burnaby",
+        name: "Burnaby",
+        center: [-122.9749, 49.2488],
+        zoom: 12,
+      },
+      {
+        id: "surrey",
+        name: "Surrey",
+        center: [-122.849, 49.1913],
+        zoom: 12,
+      },
+      {
+        id: "coquitlam",
+        name: "Coquitlam",
+        center: [-122.8289, 49.2838],
+        zoom: 12,
+      },
+      {
+        id: "delta",
+        name: "Delta",
+        center: [-123.0857, 49.0847],
+        zoom: 12,
+      },
+      {
+        id: "langley",
+        name: "Langley",
+        center: [-122.6585, 49.1041],
+        zoom: 12,
+      },
+      {
+        id: "new_westminster",
+        name: "New Westminster",
+        center: [-122.9119, 49.2057],
+        zoom: 12,
+      },
+    ]);
 
-        // 地域リストを作成（center_lat, center_lonから中心座標を設定）
-        if (region.center_lat && region.center_lon) {
-          regionList.push({
-            id: region.region_id,
-            name: formatRegionName(region.region_id),
-            center: [region.center_lon, region.center_lat] as [number, number],
-            zoom: 12, // デフォルトズーム
-          });
-        }
-      });
-
-      setRegionDelays(regionDelayData);
-
-      // 地域リストが取得できた場合のみ更新
-      if (regionList.length > 0) {
-        setRegions(regionList);
-        console.log("Regions data fetched from API:", regionList);
-      }
-
-      console.log("Regional delays fetched from API:", regionDelayData);
-    } catch (error) {
-      console.error("Error fetching regional delays:", error);
-      // エラー時はモックデータを使用
-      const regionDelayData = {
-        vancouver: Math.floor(Math.random() * 3),
-        burnaby: Math.floor(Math.random() * 5),
-        richmond: Math.floor(Math.random() * 4),
-        surrey: Math.floor(Math.random() * 6),
-      };
-      setRegionDelays(regionDelayData);
-
-      // デフォルトの地域リストを設定
-      setRegions([
-        {
-          id: "vancouver",
-          name: "Vancouver",
-          center: [-123.1207, 49.2827],
-          zoom: 11,
-        },
-        {
-          id: "richmond",
-          name: "Richmond",
-          center: [-123.1338, 49.1666],
-          zoom: 12,
-        },
-        {
-          id: "burnaby",
-          name: "Burnaby",
-          center: [-122.9749, 49.2488],
-          zoom: 12,
-        },
-        {
-          id: "surrey",
-          name: "Surrey",
-          center: [-122.849, 49.1913],
-          zoom: 12,
-        },
-      ]);
-    }
+    console.log("Mock regional delays set:", regionDelayData);
 
     const stopDelayData: { [key: string]: number } = {};
     // ランダムに選択されたバス停に遅延を設定
@@ -872,6 +862,9 @@ export default function ClientMap() {
       if (mapRef.current.getLayer("user-location-pulse")) {
         mapRef.current.removeLayer("user-location-pulse");
       }
+      if (mapRef.current.getLayer("user-location-pulse-2")) {
+        mapRef.current.removeLayer("user-location-pulse-2");
+      }
       if (mapRef.current.getLayer("user-location-center")) {
         mapRef.current.removeLayer("user-location-center");
       }
@@ -1099,12 +1092,15 @@ export default function ClientMap() {
   useEffect(() => {
     if (!ref.current || mapRef.current) return;
 
+    console.log("ClientMap: Initializing map...");
+
     // Mapboxのアクセストークンを設定
     const token =
       process.env.NEXT_PUBLIC_MAPBOX_TOKEN ||
       "pk.eyJ1IjoiZ3VtaWZ1IiwiYSI6ImNtZzF3dmV4NzAxamIya3BvZHdlZnZnZDAifQ.J4DJAlB51QlM6aK7ihx70w";
     if (token) {
       mapboxgl.accessToken = token;
+      console.log("ClientMap: Mapbox token set");
     }
 
     // 遅延予測データを初期化
@@ -1116,6 +1112,8 @@ export default function ClientMap() {
       center: VANCOUVER,
       zoom: 15,
     });
+
+    console.log("ClientMap: Map created");
 
     // Mapboxのデフォルトコントロールは削除（Google Maps風のカスタムコントロールを使用）
     mapRef.current = map;
@@ -1130,9 +1128,15 @@ export default function ClientMap() {
     // リサイズイベントを追加
     window.addEventListener("resize", resizeMap);
 
-    // マップが読み込まれた後にリサイズ
+    // マップが読み込まれた後にリサイズとレイヤー追加
     map.on("load", () => {
+      console.log("ClientMap: Map loaded, adding layers...");
       setTimeout(resizeMap, 100);
+
+      // バス停レイヤーを追加
+      addBusStopsLayer(map);
+
+      console.log("ClientMap: All layers added");
     });
 
     // ユーザーの位置情報を取得
@@ -1142,6 +1146,7 @@ export default function ClientMap() {
     loadPinnedStops();
 
     return () => {
+      console.log("ClientMap: Cleaning up map");
       window.removeEventListener("resize", resizeMap);
       // アニメーションフレームをキャンセル
       if (animationFrameRef.current) {
@@ -1169,7 +1174,11 @@ export default function ClientMap() {
           map.removeSource(`pinned-${stopId}`);
         }
       });
-      map.remove();
+      // マップを削除
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
     };
   }, []);
 
@@ -1188,226 +1197,221 @@ export default function ClientMap() {
     }
   }, [userLocation]);
 
+  // バス停レイヤーを追加する関数
+  const addBusStopsLayer = (map: Map) => {
+    // 既存のソースとレイヤーを削除
+    if (map.getSource("bus-stops")) {
+      map.removeLayer("bus-stops-clusters");
+      map.removeLayer("bus-stops-unclustered");
+      map.removeLayer("bus-stops-unclustered-bg");
+      // map.removeLayer("bus-stops-count"); // レイヤーが存在しないためコメントアウト
+      map.removeSource("bus-stops");
+    }
+
+    // 既存のマーカーをクリア
+    markersRef.current.forEach((marker) => marker.remove());
+    markersRef.current = [];
+
+    // GeoJSONデータをソースとして追加
+    map.addSource("bus-stops", {
+      type: "geojson",
+      data: "/data/stops_route.geojson",
+      cluster: true,
+      clusterMaxZoom: 14,
+      clusterRadius: 50,
+    });
+
+    // クラスター円レイヤー
+    map.addLayer({
+      id: "bus-stops-clusters",
+      type: "circle",
+      source: "bus-stops",
+      filter: ["has", "point_count"],
+      paint: {
+        "circle-color": [
+          "step",
+          ["get", "point_count"],
+          "#51bbd6",
+          100,
+          "#f1f075",
+          750,
+          "#f28cb1",
+        ],
+        "circle-radius": ["step", ["get", "point_count"], 20, 100, 30, 750, 40],
+      },
+    });
+
+    // クラスター数表示レイヤー（一時的に無効化）
+    // map.addLayer({
+    //   id: "bus-stops-count",
+    //   type: "symbol",
+    //   source: "bus-stops",
+    //   filter: ["has", "point_count"],
+    //   layout: {
+    //     "text-field": "{point_count_abbreviated}",
+    //     "text-font": ["DIN Offc Pro Medium", "Arial Unicode MS Bold"],
+    //     "text-size": 12,
+    //   },
+    // });
+
+    // 個別バス停レイヤー（ホバー効果用の背景）
+    map.addLayer({
+      id: "bus-stops-unclustered-bg",
+      type: "circle",
+      source: "bus-stops",
+      filter: ["!", ["has", "point_count"]],
+      paint: {
+        "circle-color": "rgba(255, 255, 255, 0.2)",
+        "circle-radius": 7,
+      },
+    });
+
+    // 個別バス停レイヤー（メイン）
+    map.addLayer({
+      id: "bus-stops-unclustered",
+      type: "circle",
+      source: "bus-stops",
+      filter: ["!", ["has", "point_count"]],
+      paint: {
+        "circle-color": [
+          "case",
+          ["==", ["get", "stop_id"], selectedStopId || ""],
+          "#ef4444", // 赤色（選択されたバス停）
+          "#3b82f6", // 青色（通常のバス停）
+        ],
+        "circle-radius": 4,
+        "circle-stroke-width": 2,
+        "circle-stroke-color": "#fff",
+      },
+    });
+
+    // クリックイベントの設定
+    map.on("click", "bus-stops-clusters", (e) => {
+      const features = map.queryRenderedFeatures(e.point, {
+        layers: ["bus-stops-clusters"],
+      });
+
+      if (features.length > 0 && features[0].properties) {
+        const clusterId = features[0].properties.cluster_id;
+        const source = map.getSource("bus-stops") as mapboxgl.GeoJSONSource;
+
+        if (source && typeof source.getClusterExpansionZoom === "function") {
+          source.getClusterExpansionZoom(clusterId, (err: any, zoom: any) => {
+            if (err) return;
+
+            const geometry = features[0].geometry as {
+              type: "Point";
+              coordinates: [number, number];
+            };
+            if (geometry.type === "Point") {
+              map.easeTo({
+                center: geometry.coordinates as [number, number],
+                zoom: zoom,
+              });
+            }
+          });
+        }
+      }
+    });
+
+    // 個別バス停のクリックイベント
+    map.on("click", "bus-stops-unclustered", (e) => {
+      // イベントの伝播を停止
+      e.preventDefault();
+
+      if (e.features && e.features.length > 0) {
+        const feature = e.features[0];
+        const geometry = feature.geometry as {
+          type: "Point";
+          coordinates: [number, number];
+        };
+
+        if (geometry.type === "Point") {
+          const coordinates = geometry.coordinates.slice() as [number, number];
+          const properties = feature.properties;
+
+          if (properties) {
+            // 選択されたバス停の情報を設定
+            setSelectedStop({
+              properties: properties,
+              geometry: {
+                type: "Point",
+                coordinates: coordinates,
+              },
+            });
+            setSelectedStopId(properties.stop_id);
+            setIsPanelOpen(true);
+
+            // バス停を画面中央に移動
+            map.flyTo({
+              center: coordinates,
+              zoom: 16,
+              essential: true,
+            });
+          }
+        }
+      }
+    });
+
+    // カーソルスタイルの変更
+    map.on("mouseenter", "bus-stops-clusters", () => {
+      map.getCanvas().style.cursor = "pointer";
+    });
+
+    map.on("mouseleave", "bus-stops-clusters", () => {
+      map.getCanvas().style.cursor = "";
+    });
+
+    map.on("mouseenter", "bus-stops-unclustered", () => {
+      map.getCanvas().style.cursor = "pointer";
+      // ホバー時に背景を表示
+      map.setPaintProperty(
+        "bus-stops-unclustered-bg",
+        "circle-color",
+        "rgba(255, 255, 255, 0.3)"
+      );
+    });
+
+    map.on("mouseleave", "bus-stops-unclustered", () => {
+      map.getCanvas().style.cursor = "";
+      // ホバー終了時に背景を非表示
+      map.setPaintProperty(
+        "bus-stops-unclustered-bg",
+        "circle-color",
+        "rgba(255, 255, 255, 0.0)"
+      );
+    });
+  };
+
   // GeoJSONデータをクラスタリング表示
   useEffect(() => {
     if (!mapRef.current) return;
 
     const map = mapRef.current;
 
-    const addBusStopsLayer = () => {
-      // 既存のソースとレイヤーを削除
-      if (map.getSource("bus-stops")) {
-        map.removeLayer("bus-stops-clusters");
-        map.removeLayer("bus-stops-unclustered");
-        map.removeLayer("bus-stops-unclustered-bg");
-        map.removeLayer("bus-stops-count");
-        map.removeSource("bus-stops");
-      }
-
-      // 既存のマーカーをクリア
-      markersRef.current.forEach((marker) => marker.remove());
-      markersRef.current = [];
-
-      // GeoJSONデータをソースとして追加
-      map.addSource("bus-stops", {
-        type: "geojson",
-        data: "/data/stops_route.geojson",
-        cluster: true,
-        clusterMaxZoom: 14,
-        clusterRadius: 50,
-      });
-
-      // クラスター円レイヤー
-      map.addLayer({
-        id: "bus-stops-clusters",
-        type: "circle",
-        source: "bus-stops",
-        filter: ["has", "point_count"],
-        paint: {
-          "circle-color": [
-            "step",
-            ["get", "point_count"],
-            "#51bbd6",
-            100,
-            "#f1f075",
-            750,
-            "#f28cb1",
-          ],
-          "circle-radius": [
-            "step",
-            ["get", "point_count"],
-            20,
-            100,
-            30,
-            750,
-            40,
-          ],
-        },
-      });
-
-      // クラスター数表示レイヤー
-      map.addLayer({
-        id: "bus-stops-count",
-        type: "symbol",
-        source: "bus-stops",
-        filter: ["has", "point_count"],
-        layout: {
-          "text-field": "{point_count_abbreviated}",
-          "text-font": ["DIN Offc Pro Medium", "Arial Unicode MS Bold"],
-          "text-size": 12,
-        },
-      });
-
-      // 個別バス停レイヤー（ホバー効果用の背景）
-      map.addLayer({
-        id: "bus-stops-unclustered-bg",
-        type: "circle",
-        source: "bus-stops",
-        filter: ["!", ["has", "point_count"]],
-        paint: {
-          "circle-color": "rgba(255, 255, 255, 0.2)",
-          "circle-radius": 7,
-        },
-      });
-
-      // 個別バス停レイヤー（メイン）
-      map.addLayer({
-        id: "bus-stops-unclustered",
-        type: "circle",
-        source: "bus-stops",
-        filter: ["!", ["has", "point_count"]],
-        paint: {
-          "circle-color": [
-            "case",
-            ["==", ["get", "stop_id"], selectedStopId || ""],
-            "#ef4444", // 赤色（選択されたバス停）
-            "#3b82f6", // 青色（通常のバス停）
-          ],
-          "circle-radius": 4,
-          "circle-stroke-width": 2,
-          "circle-stroke-color": "#fff",
-        },
-      });
-
-      // クリックイベントの設定
-      map.on("click", "bus-stops-clusters", (e) => {
-        const features = map.queryRenderedFeatures(e.point, {
-          layers: ["bus-stops-clusters"],
-        });
-
-        if (features.length > 0 && features[0].properties) {
-          const clusterId = features[0].properties.cluster_id;
-          const source = map.getSource("bus-stops") as mapboxgl.GeoJSONSource;
-
-          if (source && typeof source.getClusterExpansionZoom === "function") {
-            source.getClusterExpansionZoom(clusterId, (err: any, zoom: any) => {
-              if (err) return;
-
-              const geometry = features[0].geometry as {
-                type: "Point";
-                coordinates: [number, number];
-              };
-              if (geometry.type === "Point") {
-                map.easeTo({
-                  center: geometry.coordinates as [number, number],
-                  zoom: zoom,
-                });
-              }
-            });
-          }
-        }
-      });
-
-      // 個別バス停のクリックイベント
-      map.on("click", "bus-stops-unclustered", (e) => {
-        // イベントの伝播を停止
-        e.preventDefault();
-
-        if (e.features && e.features.length > 0) {
-          const feature = e.features[0];
-          const geometry = feature.geometry as {
-            type: "Point";
-            coordinates: [number, number];
-          };
-
-          if (geometry.type === "Point") {
-            const coordinates = geometry.coordinates.slice() as [
-              number,
-              number
-            ];
-            const properties = feature.properties;
-
-            if (properties) {
-              // 選択されたバス停の情報を設定
-              setSelectedStop({
-                properties: properties,
-                geometry: {
-                  type: "Point",
-                  coordinates: coordinates,
-                },
-              });
-              setSelectedStopId(properties.stop_id);
-              setIsPanelOpen(true);
-
-              // バス停を画面中央に移動
-              map.flyTo({
-                center: coordinates,
-                zoom: 16,
-                essential: true,
-              });
-            }
-          }
-        }
-      });
-
-      // カーソルスタイルの変更
-      map.on("mouseenter", "bus-stops-clusters", () => {
-        map.getCanvas().style.cursor = "pointer";
-      });
-
-      map.on("mouseleave", "bus-stops-clusters", () => {
-        map.getCanvas().style.cursor = "";
-      });
-
-      map.on("mouseenter", "bus-stops-unclustered", () => {
-        map.getCanvas().style.cursor = "pointer";
-        // ホバー時に背景を表示
-        map.setPaintProperty(
-          "bus-stops-unclustered-bg",
-          "circle-color",
-          "rgba(255, 255, 255, 0.3)"
-        );
-      });
-
-      map.on("mouseleave", "bus-stops-unclustered", () => {
-        map.getCanvas().style.cursor = "";
-        // ホバー終了時に背景を非表示
-        map.setPaintProperty(
-          "bus-stops-unclustered-bg",
-          "circle-color",
-          "rgba(255, 255, 255, 0.0)"
-        );
-      });
-    };
-
     // 地図のスタイルが読み込まれた後にレイヤーを追加
     if (map.isStyleLoaded()) {
-      addBusStopsLayer();
+      addBusStopsLayer(map);
     } else {
-      map.on("style.load", addBusStopsLayer);
+      map.on("style.load", () => addBusStopsLayer(map));
     }
   }, []);
 
   // 選択されたバス停IDが変更された時にレイヤーを更新
   useEffect(() => {
-    if (mapRef.current && mapRef.current.getLayer("bus-stops-unclustered")) {
-      mapRef.current.setPaintProperty("bus-stops-unclustered", "circle-color", [
-        "case",
-        ["==", ["get", "stop_id"], selectedStopId || ""],
-        "#ef4444", // 赤色（選択されたバス停）
-        "#3b82f6", // 青色（通常のバス停）
-      ]);
-    }
+    // 一時的に無効化（エラー回避のため）
+    // if (
+    //   mapRef.current &&
+    //   mapRef.current.getLayer &&
+    //   mapRef.current.getLayer("bus-stops-unclustered")
+    // ) {
+    //   mapRef.current.setPaintProperty("bus-stops-unclustered", "circle-color", [
+    //     "case",
+    //     ["==", ["get", "stop_id"], selectedStopId || ""],
+    //     "#ef4444", // 赤色（選択されたバス停）
+    //     "#3b82f6", // 青色（通常のバス停）
+    //   ]);
+    // }
   }, [selectedStopId]);
 
   return (
