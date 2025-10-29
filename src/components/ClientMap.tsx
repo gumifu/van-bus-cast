@@ -205,7 +205,11 @@ export default function ClientMap({
           const regionId = region.region_id;
           // region_idを変換（例: "vancouver_city" → "vancouver"）
           const simplifiedId = regionId.split("_")[0];
-          regionDelayData[simplifiedId] = region.avg_delay_minutes || 0;
+          // 小数点を丸める（負の値も保持：マイナスは「早く来ている」を意味する）
+          const delayMinutes = region.avg_delay_minutes
+            ? Math.round(region.avg_delay_minutes)
+            : 0;
+          regionDelayData[simplifiedId] = delayMinutes;
 
           // 地域リストに追加
           if (region.center_lat && region.center_lon) {
@@ -439,18 +443,24 @@ export default function ClientMap({
 
   // 遅延レベルに基づく天気アイコン取得
   const getDelaySymbol = (level: number) => {
-    if (level === 0) return "☀️"; // On Time
-    if (level <= 2) return "🌤️"; // 軽微な遅延
-    if (level <= 5) return "☁️"; // 中程度の遅延
+    const delay = Math.round(level);
+    if (delay === 0) return "☀️"; // On Time
+    if (delay < 0) return "⭐"; // 早く来ている（良い状態）
+    if (delay <= 2) return "🌤️"; // 軽微な遅延
+    if (delay <= 5) return "☁️"; // 中程度の遅延
     return "⛈️"; // 重大な遅延
   };
 
   // 遅延レベル名を取得
   const getDelayLevelName = (level: number) => {
-    if (level === 0) return "On Time";
-    if (level <= 2) return `${level} min delay`;
-    if (level <= 5) return `${level} min delay`;
-    return `${level}+ min delay`;
+    const delay = Math.round(level);
+    if (delay === 0) return "On Time";
+    // 負の値（早く来ている）
+    if (delay < 0) return `${Math.abs(delay)} min early`;
+    // 正の値（遅れている）
+    if (delay <= 2) return `${delay} min delay`;
+    if (delay <= 5) return `${delay} min delay`;
+    return `${delay}+ min delay`;
   };
 
   // 検索状態を管理
@@ -1156,6 +1166,115 @@ export default function ClientMap({
       }
     }
   }, [userLocation]);
+
+  // 選択されたバス停の遅延予測をAPIから取得
+  useEffect(() => {
+    const fetchStopPredictions = async () => {
+      if (!selectedStopId) return;
+
+      try {
+        console.log("Fetching stop predictions for stop:", selectedStopId);
+        const response = await fetch(
+          `/api/stops/${selectedStopId}/predictions`
+        );
+
+        if (!response.ok) {
+          console.error("Failed to fetch stop predictions:", response.status);
+          return;
+        }
+
+        const data = await response.json();
+        console.log("Stop predictions data:", data);
+
+        // バス停の平均遅延を計算（arrivalsから）
+        if (
+          data.arrivals &&
+          Array.isArray(data.arrivals) &&
+          data.arrivals.length > 0
+        ) {
+          const delays = data.arrivals
+            .map((arrival: any) => arrival.predicted_delay_seconds)
+            .filter((delay: any) => delay !== null && delay !== undefined);
+
+          if (delays.length > 0) {
+            const avgDelaySeconds =
+              delays.reduce((sum: number, delay: number) => sum + delay, 0) /
+              delays.length;
+            const avgDelayMinutes = Math.max(
+              0,
+              Math.round(avgDelaySeconds / 60)
+            ); // 秒を分に変換、負の値は0として扱う
+
+            setStopDelays((prev) => ({
+              ...prev,
+              [selectedStopId]: avgDelayMinutes,
+            }));
+          }
+        }
+
+        // ルート別遅延データを更新
+        if (data.arrivals && Array.isArray(data.arrivals)) {
+          const routeDelayData: { [key: string]: number } = {};
+
+          // trip_headsignから路線番号を抽出するヘルパー関数
+          const extractRouteNumber = (
+            tripHeadsign: string | null | undefined
+          ): string | null => {
+            if (!tripHeadsign) return null;
+            // "44 UBC"のような形式から"44"を抽出
+            const match = tripHeadsign.match(/^(\d+)/);
+            return match ? match[1] : null;
+          };
+
+          data.arrivals.forEach((arrival: any) => {
+            if (
+              arrival.predicted_delay_seconds !== null &&
+              arrival.predicted_delay_seconds !== undefined
+            ) {
+              // trip_headsignから実際の路線番号を取得
+              const routeNumber = extractRouteNumber(arrival.trip_headsign);
+              if (!routeNumber) {
+                // trip_headsignから抽出できない場合はroute_idを使用（フォールバック）
+                console.warn(
+                  "Could not extract route number from trip_headsign:",
+                  arrival.trip_headsign
+                );
+                return;
+              }
+
+              const delayMinutes = Math.max(
+                0,
+                Math.round(arrival.predicted_delay_seconds / 60)
+              ); // 秒を分に変換、負の値は0として扱う
+
+              // 同じルートの複数の予測がある場合は平均を取る
+              if (routeDelayData[routeNumber]) {
+                routeDelayData[routeNumber] = Math.round(
+                  (routeDelayData[routeNumber] + delayMinutes) / 2
+                );
+              } else {
+                routeDelayData[routeNumber] = delayMinutes;
+              }
+            }
+          });
+
+          console.log("ClientMap: Route delay data:", routeDelayData);
+          console.log("ClientMap: Selected stop ID:", selectedStopId);
+
+          // 選択されたバス停のルート情報のみを設定（以前のバス停のルート情報はクリア）
+          setRouteDelays(routeDelayData);
+          console.log(
+            "ClientMap: Updated route delays (replaced):",
+            routeDelayData
+          );
+        }
+      } catch (error) {
+        console.error("Error fetching stop predictions:", error);
+      }
+    };
+
+    fetchStopPredictions();
+  }, [selectedStopId]);
 
   // バス停レイヤーを追加する関数
   const addBusStopsLayer = (map: Map) => {

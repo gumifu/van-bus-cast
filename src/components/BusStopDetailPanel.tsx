@@ -34,9 +34,23 @@ export default function BusStopDetailPanel({
   const getStopRoutes = () => {
     if (!selectedStop?.properties?.stop_id) return [];
 
-    // デモ用の路線データ（実際の実装では、selectedStopから路線情報を取得）
-    const demoRoutes = ["023", "025", "041", "099", "410", "416"];
-    return demoRoutes;
+    // routeDelaysから実際のAPIから取得したルートIDを取得
+    // 選択されたバス停に対応するルートのみをフィルタリング
+    const stopRoutes = Object.keys(routeDelays).filter((routeId) => {
+      // routeDelaysに含まれる全てのルートを表示
+      // 将来的にはselectedStopから路線情報を取得することも可能
+      return routeDelays[routeId] !== undefined;
+    });
+
+    // ルートIDでソート（数値として扱える場合は数値順、そうでない場合は文字列順）
+    return stopRoutes.sort((a, b) => {
+      const numA = parseInt(a);
+      const numB = parseInt(b);
+      if (!isNaN(numA) && !isNaN(numB)) {
+        return numA - numB;
+      }
+      return a.localeCompare(b);
+    });
   };
 
   if (!selectedStop) return null;
