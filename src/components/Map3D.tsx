@@ -9,25 +9,64 @@ import GoogleMapsSearchBar from "./GoogleMapsSearchBar";
 import GoogleMapsControls from "./GoogleMapsControls";
 import GoogleMapsLayersPanel from "./GoogleMapsLayersPanel";
 import PinnedStopsPanel from "./PinnedStopsPanel";
+import MapMarkers from "./MapMarkers";
 
 const VANCOUVER: [number, number] = [-123.1207, 49.2827];
 
 interface Map3DProps {
+  ref?: React.RefObject<any>;
+  selectedStop?: any;
+  setSelectedStop?: (stop: any) => void;
+  isPanelOpen?: boolean;
+  setIsPanelOpen?: (open: boolean) => void;
+  selectedStopId?: string | null;
+  setSelectedStopId?: (id: string | null) => void;
+  initialCenter?: [number, number];
+  initialZoom?: number;
+  userLocation?: [number, number] | null;
+  setUserLocation?: (location: [number, number] | null) => void;
+  pinnedStops?: Set<string>;
+  setPinnedStops?: (stops: Set<string>) => void;
+  pinnedStopsData?: { [key: string]: any };
+  setPinnedStopsData?: (data: { [key: string]: any }) => void;
   onMapReady?: (map: Map) => void;
 }
 
-export default function Map3D({ onMapReady }: Map3DProps) {
+export default function Map3D({
+  ref: externalRef,
+  selectedStop: externalSelectedStop,
+  setSelectedStop: externalSetSelectedStop,
+  isPanelOpen: externalIsPanelOpen,
+  setIsPanelOpen: externalSetIsPanelOpen,
+  selectedStopId: externalSelectedStopId,
+  setSelectedStopId: externalSetSelectedStopId,
+  initialCenter,
+  initialZoom,
+  userLocation: externalUserLocation,
+  setUserLocation: externalSetUserLocation,
+  pinnedStops: externalPinnedStops,
+  setPinnedStops: externalSetPinnedStops,
+  pinnedStopsData: externalPinnedStopsData,
+  setPinnedStopsData: externalSetPinnedStopsData,
+  onMapReady,
+}: Map3DProps) {
   const ref = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const animationFrameRef = useRef<number | null>(null);
+
+  // 外部refを設定
+  if (externalRef) {
+    externalRef.current = mapRef.current;
+  }
+
   const [is3DEnabled, setIs3DEnabled] = useState(false);
   const [pitch, setPitch] = useState(0);
   const [bearing, setBearing] = useState(0);
 
-  // 2Dと同じ状態変数を追加
+  // 2Dと同じ状態変数を追加（外部propsがあればそれを使用）
   const [userLocation, setUserLocation] = useState<[number, number] | null>(
-    null
+    externalUserLocation || null
   );
   const [selectedStop, setSelectedStop] = useState<{
     properties: any;
@@ -35,15 +74,17 @@ export default function Map3D({ onMapReady }: Map3DProps) {
       type: "Point";
       coordinates: [number, number];
     };
-  } | null>(null);
-  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  } | null>(externalSelectedStop || null);
+  const [isPanelOpen, setIsPanelOpen] = useState(externalIsPanelOpen || false);
   const [selectedRegion, setSelectedRegion] = useState<string>("vancouver");
   const [regionDelays, setRegionDelays] = useState<{ [key: string]: number }>(
     {}
   );
   const [stopDelays, setStopDelays] = useState<{ [key: string]: number }>({});
   const [routeDelays, setRouteDelays] = useState<{ [key: string]: number }>({});
-  const [selectedStopId, setSelectedStopId] = useState<string | null>(null);
+  const [selectedStopId, setSelectedStopId] = useState<string | null>(
+    externalSelectedStopId || null
+  );
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showLayers, setShowLayers] = useState(false);
   const [layers, setLayers] = useState([
@@ -53,10 +94,12 @@ export default function Map3D({ onMapReady }: Map3DProps) {
   ]);
   const [isSearching, setIsSearching] = useState(false);
   const [regions, setRegions] = useState<any[]>([]);
-  const [pinnedStops, setPinnedStops] = useState<Set<string>>(new Set());
+  const [pinnedStops, setPinnedStops] = useState<Set<string>>(
+    externalPinnedStops || new Set()
+  );
   const [pinnedStopsData, setPinnedStopsData] = useState<{
     [key: string]: any;
-  }>({});
+  }>(externalPinnedStopsData || {});
 
   // 地域名を整形するヘルパー関数
   const formatRegionName = (regionId: string): string => {
@@ -192,28 +235,24 @@ export default function Map3D({ onMapReady }: Map3DProps) {
             position.coords.latitude,
           ];
           setUserLocation(location);
+          if (externalSetUserLocation) {
+            externalSetUserLocation(location);
+          }
           console.log("Map3D: User location:", location);
 
-          // 現在地マーカーを追加（スタイル読み込みを待たない）
-          setTimeout(() => {
-            addUserLocationMarker(location);
-          }, 1000);
+          // 現在地マーカーはMapMarkersコンポーネントで管理
         },
         (error) => {
           console.error("Map3D: Error getting location:", error);
           // デフォルトでバンクーバー中心部を使用
           setUserLocation(VANCOUVER);
-          setTimeout(() => {
-            addUserLocationMarker(VANCOUVER);
-          }, 1000);
+          // 現在地マーカーはMapMarkersコンポーネントで管理
         }
       );
     } else {
       console.log("Map3D: Geolocation not supported");
       setUserLocation(VANCOUVER);
-      setTimeout(() => {
-        addUserLocationMarker(VANCOUVER);
-      }, 1000);
+      // 現在地マーカーはMapMarkersコンポーネントで管理
     }
   };
 
@@ -301,8 +340,8 @@ export default function Map3D({ onMapReady }: Map3DProps) {
     const map = new mapboxgl.Map({
       container: ref.current,
       style: "mapbox://styles/mapbox/dark-v11", // 黒いダークスタイル
-      center: VANCOUVER,
-      zoom: 15,
+      center: initialCenter || VANCOUVER,
+      zoom: initialZoom || 15,
       pitch: 0,
       bearing: 0,
       antialias: true, // アンチエイリアスを有効化
@@ -461,7 +500,15 @@ export default function Map3D({ onMapReady }: Map3DProps) {
         source: "bus-stops",
         filter: ["has", "point_count"],
         paint: {
-          "circle-color": "#3b82f6", // 青色
+          "circle-color": [
+            "step",
+            ["get", "point_count"],
+            "#51bbd6",
+            100,
+            "#f1f075",
+            750,
+            "#f28cb1",
+          ],
           "circle-radius": [
             "step",
             ["get", "point_count"],
@@ -490,7 +537,7 @@ export default function Map3D({ onMapReady }: Map3DProps) {
             "#ef4444", // 赤色（選択されたバス停）
             "#3b82f6", // 青色（通常のバス停）
           ],
-          "circle-radius": 8,
+          "circle-radius": 4,
           "circle-stroke-width": 2,
           "circle-stroke-color": "#fff", // 白
           "circle-opacity": 1.0,
@@ -558,8 +605,17 @@ export default function Map3D({ onMapReady }: Map3DProps) {
 
             console.log("Map3D: Setting selected stop:", selectedStopData);
             setSelectedStop(selectedStopData);
+            if (externalSetSelectedStop) {
+              externalSetSelectedStop(selectedStopData);
+            }
             setSelectedStopId(properties.stop_id);
+            if (externalSetSelectedStopId) {
+              externalSetSelectedStopId(properties.stop_id);
+            }
             setIsPanelOpen(true);
+            if (externalSetIsPanelOpen) {
+              externalSetIsPanelOpen(true);
+            }
 
             console.log("Map3D: Panel should be open now");
 
@@ -602,208 +658,6 @@ export default function Map3D({ onMapReady }: Map3DProps) {
   };
 
   // ピンアイコンをマップに追加
-  const addPinIcon = () => {
-    if (!mapRef.current) {
-      console.error("Map not available for pin icon");
-      return;
-    }
-
-    // 既にピンアイコンが追加されている場合はスキップ
-    if (mapRef.current.hasImage("pin-icon")) {
-      return;
-    }
-
-    const canvas = document.createElement("canvas");
-    const size = 40;
-    canvas.width = size;
-    canvas.height = size;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    // ピンの外側の円（青）
-    ctx.beginPath();
-    ctx.arc(size / 2, size / 2, size / 2 - 2, 0, 2 * Math.PI);
-    ctx.fillStyle = "#3b82f6";
-    ctx.fill();
-
-    // ピンの内側の円（白）
-    ctx.beginPath();
-    ctx.arc(size / 2, size / 2, size / 2 - 8, 0, 2 * Math.PI);
-    ctx.fillStyle = "#ffffff";
-    ctx.fill();
-
-    // ピンの中心点（青）
-    ctx.beginPath();
-    ctx.arc(size / 2, size / 2, 4, 0, 2 * Math.PI);
-    ctx.fillStyle = "#3b82f6";
-    ctx.fill();
-
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    mapRef.current.addImage("pin-icon", imageData);
-    console.log("Pin icon added successfully");
-  };
-
-  // ユーザーの位置をMapboxレイヤーとして追加
-  const addUserLocationMarker = (location: [number, number]) => {
-    if (!mapRef.current || !mapRef.current.isStyleLoaded()) {
-      console.log("Map not ready, retrying in 1 second...");
-      setTimeout(() => addUserLocationMarker(location), 1000);
-      return;
-    }
-
-    console.log("Adding user location marker at:", location);
-
-    // ピンアイコンを追加
-    addPinIcon();
-
-    // 既存のユーザー位置ソースとレイヤーを削除
-    if (mapRef.current.getSource("user-location")) {
-      if (mapRef.current.getLayer("user-location-pulse")) {
-        mapRef.current.removeLayer("user-location-pulse");
-      }
-      if (mapRef.current.getLayer("user-location-pulse-2")) {
-        mapRef.current.removeLayer("user-location-pulse-2");
-      }
-      if (mapRef.current.getLayer("user-location-center")) {
-        mapRef.current.removeLayer("user-location-center");
-      }
-      mapRef.current.removeSource("user-location");
-    }
-
-    // ユーザー位置のGeoJSONデータを作成
-    const userLocationGeoJSON: GeoJSON.FeatureCollection = {
-      type: "FeatureCollection",
-      features: [
-        {
-          type: "Feature",
-          geometry: {
-            type: "Point",
-            coordinates: location,
-          },
-          properties: {
-            id: "user-location",
-          },
-        },
-      ],
-    };
-
-    // ユーザー位置のソースを追加
-    mapRef.current.addSource("user-location", {
-      type: "geojson",
-      data: userLocationGeoJSON,
-    });
-
-    // アニメーション用のCSSを追加
-    if (!document.getElementById("user-location-styles")) {
-      const style = document.createElement("style");
-      style.id = "user-location-styles";
-      style.textContent = `
-        @keyframes ping-ring {
-          0% {
-            transform: scale(0.8);
-            opacity: 1;
-          }
-          100% {
-            transform: scale(2.5);
-            opacity: 0;
-          }
-        }
-
-        @keyframes pulse {
-          0% {
-            transform: scale(1);
-            opacity: 1;
-          }
-          50% {
-            transform: scale(1.2);
-            opacity: 0.8;
-          }
-          100% {
-            transform: scale(1);
-            opacity: 1;
-          }
-        }
-
-        @keyframes animate-ping {
-          0% {
-            transform: scale(1);
-            opacity: 1;
-          }
-          75%, 100% {
-            transform: scale(2);
-            opacity: 0;
-          }
-        }
-
-        .animate-ping {
-          animation: animate-ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
-        }
-
-        .selected-bus-stop {
-          animation: pulse 2s ease-in-out infinite;
-        }
-      `;
-      document.head.appendChild(style);
-    }
-
-    // パルス効果のレイヤー1
-    mapRef.current.addLayer({
-      id: "user-location-pulse",
-      type: "circle",
-      source: "user-location",
-      paint: {
-        "circle-radius": {
-          stops: [
-            [0, 0],
-            [20, 20],
-          ],
-          base: 1,
-        },
-        "circle-color": "#3b82f6",
-        "circle-opacity": 0.3,
-        "circle-stroke-width": 2,
-        "circle-stroke-color": "#ffffff",
-        "circle-stroke-opacity": 0.8,
-      },
-    });
-
-    // パルス効果のレイヤー2
-    mapRef.current.addLayer({
-      id: "user-location-pulse-2",
-      type: "circle",
-      source: "user-location",
-      paint: {
-        "circle-radius": {
-          stops: [
-            [0, 0],
-            [20, 15],
-          ],
-          base: 1,
-        },
-        "circle-color": "#3b82f6",
-        "circle-opacity": 0.6,
-        "circle-stroke-width": 1,
-        "circle-stroke-color": "#ffffff",
-        "circle-stroke-opacity": 0.9,
-      },
-    });
-
-    // 中心のマーカー
-    mapRef.current.addLayer({
-      id: "user-location-center",
-      type: "symbol",
-      source: "user-location",
-      layout: {
-        "icon-image": "pin-icon",
-        "icon-size": 1,
-        "icon-allow-overlap": true,
-        "icon-ignore-placement": true,
-      },
-    });
-
-    console.log("User location marker added successfully");
-  };
 
   // 3D表示の切り替え
   const toggle3D = () => {
@@ -1022,6 +876,13 @@ export default function Map3D({ onMapReady }: Map3DProps) {
           }}
         />
       )}
+
+      {/* Map Markers */}
+      <MapMarkers
+        map={mapRef.current}
+        userLocation={userLocation}
+        animationFrameRef={animationFrameRef}
+      />
     </div>
   );
 }
