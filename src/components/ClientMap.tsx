@@ -128,7 +128,7 @@ export default function ClientMap({
   // API URL
   const API_URL =
     process.env.NEXT_PUBLIC_API_URL ||
-    "https://api-production-9399.up.railway.app";
+    "https://vanbuscast-api-prod.up.railway.app";
 
   // 地域名を整形するヘルパー関数
   const formatRegionName = (regionId: string): string => {
