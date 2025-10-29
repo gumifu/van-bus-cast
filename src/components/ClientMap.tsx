@@ -166,9 +166,9 @@ export default function ClientMap({
 
   // 地域別遅延予測をAPIから取得（現在はモックデータを使用）
   const generateDelayPredictions = async () => {
-    console.log("Using mock data for regional delays (API not available)");
+    console.log("Using mock data for delay predictions (CORS issues with API)");
 
-    // モックデータを使用（APIが利用できないため）
+    // CORSエラーのため、モックデータのみを使用
     const regionDelayData = {
       vancouver: Math.floor(Math.random() * 3),
       burnaby: Math.floor(Math.random() * 5),
@@ -180,6 +180,38 @@ export default function ClientMap({
       new_westminster: Math.floor(Math.random() * 4),
     };
     setRegionDelays(regionDelayData);
+
+    // 路線別遅延予測（デモデータ）
+    const routeDelayData: { [key: string]: number } = {};
+    const routes = [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "10",
+      "14",
+      "16",
+      "20",
+      "25",
+      "023",
+      "025",
+      "041",
+      "099",
+      "410",
+      "416",
+    ];
+    routes.forEach((route) => {
+      routeDelayData[route] = Math.floor(Math.random() * 5); // 0-4分
+    });
+    setRouteDelays(routeDelayData);
+
+    const stopDelayData: { [key: string]: number } = {};
+    for (let i = 0; i < 20; i++) {
+      const stopId = Math.floor(Math.random() * 10000).toString();
+      stopDelayData[stopId] = Math.floor(Math.random() * 8); // 0-7分
+    }
+    setStopDelays(stopDelayData);
 
     // デフォルトの地域リストを設定
     setRegions([
@@ -232,24 +264,6 @@ export default function ClientMap({
         zoom: 12,
       },
     ]);
-
-    console.log("Mock regional delays set:", regionDelayData);
-
-    const stopDelayData: { [key: string]: number } = {};
-    // ランダムに選択されたバス停に遅延を設定
-    for (let i = 0; i < 20; i++) {
-      const stopId = Math.floor(Math.random() * 10000).toString();
-      stopDelayData[stopId] = Math.floor(Math.random() * 8); // 0-7分
-    }
-    setStopDelays(stopDelayData);
-
-    // 路線別遅延予測（デモデータ）
-    const routeDelayData: { [key: string]: number } = {};
-    const routes = ["023", "025", "041", "099", "410", "416"];
-    routes.forEach((route) => {
-      routeDelayData[route] = Math.floor(Math.random() * 5); // 0-4分
-    });
-    setRouteDelays(routeDelayData);
   };
 
   // 遅延レベルに基づく天気アイコン取得
@@ -391,7 +405,7 @@ export default function ClientMap({
           const stopData = {
             properties: properties,
             geometry: {
-              type: "Point",
+              type: "Point" as const,
               coordinates: coordinates,
             },
           };
@@ -701,9 +715,7 @@ export default function ClientMap({
 
     console.log("Adding pinned marker for stop:", stopId, stopData);
 
-    // ピンアイコンを追加
-    addPinIcon();
-
+    // ピン留めマーカーを追加
     const coordinates = stopData.geometry.coordinates;
 
     // ピン留めマーカーのGeoJSONデータを作成
@@ -832,6 +844,17 @@ export default function ClientMap({
           }
           console.log("User location:", lat, lng);
 
+          // マップが読み込まれている場合は、現在地を中心に移動（3D表示に適したズームレベル）
+          if (mapRef.current) {
+            mapRef.current.flyTo({
+              center: location,
+              zoom: 16, // 3D表示に適したズームレベル
+              duration: 1500,
+              essential: true,
+            });
+            console.log("ClientMap: Map moved to user location with zoom 16");
+          }
+
           // 現在地マーカーはMapMarkersコンポーネントで管理
         },
         (error) => {
@@ -867,11 +890,16 @@ export default function ClientMap({
     // 遅延予測データを初期化
     generateDelayPredictions();
 
+    if (!ref.current) {
+      console.error("ClientMap: Map container not available");
+      return;
+    }
+
     const map = new mapboxgl.Map({
-      container: ref.current,
+      container: ref.current!,
       style: "mapbox://styles/mapbox/dark-v11",
       center: initialCenter || VANCOUVER,
-      zoom: initialZoom || 15,
+      zoom: initialZoom || 16, // 3D表示に適した初期ズームレベル
     });
 
     console.log("ClientMap: Map created");
@@ -946,12 +974,12 @@ export default function ClientMap({
   // ユーザーの位置情報が取得できたら、地図の中心を移動（初回のみ）
   useEffect(() => {
     if (userLocation && mapRef.current) {
-      // 現在のズームレベルがデフォルト（15）の場合のみ移動
+      // 現在のズームレベルがデフォルト（16）の場合のみ移動
       const currentZoom = mapRef.current.getZoom();
-      if (Math.abs(currentZoom - 15) < 0.1) {
+      if (Math.abs(currentZoom - 16) < 0.1) {
         mapRef.current.flyTo({
           center: userLocation,
-          zoom: 15,
+          zoom: 16, // 3D表示に適したズームレベル
           essential: true,
         });
       }

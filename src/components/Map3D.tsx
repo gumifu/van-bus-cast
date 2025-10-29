@@ -88,9 +88,9 @@ export default function Map3D({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showLayers, setShowLayers] = useState(false);
   const [layers, setLayers] = useState([
-    { id: "traffic", name: "Traffic", enabled: true },
-    { id: "transit", name: "Transit", enabled: true },
-    { id: "bicycle", name: "Bicycle", enabled: false },
+    { id: "traffic", name: "Traffic", enabled: true, icon: "🚦" },
+    { id: "transit", name: "Transit", enabled: true, icon: "🚌" },
+    { id: "bicycle", name: "Bicycle", enabled: false, icon: "🚴" },
   ]);
   const [isSearching, setIsSearching] = useState(false);
   const [regions, setRegions] = useState<any[]>([]);
@@ -136,12 +136,17 @@ export default function Map3D({
   };
 
   // 遅延予測データを生成
+  // API URL
+  const API_URL =
+    process.env.NEXT_PUBLIC_API_URL ||
+    "https://vanbuscast-api-prod.up.railway.app";
+
   const generateDelayPredictions = async () => {
     console.log(
-      "Map3D: Using mock data for regional delays (API not available)"
+      "Map3D: Using mock data for delay predictions (CORS issues with API)"
     );
 
-    // モックデータを使用（APIが利用できないため）
+    // CORSエラーのため、モックデータのみを使用
     const regionDelayData = {
       vancouver: Math.floor(Math.random() * 3),
       burnaby: Math.floor(Math.random() * 5),
@@ -153,6 +158,21 @@ export default function Map3D({
       new_westminster: Math.floor(Math.random() * 4),
     };
     setRegionDelays(regionDelayData);
+
+    // 路線別遅延予測（デモデータ）
+    const routeDelayData: { [key: string]: number } = {};
+    const routes = ["1", "2", "3", "4", "5", "10", "14", "16", "20", "25"];
+    routes.forEach((route) => {
+      routeDelayData[route] = Math.floor(Math.random() * 5); // 0-4分
+    });
+    setRouteDelays(routeDelayData);
+
+    const stopDelayData: { [key: string]: number } = {};
+    for (let i = 0; i < 20; i++) {
+      const stopId = Math.floor(Math.random() * 10000).toString();
+      stopDelayData[stopId] = Math.floor(Math.random() * 8); // 0-7分
+    }
+    setStopDelays(stopDelayData);
 
     // デフォルトの地域リストを設定
     setRegions([
@@ -205,24 +225,6 @@ export default function Map3D({
         zoom: 12,
       },
     ]);
-
-    console.log("Map3D: Mock regional delays set:", regionDelayData);
-
-    const stopDelayData: { [key: string]: number } = {};
-    // ランダムに選択されたバス停に遅延を設定
-    for (let i = 0; i < 20; i++) {
-      const stopId = Math.floor(Math.random() * 10000).toString();
-      stopDelayData[stopId] = Math.floor(Math.random() * 5);
-    }
-    setStopDelays(stopDelayData);
-
-    const routeDelayData: { [key: string]: number } = {};
-    // ランダムに選択されたルートに遅延を設定
-    const routes = ["1", "2", "3", "4", "5", "10", "14", "16", "20", "25"];
-    routes.forEach((route) => {
-      routeDelayData[route] = Math.floor(Math.random() * 4);
-    });
-    setRouteDelays(routeDelayData);
   };
 
   // ユーザーの位置情報を取得
@@ -239,6 +241,20 @@ export default function Map3D({
             externalSetUserLocation(location);
           }
           console.log("Map3D: User location:", location);
+
+          // マップが読み込まれている場合は、現在地を中心に移動（3D表示に適したズームレベル）
+          if (mapRef.current) {
+            mapRef.current.flyTo({
+              center: location,
+              zoom: 16, // 3D表示に適したズームレベル
+              pitch: 45, // 3D効果を高めるピッチ
+              bearing: 0,
+              duration: 1500,
+              essential: true,
+            });
+            setIs3DEnabled(true); // 3Dモードを自動的に有効化
+            console.log("Map3D: Map moved to user location with 3D zoom");
+          }
 
           // 現在地マーカーはMapMarkersコンポーネントで管理
         },
@@ -317,7 +333,7 @@ export default function Map3D({
     if (delay === 0) return "On Time";
     if (delay <= 2) return `${delay} min delay`;
     if (delay <= 5) return `${delay} min delay`;
-    return `${delay} min delay`;
+    return `${delay}+ min delay`;
   };
 
   useEffect(() => {
@@ -337,12 +353,17 @@ export default function Map3D({
     // 遅延予測データを初期化
     generateDelayPredictions();
 
+    if (!ref.current) {
+      console.error("Map3D: Map container not available");
+      return;
+    }
+
     const map = new mapboxgl.Map({
-      container: ref.current,
+      container: ref.current!,
       style: "mapbox://styles/mapbox/dark-v11", // 黒いダークスタイル
       center: initialCenter || VANCOUVER,
-      zoom: initialZoom || 15,
-      pitch: 0,
+      zoom: initialZoom || 16, // 3D表示に適した初期ズームレベル
+      pitch: 45, // 初期ピッチを3D効果のある角度に
       bearing: 0,
       antialias: true, // アンチエイリアスを有効化
     });
@@ -353,6 +374,10 @@ export default function Map3D({
     // マップが読み込まれた後の処理
     map.on("load", () => {
       console.log("Map3D: Map loaded, adding layers...");
+
+      // 初期3Dモードを有効化
+      setIs3DEnabled(true);
+
       // 3D建物レイヤーを追加
       add3DBuildings(map);
 
@@ -748,6 +773,14 @@ export default function Map3D({
               setIsPanelOpen(true);
             }
           }}
+          onRemovePin={(stopId) => {
+            const newPinnedStops = new Set(pinnedStops);
+            newPinnedStops.delete(stopId);
+            const newPinnedData = { ...pinnedStopsData };
+            delete newPinnedData[stopId];
+            setPinnedStops(newPinnedStops);
+            setPinnedStopsData(newPinnedData);
+          }}
           isVisible={true}
           onToggleVisibility={() => {}}
         />
@@ -770,7 +803,7 @@ export default function Map3D({
         </button>
 
         <button
-          onClick={resetView}
+          onClick={() => resetView()}
           className="px-4 py-2 bg-gray-900 text-gray-300 rounded-lg shadow-lg border border-gray-700 hover:bg-gray-800 transition-colors"
         >
           リセット
@@ -799,9 +832,28 @@ export default function Map3D({
         <GoogleMapsControls
           onZoomIn={() => mapRef.current?.zoomIn()}
           onZoomOut={() => mapRef.current?.zoomOut()}
-          onReset={() => resetView()}
-          onToggleLayers={() => setShowLayers(!showLayers)}
-          onToggleFullscreen={() => setIsFullscreen(!isFullscreen)}
+          onFullscreen={() => setIsFullscreen(!isFullscreen)}
+          onMyLocation={() => {
+            if (navigator.geolocation) {
+              navigator.geolocation.getCurrentPosition(
+                (position) => {
+                  const { latitude, longitude } = position.coords;
+                  setUserLocation([longitude, latitude]);
+                  if (mapRef.current) {
+                    mapRef.current.flyTo({
+                      center: [longitude, latitude],
+                      zoom: 15,
+                    });
+                  }
+                },
+                (error) => {
+                  console.error("Error getting location:", error);
+                }
+              );
+            }
+          }}
+          onLayerToggle={() => setShowLayers(!showLayers)}
+          onStreetView={() => {}}
           isFullscreen={isFullscreen}
           showLayers={showLayers}
         />
@@ -822,17 +874,11 @@ export default function Map3D({
               );
             }}
             onClose={() => setShowLayers(false)}
+            isVisible={showLayers}
           />
         </div>
       )}
 
-      {/* バス停詳細パネル */}
-      {console.log(
-        "Map3D: Panel render check - isPanelOpen:",
-        isPanelOpen,
-        "selectedStop:",
-        selectedStop
-      )}
       {/* バス停詳細パネル */}
       {isPanelOpen && selectedStop && (
         <BusStopDetailPanel
