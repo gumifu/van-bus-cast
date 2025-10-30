@@ -206,8 +206,8 @@ export default function ClientMap({
           // region_idを変換（例: "vancouver_city" → "vancouver"）
           const simplifiedId = regionId.split("_")[0];
           // 小数点を丸める（負の値も保持：マイナスは「早く来ている」を意味する）
-          const delayMinutes = region.avg_delay_minutes
-            ? Math.round(region.avg_delay_minutes)
+          const delayMinutes = region.avg_delay_seconds
+            ? Math.round(region.avg_delay_seconds)
             : 0;
           regionDelayData[simplifiedId] = delayMinutes;
 
@@ -388,57 +388,6 @@ export default function ClientMap({
     }
     setStopDelays(stopDelayData);
 
-    // デフォルトの地域リストを設定
-    setRegions([
-      {
-        id: "vancouver",
-        name: "Vancouver",
-        center: [-123.1207, 49.2827],
-        zoom: 11,
-      },
-      {
-        id: "richmond",
-        name: "Richmond",
-        center: [-123.1338, 49.1666],
-        zoom: 12,
-      },
-      {
-        id: "burnaby",
-        name: "Burnaby",
-        center: [-122.9749, 49.2488],
-        zoom: 12,
-      },
-      {
-        id: "surrey",
-        name: "Surrey",
-        center: [-122.849, 49.1913],
-        zoom: 12,
-      },
-      {
-        id: "coquitlam",
-        name: "Coquitlam",
-        center: [-122.8289, 49.2838],
-        zoom: 12,
-      },
-      {
-        id: "delta",
-        name: "Delta",
-        center: [-123.0857, 49.0847],
-        zoom: 12,
-      },
-      {
-        id: "langley",
-        name: "Langley",
-        center: [-122.6585, 49.1041],
-        zoom: 12,
-      },
-      {
-        id: "new_westminster",
-        name: "New Westminster",
-        center: [-122.9119, 49.2057],
-        zoom: 12,
-      },
-    ]);
   };
 
   // 遅延レベルに基づく天気アイコン取得
