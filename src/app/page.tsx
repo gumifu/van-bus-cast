@@ -50,21 +50,22 @@ export default function Home() {
   return (
     <main className="h-screen w-full bg-black text-white md:h-dvh">
       <div className="h-full flex flex-col">
-        <div className="p-4 text-xl font-thin flex-shrink-0 md:block hidden bg-gray-900 text-white border-b border-gray-700 flex items-center justify-between">
+        <div className="p-4 text-xl font-thin flex-shrink-0 bg-gray-900 text-white border-b border-gray-700 flex items-center justify-between">
           <h1>VanBusCast</h1>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-400">
-              {is3DMode ? "3D表示" : "2D表示"}
-            </span>
+            <span className="text-sm text-gray-300">3D表示</span>
+            <span className="text-gray-500">|</span>
             <button
               onClick={handleMapToggle}
-              className={`px-3 py-1 rounded text-sm transition-colors ${
-                is3DMode
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                is3DMode ? "bg-blue-600" : "bg-gray-600"
               }`}
             >
-              {is3DMode ? "2Dに切り替え" : "3Dに切り替え"}
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  is3DMode ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
             </button>
           </div>
         </div>

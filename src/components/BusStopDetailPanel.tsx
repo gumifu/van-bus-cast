@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface BusStopDetailPanelProps {
   isOpen: boolean;
@@ -9,6 +9,8 @@ interface BusStopDetailPanelProps {
   regionDelays: { [key: string]: number };
   stopDelays: { [key: string]: number };
   routeDelays: { [key: string]: number };
+  routeIdMapping?: { [routeNumber: string]: string }; // 路線番号 -> route_id（GTFS内部ID）
+  selectedStopId?: string | null;
   getDelaySymbol: (level: number) => string;
   getDelayLevelName: (level: number) => string;
   pinnedStops: Set<string>;
@@ -22,6 +24,8 @@ export default function BusStopDetailPanel({
   regionDelays,
   stopDelays,
   routeDelays,
+  routeIdMapping = {},
+  selectedStopId,
   getDelaySymbol,
   getDelayLevelName,
   pinnedStops,
@@ -29,6 +33,50 @@ export default function BusStopDetailPanel({
 }: BusStopDetailPanelProps) {
   const [selectedRoute, setSelectedRoute] = useState<string | null>(null);
   const [showForecast, setShowForecast] = useState(false);
+  const [routeArrivals, setRouteArrivals] = useState<any[]>([]);
+  const [loadingArrivals, setLoadingArrivals] = useState(false);
+
+  // 選択されたルートの詳細な到着時刻を取得
+  useEffect(() => {
+    const fetchRouteArrivals = async () => {
+      if (!selectedRoute || !selectedStopId || !routeIdMapping[selectedRoute]) {
+        setRouteArrivals([]);
+        return;
+      }
+
+      setLoadingArrivals(true);
+      try {
+        const routeId = routeIdMapping[selectedRoute];
+        const response = await fetch(
+          `/api/stops/${selectedStopId}/routes/${routeId}/predictions`
+        );
+
+        if (!response.ok) {
+          console.error("Failed to fetch route arrivals:", response.status);
+          setRouteArrivals([]);
+          return;
+        }
+
+        const data = await response.json();
+        if (data.arrivals && Array.isArray(data.arrivals)) {
+          setRouteArrivals(data.arrivals);
+        } else {
+          setRouteArrivals([]);
+        }
+      } catch (error) {
+        console.error("Error fetching route arrivals:", error);
+        setRouteArrivals([]);
+      } finally {
+        setLoadingArrivals(false);
+      }
+    };
+
+    if (showForecast && selectedRoute) {
+      fetchRouteArrivals();
+    } else {
+      setRouteArrivals([]);
+    }
+  }, [selectedRoute, selectedStopId, routeIdMapping, showForecast]);
 
   // 選択したバス停に停まる路線を取得
   const getStopRoutes = () => {
@@ -59,7 +107,7 @@ export default function BusStopDetailPanel({
     <>
       {/* Desktop Version (from right) */}
       <div
-        className={`hidden md:block fixed top-0 right-0 h-full w-80 bg-gray-900 text-white shadow-2xl transform transition-transform duration-300 ease-out z-50 ${
+        className={`hidden md:block fixed top-16 right-0 h-[calc(100%-4rem)] w-80 bg-gray-900 text-white shadow-2xl transform transition-transform duration-300 ease-out z-50 ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
@@ -123,7 +171,7 @@ export default function BusStopDetailPanel({
           </div>
 
           {/* Delay Status */}
-          <div className="border-t border-gray-700 pt-4">
+          <div className="border-t border-white/20 pt-4">
             <h4 className="font-semibold text-white mb-2">Delay Status</h4>
             <div className="bg-gray-800 rounded-lg p-3">
               <div className="flex items-center justify-between mb-2">
@@ -208,7 +256,7 @@ export default function BusStopDetailPanel({
           )}
 
           {/* 位置情報 */}
-          <div className="border-t border-gray-700 pt-4">
+          <div className="border-t border-white/20 pt-4">
             <h4 className="font-semibold text-white mb-2">Location</h4>
             <div className="space-y-1 text-sm text-gray-400">
               <div className="flex justify-between">
@@ -294,7 +342,7 @@ export default function BusStopDetailPanel({
           </div>
 
           {/* Delay Status */}
-          <div className="border-t border-gray-700 pt-3">
+          <div className="border-t border-white/20 pt-3">
             <h4 className="font-semibold text-white mb-2 text-sm">
               Delay Status
             </h4>
@@ -381,7 +429,7 @@ export default function BusStopDetailPanel({
           )}
 
           {/* 位置情報 */}
-          <div className="border-t border-gray-700 pt-3">
+          <div className="border-t border-white/20 pt-3">
             <h4 className="font-semibold text-white mb-2 text-sm">Location</h4>
             <div className="space-y-1 text-xs text-gray-400">
               <div className="flex justify-between">
@@ -404,10 +452,10 @@ export default function BusStopDetailPanel({
       {/* 6-Hour Forecast Modal */}
       {showForecast && selectedRoute && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-900 rounded-lg p-6 w-96 max-w-full mx-4">
+          <div className="bg-gray-900 rounded-lg p-6 w-96 max-w-full mx-4 max-h-[80vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold text-white">
-                6-Hour Forecast - Route {selectedRoute}
+                Route {selectedRoute} - Arrival Times
               </h3>
               <button
                 onClick={() => {
@@ -419,40 +467,53 @@ export default function BusStopDetailPanel({
                 ×
               </button>
             </div>
-            <div className="space-y-3">
-              {Array.from({ length: 6 }, (_, i) => {
-                const hour = new Date();
-                hour.setHours(hour.getHours() + i);
-                const delay = Math.floor(Math.random() * 6);
-                return (
-                  <div
-                    key={i}
-                    className="flex items-center justify-between bg-gray-800 p-3 rounded"
-                  >
-                    <div>
-                      <div className="text-white font-medium">
-                        {hour.toLocaleTimeString("ja-JP", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+            {loadingArrivals ? (
+              <div className="text-center py-8 text-gray-400">Loading...</div>
+            ) : routeArrivals.length > 0 ? (
+              <div className="space-y-3">
+                {routeArrivals.map((arrival: any, index: number) => {
+                  const delayMinutes =
+                    arrival.predicted_delay_seconds !== null &&
+                    arrival.predicted_delay_seconds !== undefined
+                      ? Math.max(
+                          0,
+                          Math.round(arrival.predicted_delay_seconds / 60)
+                        )
+                      : 0;
+                  const arrivalTime =
+                    arrival.arrival_time || arrival.next_arrival_time || "";
+
+                  return (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between bg-gray-800 p-3 rounded"
+                    >
+                      <div>
+                        <div className="text-white font-medium">
+                          {arrivalTime}
+                        </div>
+                        <div className="text-gray-400 text-sm">
+                          {arrival.trip_headsign ||
+                            `Trip ${arrival.trip_id?.substring(0, 8) || "N/A"}`}
+                        </div>
                       </div>
-                      <div className="text-gray-400 text-sm">
-                        {hour.toLocaleDateString("ja-JP", {
-                          month: "short",
-                          day: "numeric",
-                        })}
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">
+                          {getDelaySymbol(delayMinutes)}
+                        </span>
+                        <span className="text-gray-300">
+                          {getDelayLevelName(delayMinutes)}
+                        </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl">{getDelaySymbol(delay)}</span>
-                      <span className="text-gray-300">
-                        {getDelayLevelName(delay)}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-400">
+                No arrival times available
+              </div>
+            )}
           </div>
         </div>
       )}

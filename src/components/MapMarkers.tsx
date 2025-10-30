@@ -14,15 +14,20 @@ export const MapMarkers = ({
 }: MapMarkersProps) => {
   const pinIconAddedRef = useRef(false);
 
-  // ピンアイコンをマップに追加
+  // SF Symbolsスタイルのピンアイコンをマップに追加
   const addPinIcon = () => {
     if (!map || pinIconAddedRef.current) {
       return;
     }
 
-    console.log("Creating pin icon...");
+    console.log("Creating SF Symbols style pin icon...");
 
-    // Canvasでピンアイコンを作成
+    // 既存のアイコンを削除
+    if (map.hasImage("pin-icon")) {
+      map.removeImage("pin-icon");
+    }
+
+    // CanvasでSF Symbolsスタイルのピンアイコンを作成
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
     if (!ctx) {
@@ -30,34 +35,52 @@ export const MapMarkers = ({
       return;
     }
 
-    canvas.width = 24;
-    canvas.height = 24;
+    const size = 32;
+    canvas.width = size;
+    canvas.height = size;
 
-    // ピンの形状を描画
-    ctx.fillStyle = "#ef4444"; // 赤色
+    // 背景を透明にする
+    ctx.clearRect(0, 0, size, size);
+
+    // SF Symbolsスタイルのピンアイコンを描画
+    // メインの円形部分
+    ctx.fillStyle = "#007AFF"; // SF Blue
     ctx.beginPath();
-    ctx.arc(12, 8, 6, 0, 2 * Math.PI); // 上部の円
+    ctx.arc(size / 2, size / 2 - 2, 10, 0, 2 * Math.PI);
     ctx.fill();
 
-    // ピンの下部（三角形）
+    // 内側の白い円
+    ctx.fillStyle = "#FFFFFF";
     ctx.beginPath();
-    ctx.moveTo(12, 14);
-    ctx.lineTo(8, 22);
-    ctx.lineTo(16, 22);
+    ctx.arc(size / 2, size / 2 - 2, 6, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // 中央のドット
+    ctx.fillStyle = "#007AFF";
+    ctx.beginPath();
+    ctx.arc(size / 2, size / 2 - 2, 2, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // 下部の三角形（ピンの先端）
+    ctx.fillStyle = "#007AFF";
+    ctx.beginPath();
+    ctx.moveTo(size / 2, size / 2 + 8);
+    ctx.lineTo(size / 2 - 6, size - 2);
+    ctx.lineTo(size / 2 + 6, size - 2);
     ctx.closePath();
     ctx.fill();
 
-    // 白い中心点
-    ctx.fillStyle = "#ffffff";
-    ctx.beginPath();
-    ctx.arc(12, 8, 2, 0, 2 * Math.PI);
-    ctx.fill();
+    // 影を追加（SF Symbolsスタイル）
+    ctx.shadowColor = "rgba(0, 0, 0, 0.2)";
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 2;
 
     // CanvasをImageDataに変換して追加
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     map.addImage("pin-icon", imageData);
     pinIconAddedRef.current = true;
-    console.log("Pin icon added successfully");
+    console.log("SF Symbols style pin icon added successfully");
   };
 
   // ユーザーの位置をMapboxレイヤーとして追加

@@ -79,6 +79,9 @@ export default function ClientMap({
   );
   const [stopDelays, setStopDelays] = useState<{ [key: string]: number }>({});
   const [routeDelays, setRouteDelays] = useState<{ [key: string]: number }>({});
+  const [routeIdMapping, setRouteIdMapping] = useState<{
+    [routeNumber: string]: string;
+  }>({}); // 路線番号 -> route_id（GTFS内部ID）
   const [selectedStopId, setSelectedStopId] = useState<string | null>(
     externalSelectedStopId || null
   );
@@ -1226,37 +1229,54 @@ export default function ClientMap({
             return match ? match[1] : null;
           };
 
+          // 路線番号 -> route_id（GTFS内部ID）のマッピングを作成
+          const routeIdMap: { [routeNumber: string]: string } = {};
+
+          // 全てのarrivalsを処理（遅延予測の有無に関わらず全てのルートを含む）
           data.arrivals.forEach((arrival: any) => {
+            // trip_headsignから実際の路線番号を取得
+            const routeNumber = extractRouteNumber(arrival.trip_headsign);
+            if (!routeNumber) {
+              console.warn(
+                "Could not extract route number from trip_headsign:",
+                arrival.trip_headsign
+              );
+              return;
+            }
+
+            // route_idとroute_numberのマッピングを保存（最初に見つかったものを使用）
+            if (arrival.route_id && !routeIdMap[routeNumber]) {
+              routeIdMap[routeNumber] = arrival.route_id;
+            }
+
+            // 遅延予測がある場合は計算、ない場合は0を設定
             if (
               arrival.predicted_delay_seconds !== null &&
               arrival.predicted_delay_seconds !== undefined
             ) {
-              // trip_headsignから実際の路線番号を取得
-              const routeNumber = extractRouteNumber(arrival.trip_headsign);
-              if (!routeNumber) {
-                // trip_headsignから抽出できない場合はroute_idを使用（フォールバック）
-                console.warn(
-                  "Could not extract route number from trip_headsign:",
-                  arrival.trip_headsign
-                );
-                return;
-              }
-
               const delayMinutes = Math.max(
                 0,
                 Math.round(arrival.predicted_delay_seconds / 60)
               ); // 秒を分に変換、負の値は0として扱う
 
               // 同じルートの複数の予測がある場合は平均を取る
-              if (routeDelayData[routeNumber]) {
+              if (routeDelayData[routeNumber] !== undefined) {
                 routeDelayData[routeNumber] = Math.round(
                   (routeDelayData[routeNumber] + delayMinutes) / 2
                 );
               } else {
                 routeDelayData[routeNumber] = delayMinutes;
               }
+            } else {
+              // 遅延予測がない場合でもルートを追加（遅延は0）
+              if (routeDelayData[routeNumber] === undefined) {
+                routeDelayData[routeNumber] = 0;
+              }
             }
           });
+
+          // route_idマッピングを保存
+          setRouteIdMapping(routeIdMap);
 
           console.log("ClientMap: Route delay data:", routeDelayData);
           console.log("ClientMap: Selected stop ID:", selectedStopId);
@@ -1687,6 +1707,8 @@ export default function ClientMap({
         regionDelays={regionDelays}
         stopDelays={stopDelays}
         routeDelays={routeDelays}
+        routeIdMapping={routeIdMapping}
+        selectedStopId={selectedStopId}
         getDelaySymbol={getDelaySymbol}
         getDelayLevelName={getDelayLevelName}
         pinnedStops={pinnedStops}

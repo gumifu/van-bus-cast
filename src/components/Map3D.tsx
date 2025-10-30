@@ -82,6 +82,9 @@ export default function Map3D({
   );
   const [stopDelays, setStopDelays] = useState<{ [key: string]: number }>({});
   const [routeDelays, setRouteDelays] = useState<{ [key: string]: number }>({});
+  const [routeIdMapping, setRouteIdMapping] = useState<{
+    [routeNumber: string]: string;
+  }>({}); // 路線番号 -> route_id（GTFS内部ID）
   const [selectedStopId, setSelectedStopId] = useState<string | null>(
     externalSelectedStopId || null
   );
@@ -584,37 +587,54 @@ export default function Map3D({
             return match ? match[1] : null;
           };
 
+          // 路線番号 -> route_id（GTFS内部ID）のマッピングを作成
+          const routeIdMap: { [routeNumber: string]: string } = {};
+
+          // 全てのarrivalsを処理（遅延予測の有無に関わらず全てのルートを含む）
           data.arrivals.forEach((arrival: any) => {
+            // trip_headsignから実際の路線番号を取得
+            const routeNumber = extractRouteNumber(arrival.trip_headsign);
+            if (!routeNumber) {
+              console.warn(
+                "Map3D: Could not extract route number from trip_headsign:",
+                arrival.trip_headsign
+              );
+              return;
+            }
+
+            // route_idとroute_numberのマッピングを保存（最初に見つかったものを使用）
+            if (arrival.route_id && !routeIdMap[routeNumber]) {
+              routeIdMap[routeNumber] = arrival.route_id;
+            }
+
+            // 遅延予測がある場合は計算、ない場合は0を設定
             if (
               arrival.predicted_delay_seconds !== null &&
               arrival.predicted_delay_seconds !== undefined
             ) {
-              // trip_headsignから実際の路線番号を取得
-              const routeNumber = extractRouteNumber(arrival.trip_headsign);
-              if (!routeNumber) {
-                // trip_headsignから抽出できない場合はroute_idを使用（フォールバック）
-                console.warn(
-                  "Map3D: Could not extract route number from trip_headsign:",
-                  arrival.trip_headsign
-                );
-                return;
-              }
-
               const delayMinutes = Math.max(
                 0,
                 Math.round(arrival.predicted_delay_seconds / 60)
               ); // 秒を分に変換、負の値は0として扱う
 
               // 同じルートの複数の予測がある場合は平均を取る
-              if (routeDelayData[routeNumber]) {
+              if (routeDelayData[routeNumber] !== undefined) {
                 routeDelayData[routeNumber] = Math.round(
                   (routeDelayData[routeNumber] + delayMinutes) / 2
                 );
               } else {
                 routeDelayData[routeNumber] = delayMinutes;
               }
+            } else {
+              // 遅延予測がない場合でもルートを追加（遅延は0）
+              if (routeDelayData[routeNumber] === undefined) {
+                routeDelayData[routeNumber] = 0;
+              }
             }
           });
+
+          // route_idマッピングを保存
+          setRouteIdMapping(routeIdMap);
 
           console.log("Map3D: Route delay data:", routeDelayData);
           console.log("Map3D: Selected stop ID:", selectedStopId);
@@ -979,44 +999,6 @@ export default function Map3D({
       {/* メインマップ */}
       <div ref={ref} className="h-full w-full" />
 
-      {/* 3Dコントロール */}
-      <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
-        <button
-          onClick={toggle3D}
-          className={`px-4 py-2 rounded-lg shadow-lg border transition-colors ${
-            is3DEnabled
-              ? "bg-blue-600 text-white border-blue-500"
-              : "bg-gray-900 text-gray-300 border-gray-700 hover:bg-gray-800"
-          }`}
-        >
-          {is3DEnabled ? "2D視点" : "3D視点"}
-        </button>
-
-        <button
-          onClick={() => resetView()}
-          className="px-4 py-2 bg-gray-900 text-gray-300 rounded-lg shadow-lg border border-gray-700 hover:bg-gray-800 transition-colors"
-        >
-          リセット
-        </button>
-      </div>
-
-      {/* 3D情報パネル */}
-      {is3DEnabled && (
-        <div className="absolute bottom-4 left-4 z-10 bg-gray-900 text-white p-3 rounded-lg shadow-lg border border-gray-700">
-          <h3 className="font-semibold text-sm mb-2">3D表示モード</h3>
-          <div className="text-xs space-y-1">
-            <div>ピッチ: {Math.round(pitch)}°</div>
-            <div>ベアリング: {Math.round(bearing)}°</div>
-            <div className="text-gray-400 mt-2">
-              • 建物の3D表示
-              <br />
-              • 地形の立体化
-              <br />• マウスで視点変更可能
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* 右下のコントロール */}
       <div className="absolute bottom-4 right-4 z-10 flex flex-col gap-2">
         <GoogleMapsControls
@@ -1082,6 +1064,8 @@ export default function Map3D({
           regionDelays={regionDelays}
           stopDelays={stopDelays}
           routeDelays={routeDelays}
+          routeIdMapping={routeIdMapping}
+          selectedStopId={selectedStopId}
           getDelaySymbol={getDelaySymbol}
           getDelayLevelName={getDelayLevelName}
           pinnedStops={pinnedStops}
