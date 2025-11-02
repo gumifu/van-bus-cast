@@ -203,24 +203,66 @@ export default function ClientMap({
         zoom: number;
       }> = [];
 
+      // 主要な街6つに制限
+      const majorRegions = [
+        "vancouver",
+        "richmond",
+        "burnaby",
+        "surrey",
+        "coquitlam",
+        "delta",
+      ];
+
       if (data.regions && Array.isArray(data.regions)) {
         data.regions.forEach((region: any) => {
           const regionId = region.region_id;
-          // region_idを変換（例: "vancouver_city" → "vancouver"）
-          const simplifiedId = regionId.split("_")[0];
-          // 小数点を丸める（負の値も保持：マイナスは「早く来ている」を意味する）
+          // region_id は重複回避のためそのまま使用（例: "port_coquitlam" と "port_moody"）
+          const simplifiedId = regionId;
+          // 秒を分に変換して丸める（負の値も保持：マイナスは「早く来ている」を意味する）
           const delayMinutes = region.avg_delay_seconds
-            ? Math.round(region.avg_delay_seconds)
+            ? Math.round(region.avg_delay_seconds / 60)
             : 0;
           regionDelayData[simplifiedId] = delayMinutes;
 
-          // 地域リストに追加
-          if (region.center_lat && region.center_lon) {
+          // 主要な街のみ地域リストに追加
+          const isMajorRegion = majorRegions.some((major) =>
+            simplifiedId.toLowerCase().includes(major.toLowerCase())
+          );
+
+          if (isMajorRegion) {
+            // 緯度経度がAPIから取得できない場合は固定値を使用
+            let center: [number, number];
+            let zoom: number;
+
+            if (region.center_lat && region.center_lon) {
+              center = [region.center_lon, region.center_lat];
+              zoom = 12;
+            } else {
+              // 固定値のマッピング
+              const centerMap: { [key: string]: [number, number] } = {
+                vancouver: [-123.1207, 49.2827],
+                richmond: [-123.1338, 49.1666],
+                burnaby: [-122.9749, 49.2488],
+                surrey: [-122.849, 49.1913],
+                coquitlam: [-122.8289, 49.2838],
+                delta: [-123.0857, 49.0847],
+              };
+
+              const matchedMajor = majorRegions.find((major) =>
+                simplifiedId.toLowerCase().includes(major.toLowerCase())
+              );
+              center =
+                matchedMajor && centerMap[matchedMajor]
+                  ? centerMap[matchedMajor]
+                  : [-123.1207, 49.2827]; // デフォルト
+              zoom = simplifiedId.toLowerCase().includes("vancouver") ? 11 : 12;
+            }
+
             regionList.push({
               id: simplifiedId,
               name: region.region_name || formatRegionName(simplifiedId),
-              center: [region.center_lon, region.center_lat],
-              zoom: 12,
+              center,
+              zoom,
             });
           }
         });
@@ -229,10 +271,24 @@ export default function ClientMap({
       setRegionDelays(regionDelayData);
 
       // 地域リストを設定（APIから取得したデータがあればそれを使用、なければデフォルト）
+      // 主要な街6つに制限（重複を避けつつ最大6つ）
       if (regionList.length > 0) {
-        setRegions(regionList);
+        // 主要な街の優先順位に基づいてソート
+        const sortedRegions = regionList.sort((a, b) => {
+          const aIndex = majorRegions.findIndex((major) =>
+            a.id.toLowerCase().includes(major.toLowerCase())
+          );
+          const bIndex = majorRegions.findIndex((major) =>
+            b.id.toLowerCase().includes(major.toLowerCase())
+          );
+          return (
+            (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex)
+          );
+        });
+        // 最大6つに制限
+        setRegions(sortedRegions.slice(0, 6));
       } else {
-        // フォールバック: デフォルトの地域リスト
+        // フォールバック: 主要な街6つ
         setRegions([
           {
             id: "vancouver",
@@ -270,18 +326,6 @@ export default function ClientMap({
             center: [-123.0857, 49.0847],
             zoom: 12,
           },
-          {
-            id: "langley",
-            name: "Langley",
-            center: [-122.6585, 49.1041],
-            zoom: 12,
-          },
-          {
-            id: "new_westminster",
-            name: "New Westminster",
-            center: [-122.9119, 49.2057],
-            zoom: 12,
-          },
         ]);
       }
     } catch (error) {
@@ -293,7 +337,7 @@ export default function ClientMap({
       console.error("API URL attempted:", "/api/regional-status");
       console.log("Falling back to mock data");
 
-      // エラー時はモックデータを使用
+      // エラー時はモックデータを使用（主要な街6つのみ）
       const regionDelayData = {
         vancouver: Math.floor(Math.random() * 3),
         burnaby: Math.floor(Math.random() * 5),
@@ -301,12 +345,10 @@ export default function ClientMap({
         surrey: Math.floor(Math.random() * 6),
         coquitlam: Math.floor(Math.random() * 4),
         delta: Math.floor(Math.random() * 3),
-        langley: Math.floor(Math.random() * 5),
-        new_westminster: Math.floor(Math.random() * 4),
       };
       setRegionDelays(regionDelayData);
 
-      // デフォルトの地域リストを設定
+      // 主要な街6つを設定
       setRegions([
         {
           id: "vancouver",
@@ -344,18 +386,6 @@ export default function ClientMap({
           center: [-123.0857, 49.0847],
           zoom: 12,
         },
-        {
-          id: "langley",
-          name: "Langley",
-          center: [-122.6585, 49.1041],
-          zoom: 12,
-        },
-        {
-          id: "new_westminster",
-          name: "New Westminster",
-          center: [-122.9119, 49.2057],
-          zoom: 12,
-        },
       ]);
     }
 
@@ -390,7 +420,6 @@ export default function ClientMap({
       stopDelayData[stopId] = Math.floor(Math.random() * 8); // 0-7分
     }
     setStopDelays(stopDelayData);
-
   };
 
   // 遅延レベルに基づく天気アイコン取得
@@ -432,8 +461,8 @@ export default function ClientMap({
     if (!mapRef.current) return;
 
     try {
-      // stops_route.geojsonファイルからデータを取得（路線情報を含む）
-      const response = await fetch("/data/stops_route.geojson");
+      // stops.geojsonファイルからデータを取得（路線情報を含む）
+      const response = await fetch("/data/stops.geojson");
       const data = await response.json();
 
       if (data.features) {
@@ -758,8 +787,8 @@ export default function ClientMap({
     }
 
     try {
-      // 最新のstops_route.geojsonから完全なデータを取得
-      const response = await fetch("/data/stops_route.geojson");
+      // 最新のstops.geojsonから完全なデータを取得
+      const response = await fetch("/data/stops.geojson");
       const data = await response.json();
 
       const fullStopData = data.features.find(
@@ -1263,7 +1292,7 @@ export default function ClientMap({
     // GeoJSONデータをソースとして追加
     map.addSource("bus-stops", {
       type: "geojson",
-      data: "/data/stops_route.geojson",
+      data: "/data/stops.geojson",
       cluster: true,
       clusterMaxZoom: 14,
       clusterRadius: 50,

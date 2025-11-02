@@ -720,7 +720,7 @@ export default function Map3D({
     if (!map.getSource("bus-stops")) {
       map.addSource("bus-stops", {
         type: "geojson",
-        data: "/data/stops_route.geojson",
+        data: "/data/stops.geojson",
         cluster: true,
         clusterMaxZoom: 14,
         clusterRadius: 50,

@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import ClientMap from "../components/ClientMap";
 import Map3D from "../components/Map3D";
+import Logo from "../components/Logo";
 
 export default function Home() {
   const [is3DMode, setIs3DMode] = useState(false);
@@ -51,7 +52,7 @@ export default function Home() {
     <main className="h-screen w-full bg-black text-white md:h-dvh">
       <div className="h-full flex flex-col">
         <div className="p-4 text-xl font-thin flex-shrink-0 bg-gray-900 text-white border-b border-gray-700 flex items-center justify-between">
-          <h1>VanBusCast</h1>
+          <Logo size="md" showText={true} />
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-300">3D表示</span>
             <span className="text-gray-500">|</span>

@@ -488,22 +488,28 @@ export default function BusStopDetailPanel({
                       key={index}
                       className="flex items-center justify-between bg-gray-800 p-3 rounded"
                     >
-                      <div>
-                        <div className="text-white font-medium">
-                          {arrivalTime}
-                        </div>
-                        <div className="text-gray-400 text-sm">
-                          {arrival.trip_headsign ||
-                            `Trip ${arrival.trip_id?.substring(0, 8) || "N/A"}`}
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl">
+                            {getDelaySymbol(delayMinutes)}
+                          </span>
+                          <div>
+                            <div className="text-white font-medium">
+                              {arrivalTime}
+                            </div>
+                            <div className="text-gray-400 text-sm">
+                              {arrival.trip_headsign ||
+                                `Trip ${
+                                  arrival.trip_id?.substring(0, 8) || "N/A"
+                                }`}
+                            </div>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl">
-                          {getDelaySymbol(delayMinutes)}
-                        </span>
-                        <span className="text-gray-300">
+                      <div className="text-right">
+                        <div className="text-gray-300 text-sm font-medium">
                           {getDelayLevelName(delayMinutes)}
-                        </span>
+                        </div>
                       </div>
                     </div>
                   );
