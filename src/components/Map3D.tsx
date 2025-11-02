@@ -603,16 +603,30 @@ export default function Map3D({
 
     try {
       // iOS Safari向けの遅延初期化（コンテナのサイズが確実に計算されるまで待つ）
-      const initMap = () => {
-        if (!ref.current) return;
+      let initAttempts = 0;
+      const maxInitAttempts = 20; // 最大20回（2秒）試行
 
-        // iOS Safari向け：コンテナのサイズを明示的に計算
+      const initMap = () => {
+        if (!ref.current) {
+          console.warn("Map3D: Container ref is null");
+          return;
+        }
+
+        // コンテナのサイズを明示的に計算
         const container = ref.current;
         const rect = container.getBoundingClientRect();
+
         if (rect.width === 0 || rect.height === 0) {
-          // サイズがまだ計算されていない場合は少し待つ
-          setTimeout(initMap, 100);
-          return;
+          initAttempts++;
+          if (initAttempts < maxInitAttempts) {
+            // サイズがまだ計算されていない場合は少し待つ
+            setTimeout(initMap, 100);
+            return;
+          } else {
+            console.warn(
+              "Map3D: Container size still 0 after max attempts, proceeding anyway"
+            );
+          }
         }
 
         const map = new mapboxgl.Map({
@@ -626,8 +640,6 @@ export default function Map3D({
           // モバイル向けの最適化
           renderWorldCopies: true,
           maxTileCacheSize: 50, // モバイル向けにキャッシュサイズを制限
-          // iOS Safari向けの最適化
-          preserveDrawingBuffer: false, // メモリ使用量を削減
         });
 
         mapRef.current = map;
@@ -717,17 +729,10 @@ export default function Map3D({
         };
       };
 
-      // 初期化を実行（iOS Safariでは少し遅延させる）
-      if (
-        typeof window !== "undefined" &&
-        /iPad|iPhone|iPod/.test(navigator.userAgent)
-      ) {
-        // iOS Safariの場合、少し待ってから初期化
-        setTimeout(initMap, 100);
-      } else {
-        // その他のブラウザは即座に初期化
-        initMap();
-      }
+      // 初期化を実行（すべてのブラウザで即座に初期化を試行）
+      // コンテナのサイズチェックが初期化関数内で処理されるため、
+      // iOS Safariでも即座に初期化を試行（サイズが0の場合は自動的にリトライされる）
+      initMap();
     } catch (error) {
       console.error("Map3D: Failed to initialize map:", error);
       if (ref.current) {
