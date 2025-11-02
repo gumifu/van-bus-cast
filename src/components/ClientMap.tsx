@@ -1177,33 +1177,27 @@ export default function ClientMap({
         mapRef.current = map;
 
         // エラーハンドリング（タイルエラーは通常ログに記録しない）
-        let errorCount = 0;
-        const maxErrorLogs = 5; // 最大5回までエラーをログに記録
-
+        // Mapboxのタイルロードエラーは自動的にリトライされるため、ログに記録する必要がない
         map.on("error", (e: any) => {
-          // タイルロードエラーは通常無視して良い（ネットワークの問題などで一時的に発生する）
-          if (e.error && e.error.message) {
-            const errorMessage = e.error.message.toLowerCase();
-            // 重要なエラーのみをログに記録
-            if (
-              errorMessage.includes("token") ||
+          // エラーメッセージがない、またはタイルエラーの場合は無視
+          const errorMessage = e.error?.message?.toLowerCase() || "";
+
+          // 重要なエラーのみをログに記録（トークン、認証、スタイル関連）
+          if (
+            errorMessage &&
+            (errorMessage.includes("token") ||
               errorMessage.includes("unauthorized") ||
               errorMessage.includes("forbidden") ||
               errorMessage.includes("style") ||
-              errorCount < maxErrorLogs
-            ) {
-              errorCount++;
-              console.error("ClientMap: Map error:", {
-                message: e.error.message,
-                status: (e.error as any).status,
-                type: e.type,
-                tile: e.tile ? { url: (e.tile as any).url } : null,
-              });
-            }
-          } else if (errorCount < maxErrorLogs) {
-            errorCount++;
-            console.warn("ClientMap: Map error (no details):", e.type);
+              errorMessage.includes("access denied"))
+          ) {
+            console.error("ClientMap: Important map error:", {
+              message: e.error?.message,
+              status: (e.error as any)?.status,
+              type: e.type,
+            });
           }
+          // その他のエラー（タイルエラーなど）は完全に無視
         });
 
         map.on("style.load", () => {
