@@ -1,52 +1,112 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+} from "chart.js";
+import { Line } from "react-chartjs-2";
 
-// 遅延グラフコンポーネント
+// Chart.jsの登録
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
+
+// 時刻をカナダ式（12時間制AM/PM）に変換（秒なし）
+const formatCanadianTime = (timeStr: string): string => {
+  if (!timeStr) return "N/A";
+  try {
+    const isoDate = new Date(timeStr);
+    if (!isNaN(isoDate.getTime())) {
+      const hour24 = isoDate.getHours();
+      const minute = String(isoDate.getMinutes()).padStart(2, "0");
+      const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
+      const ampm = hour24 < 12 ? "AM" : "PM";
+      return `${hour12}:${minute} ${ampm}`;
+    }
+  } catch (e) {}
+  const timeMatch = timeStr.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if (timeMatch) {
+    const hour24 = parseInt(timeMatch[1], 10);
+    const minute = timeMatch[2];
+    const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
+    const ampm = hour24 < 12 ? "AM" : "PM";
+    return `${hour12}:${minute} ${ampm}`;
+  }
+  return timeStr;
+};
+
+// 遅延グラフコンポーネント（Chart.js使用）
 function DelayChart({ arrivals }: { arrivals: any[] }) {
   const chartData = useMemo(() => {
     if (!arrivals || arrivals.length === 0) return null;
 
-    const delays = arrivals
+    // 秒単位の遅延を取得
+    const delaysInSeconds = arrivals
       .map((arrival) => {
         const delaySeconds = arrival.predicted_delay_seconds;
         if (delaySeconds === null || delaySeconds === undefined) return null;
-        return Math.round(delaySeconds / 60); // 秒を分に変換
+        return delaySeconds;
       })
       .filter((d): d is number => d !== null);
 
-    if (delays.length === 0) return null;
+    if (delaysInSeconds.length === 0) return null;
 
-    const maxDelay = Math.max(...delays.map(Math.abs));
-    const minDelay = Math.min(...delays);
-    const range = Math.max(Math.abs(maxDelay), Math.abs(minDelay)) || 1;
-    const maxRange = Math.max(Math.abs(maxDelay), Math.abs(minDelay), 5); // 最小範囲を5分に設定
-
-    const width = 300;
-    const height = 120;
-    const padding = 20;
-    const chartWidth = width - padding * 2;
-    const chartHeight = height - padding * 2;
-    const centerY = padding + chartHeight / 2;
-
-    // グラフのポイントを計算（中央を0として、上下に分布）
-    const points = delays.map((delay, index) => {
-      const x = padding + (chartWidth / (delays.length - 1 || 1)) * index;
-      // 中央を0として、上方向が正（遅延）、下方向が負（早到）
-      const y = centerY - (delay / maxRange) * (chartHeight / 2) * 0.9;
-      return { x, y, delay };
+    // 到着時刻を取得（時間表示用）
+    const labels = arrivals.map((arrival) => {
+      const timeStr = arrival.arrival_time || arrival.next_arrival_time || "";
+      return formatCanadianTime(timeStr);
     });
 
-    // パスを生成
-    const pathData = points
-      .map((point, index) => {
-        return index === 0
-          ? `M ${point.x} ${point.y}`
-          : `L ${point.x} ${point.y}`;
-      })
-      .join(" ");
+    // 分単位の遅延（表示用）
+    const delaysInMinutes = delaysInSeconds.map((s) => s / 60);
 
-    return { points, pathData, width, height, maxDelay, minDelay, padding };
+    // 最大・最小遅延を計算
+    const maxDelay = Math.max(...delaysInMinutes);
+    const minDelay = Math.min(...delaysInMinutes);
+    const delayRange = Math.max(maxDelay - minDelay, 5); // 最小範囲は5分
+
+    // Y軸のスケールを5分単位で計算
+    // 遅延の幅が5分以下なら5分単位、5分超なら10分単位、10分超なら15分単位...と設定
+    const stepSize = 5;
+    const rangeInSteps = Math.ceil(delayRange / stepSize);
+    const yAxisMax = Math.ceil(maxDelay / stepSize) * stepSize + stepSize; // 上に少し余白
+    const yAxisMin = Math.floor(minDelay / stepSize) * stepSize - stepSize; // 下に少し余白
+
+    // データポイントの色を決定
+    const pointBackgroundColors = delaysInMinutes.map((delay) => {
+      if (delay === 0) return "rgb(34, 197, 94)"; // 緑 - On Time
+      if (delay < 0) return "rgb(59, 130, 246)"; // 青 - Early
+      if (delay <= 2) return "rgb(251, 191, 36)"; // 黄 - Delayed
+      return "rgb(239, 68, 68)"; // 赤 - Severely Delayed
+    });
+
+    return {
+      labels,
+      delays: delaysInMinutes,
+      delaysInSeconds,
+      maxDelay,
+      minDelay,
+      delayRange,
+      yAxisMax,
+      yAxisMin,
+      pointBackgroundColors,
+      arrivals,
+    };
   }, [arrivals]);
 
   if (!chartData) {
@@ -57,114 +117,137 @@ function DelayChart({ arrivals }: { arrivals: any[] }) {
     );
   }
 
+  const data = {
+    labels: chartData.labels,
+    datasets: [
+      {
+        label: "Delay (min)",
+        data: chartData.delays,
+        borderColor: "rgba(59, 130, 246, 0.8)",
+        backgroundColor: "rgba(59, 130, 246, 0.1)",
+        pointBackgroundColor: chartData.pointBackgroundColors,
+        pointBorderColor: "rgba(255, 255, 255, 0.8)",
+        pointBorderWidth: 2,
+        pointRadius: 6,
+        pointHoverRadius: 8,
+        pointHoverBorderWidth: 3,
+        borderWidth: 2,
+        fill: true,
+        tension: 0.4,
+      },
+    ],
+  };
+
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        backgroundColor: "rgba(0, 0, 0, 0.85)",
+        titleColor: "rgba(255, 255, 255, 0.9)",
+        bodyColor: "rgba(255, 255, 255, 0.7)",
+        borderColor: "rgba(255, 255, 255, 0.3)",
+        borderWidth: 1,
+        padding: 12,
+        callbacks: {
+          label: function (context: any) {
+            const index = context.dataIndex;
+            const arrival = chartData.arrivals[index];
+            const delaySeconds = chartData.delaysInSeconds[index];
+            const delayMin = chartData.delays[index];
+
+            let tooltipText = [
+              `Delay: ${delaySeconds >= 0 ? "+" : ""}${delaySeconds.toFixed(
+                0
+              )}s (${delayMin >= 0 ? "+" : ""}${delayMin.toFixed(1)}min)`,
+            ];
+
+            if (arrival?.trip_headsign) {
+              tooltipText.push(`Destination: ${arrival.trip_headsign}`);
+            }
+
+            // Scheduled時刻を計算
+            const arrivalTime =
+              arrival?.arrival_time || arrival?.next_arrival_time || "";
+            if (arrivalTime && arrival?.predicted_delay_seconds !== null) {
+              try {
+                const arrivalDate = new Date(arrivalTime);
+                if (!isNaN(arrivalDate.getTime())) {
+                  const delayMs = arrival.predicted_delay_seconds * 1000;
+                  const scheduledDate = new Date(
+                    arrivalDate.getTime() - delayMs
+                  );
+                  tooltipText.push(
+                    `Scheduled: ${formatCanadianTime(
+                      scheduledDate.toISOString()
+                    )}`
+                  );
+                }
+              } catch (e) {}
+            }
+
+            return tooltipText;
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        title: {
+          display: true,
+          text: "Time",
+          color: "rgba(255, 255, 255, 0.7)",
+          font: {
+            size: 12,
+            weight: "normal" as const,
+          },
+        },
+        ticks: {
+          color: "rgba(255, 255, 255, 0.5)",
+          maxRotation: 45,
+          minRotation: 45,
+        },
+        grid: {
+          color: "rgba(255, 255, 255, 0.1)",
+        },
+      },
+      y: {
+        title: {
+          display: true,
+          text: "Delay (min)",
+          color: "rgba(255, 255, 255, 0.7)",
+          font: {
+            size: 12,
+            weight: "normal" as const,
+          },
+        },
+        min: chartData.yAxisMin,
+        max: chartData.yAxisMax,
+        ticks: {
+          stepSize: 5, // 5分単位
+          color: "rgba(255, 255, 255, 0.5)",
+          callback: function (value: any) {
+            return value >= 0 ? `+${value}` : `${value}`;
+          },
+        },
+        grid: {
+          color: "rgba(255, 255, 255, 0.1)",
+        },
+        beginAtZero: false,
+      },
+    },
+  };
+
   return (
-    <div className="relative">
-      <svg
-        width={chartData.width}
-        height={chartData.height}
-        className="w-full"
-        viewBox={`0 0 ${chartData.width} ${chartData.height}`}
-      >
-        {/* グリッド線 */}
-        <defs>
-          <linearGradient id="delayGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="rgba(59, 130, 246, 0.3)" />
-            <stop offset="100%" stopColor="rgba(59, 130, 246, 0.05)" />
-          </linearGradient>
-        </defs>
-
-        {/* 中央の基準線（On Time） */}
-        <line
-          x1={chartData.padding}
-          y1={chartData.height / 2}
-          x2={chartData.width - chartData.padding}
-          y2={chartData.height / 2}
-          stroke="rgba(255, 255, 255, 0.3)"
-          strokeWidth="1.5"
-          strokeDasharray="4 4"
-        />
-
-        {/* グラフエリアの背景（グラデーション） */}
-        <path
-          d={`${chartData.pathData} L ${chartData.width - chartData.padding} ${
-            chartData.height / 2
-          } L ${chartData.padding} ${chartData.height / 2} Z`}
-          fill="url(#delayGradient)"
-          opacity="0.3"
-        />
-
-        {/* 遅延線 */}
-        <path
-          d={chartData.pathData}
-          fill="none"
-          stroke="rgba(59, 130, 246, 0.8)"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-
-        {/* データポイント */}
-        {chartData.points.map((point, index) => {
-          const color =
-            point.delay === 0
-              ? "rgb(34, 197, 94)"
-              : point.delay < 0
-              ? "rgb(59, 130, 246)"
-              : point.delay <= 2
-              ? "rgb(251, 191, 36)"
-              : "rgb(239, 68, 68)";
-
-          return (
-            <circle
-              key={index}
-              cx={point.x}
-              cy={point.y}
-              r="4"
-              fill={color}
-              stroke="white"
-              strokeWidth="2"
-            />
-          );
-        })}
-
-        {/* Y軸ラベル */}
-        <text
-          x={10}
-          y={chartData.height / 2 + 4}
-          fill="rgba(255, 255, 255, 0.6)"
-          fontSize="10"
-          textAnchor="middle"
-        >
-          0
-        </text>
-        {/* 最大値ラベル */}
-        {chartData.maxDelay > 0 && (
-          <text
-            x={10}
-            y={chartData.padding + 10}
-            fill="rgba(255, 255, 255, 0.5)"
-            fontSize="9"
-            textAnchor="middle"
-          >
-            +{chartData.maxDelay}min
-          </text>
-        )}
-        {/* 最小値ラベル（負の値の場合） */}
-        {chartData.minDelay < 0 && (
-          <text
-            x={10}
-            y={chartData.height - chartData.padding + 14}
-            fill="rgba(255, 255, 255, 0.5)"
-            fontSize="9"
-            textAnchor="middle"
-          >
-            {chartData.minDelay}min
-          </text>
-        )}
-      </svg>
-
+    <div className="relative w-full">
+      <div style={{ height: "250px", width: "100%" }}>
+        <Line data={data} options={options} />
+      </div>
       {/* 凡例と統計 */}
-      <div className="mt-3 flex items-center justify-between text-xs text-gray-300">
+      <div className="mt-8 flex items-center justify-between text-xs text-gray-300">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1">
             <div className="w-2 h-2 rounded-full bg-green-500"></div>
@@ -178,9 +261,14 @@ function DelayChart({ arrivals }: { arrivals: any[] }) {
             <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
             <span>Delayed</span>
           </div>
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 rounded-full bg-red-500"></div>
+            <span>Severely Delayed</span>
+          </div>
         </div>
         <div className="text-gray-400">
-          Max: {chartData.maxDelay}min | Min: {chartData.minDelay}min
+          Max: {chartData.maxDelay.toFixed(1)}min | Min:{" "}
+          {chartData.minDelay.toFixed(1)}min
         </div>
       </div>
     </div>
@@ -220,6 +308,7 @@ export default function BusStopDetailPanel({
   const [showForecast, setShowForecast] = useState(false);
   const [routeArrivals, setRouteArrivals] = useState<any[]>([]);
   const [loadingArrivals, setLoadingArrivals] = useState(false);
+  const [routeData, setRouteData] = useState<any>(null); // APIレスポンス全体を保存
   const [routeFirstArrivals, setRouteFirstArrivals] = useState<{
     [route: string]: {
       destination: string;
@@ -254,8 +343,10 @@ export default function BusStopDetailPanel({
         const data = await response.json();
         if (data.arrivals && Array.isArray(data.arrivals)) {
           setRouteArrivals(data.arrivals);
+          setRouteData(data); // APIレスポンス全体を保存
         } else {
           setRouteArrivals([]);
+          setRouteData(null);
         }
       } catch (error) {
         console.error("Error fetching route arrivals:", error);
@@ -711,7 +802,7 @@ export default function BusStopDetailPanel({
                           )}
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-400">
+                          <span className="text-sm text-white">
                             {getDelayLevelName(delay)}
                           </span>
                           <span className="text-gray-400">|</span>
@@ -947,15 +1038,62 @@ export default function BusStopDetailPanel({
       {/* 6-Hour Forecast Modal */}
       {showForecast && selectedRoute && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white/10 backdrop-blur-xl rounded-lg p-6 w-96 max-w-full mx-4 max-h-[80vh] overflow-y-auto border border-white/20 shadow-2xl">
+          <div className="bg-white/10 backdrop-blur-xl rounded-lg p-6 w-[90vw] max-w-6xl mx-4 max-h-[90vh] overflow-y-auto border border-white/20 shadow-2xl">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-white">
-                Route {selectedRoute} - Arrival Times
-              </h3>
+              <div className="flex items-center gap-2">
+                {/* 路線番号バッジ */}
+                {(() => {
+                  // メインパネルと同じ色配列
+                  const colors = [
+                    "#0066CC", // 青
+                    "#FF6600", // オレンジ
+                    "#00AA44", // 緑
+                    "#CC0066", // ピンク
+                    "#6600CC", // 紫
+                    "#00CCAA", // シアン
+                  ];
+
+                  // 選択された路線のインデックスを取得
+                  const stopRoutes = getStopRoutes();
+                  const routeIndex = stopRoutes.indexOf(selectedRoute || "");
+                  const color =
+                    routeIndex >= 0
+                      ? colors[routeIndex % colors.length]
+                      : "#0066CC"; // デフォルト色
+
+                  return (
+                    <span
+                      className="px-3 py-1 rounded-md font-bold text-sm text-white"
+                      style={{ backgroundColor: color }}
+                    >
+                      {selectedRoute}
+                    </span>
+                  );
+                })()}
+                {/* 目的地 */}
+                {routeFirstArrivals[selectedRoute]?.destination && (
+                  <span className="text-white font-medium">
+                    {routeFirstArrivals[selectedRoute].destination}
+                  </span>
+                )}
+                {/* 遅延ステータス */}
+                {selectedRoute && routeDelays[selectedRoute] !== undefined && (
+                  <>
+                    <span className="text-gray-400 text-sm">
+                      {getDelayLevelName(routeDelays[selectedRoute])}
+                    </span>
+                    <span className="text-gray-400">|</span>
+                    <span className="text-lg">
+                      {getDelaySymbol(routeDelays[selectedRoute])}
+                    </span>
+                  </>
+                )}
+              </div>
               <button
                 onClick={() => {
                   setShowForecast(false);
                   setSelectedRoute(null);
+                  setRouteData(null);
                 }}
                 className="text-gray-400 hover:text-white text-xl"
               >
@@ -965,65 +1103,251 @@ export default function BusStopDetailPanel({
             {loadingArrivals ? (
               <div className="text-center py-8 text-gray-400">Loading...</div>
             ) : routeArrivals.length > 0 ? (
-              <div className="space-y-4">
-                {/* 遅延グラフ */}
-                <div className="bg-white/10 backdrop-blur-md rounded-lg p-4 border border-white/20">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* 左側カラム: グラフ */}
+                <div className="space-y-4">
                   <h4 className="text-sm font-semibold text-white mb-3">
                     Delay Trend
                   </h4>
-                  <DelayChart arrivals={routeArrivals} />
+                  {/* 遅延グラフ */}
+                  <div className="bg-white/10 backdrop-blur-md rounded-lg p-4 border border-white/20">
+                    <DelayChart arrivals={routeArrivals} />
+                  </div>
                 </div>
 
-                {/* 到着時刻リスト */}
-                <div>
-                  <h4 className="text-sm font-semibold text-white mb-3">
-                    Arrival Times
-                  </h4>
-                  <div className="space-y-3">
-                    {routeArrivals.map((arrival: any, index: number) => {
-                      const delayMinutes =
-                        arrival.predicted_delay_seconds !== null &&
-                        arrival.predicted_delay_seconds !== undefined
-                          ? Math.max(
-                              0,
-                              Math.round(arrival.predicted_delay_seconds / 60)
-                            )
-                          : 0;
-                      const arrivalTime =
-                        arrival.arrival_time || arrival.next_arrival_time || "";
-
-                      return (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between bg-white/10 backdrop-blur-md p-3 rounded border border-white/20 shadow-lg"
-                        >
-                          <div className="flex items-center gap-3 flex-1">
-                            <div>
-                              <div className="text-white font-medium">
-                                {arrivalTime}
-                              </div>
-                              <div className="text-gray-400 text-sm">
-                                {arrival.trip_headsign ||
-                                  `Trip ${
-                                    arrival.trip_id?.substring(0, 8) || "N/A"
-                                  }`}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="flex items-center gap-2 justify-end">
-                              <span className="text-gray-300 text-sm font-medium">
-                                {getDelayLevelName(delayMinutes)}
-                              </span>
-                              <span className="text-gray-400">|</span>
-                              <span className="text-2xl">
-                                {getDelaySymbol(delayMinutes)}
-                              </span>
-                            </div>
-                          </div>
+                {/* 右側カラム: Route情報と到着時刻リスト */}
+                <div className="space-y-4">
+                  {/* Route情報 */}
+                  {routeData?.route && (
+                    <div className="bg-white/10 backdrop-blur-md rounded-lg p-4 border border-white/20">
+                      <h4 className="text-sm font-semibold text-white mb-3">
+                        Route Information
+                      </h4>
+                      <div className="space-y-2 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Route:</span>
+                          <span className="text-white">
+                            {routeData.route.route_id ||
+                              routeData.route.route_short_name ||
+                              selectedRoute}
+                          </span>
                         </div>
-                      );
-                    })}
+                        {routeData.route.route_long_name && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Route Name:</span>
+                            <span className="text-white truncate ml-2 max-w-[180px] text-right">
+                              {routeData.route.route_long_name}
+                            </span>
+                          </div>
+                        )}
+                        {routeData.route.route_type && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Route Type:</span>
+                            <span className="text-white">
+                              {routeData.route.route_type}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 到着時刻リスト */}
+                  <div>
+                    <h4 className="text-sm font-semibold text-white mb-3">
+                      Arrival Times
+                    </h4>
+                    <div className="space-y-3 max-h-[50vh] overflow-y-auto">
+                      {routeArrivals.map((arrival: any, index: number) => {
+                        const delayMinutes =
+                          arrival.predicted_delay_seconds !== null &&
+                          arrival.predicted_delay_seconds !== undefined
+                            ? Math.max(
+                                0,
+                                Math.round(arrival.predicted_delay_seconds / 60)
+                              )
+                            : 0;
+                        const arrivalTime =
+                          arrival.arrival_time ||
+                          arrival.next_arrival_time ||
+                          "";
+
+                        // 時刻をカナダ式（12時間制AM/PM）に変換（秒なし、XX:YY PM形式）
+                        const formatCanadianTime = (
+                          timeStr: string
+                        ): string => {
+                          if (!timeStr) return "N/A";
+                          try {
+                            const isoDate = new Date(timeStr);
+                            if (!isNaN(isoDate.getTime())) {
+                              const hour24 = isoDate.getHours();
+                              const minute = String(
+                                isoDate.getMinutes()
+                              ).padStart(2, "0");
+                              const hour12 =
+                                hour24 === 0
+                                  ? 12
+                                  : hour24 > 12
+                                  ? hour24 - 12
+                                  : hour24;
+                              const ampm = hour24 < 12 ? "AM" : "PM";
+                              return `${hour12}:${minute} ${ampm}`;
+                            }
+                          } catch (e) {}
+                          // ISO形式でない場合、HH:MM:SS形式から抽出
+                          const timeMatch = timeStr.match(
+                            /(\d{1,2}):(\d{2})(?::(\d{2}))?/
+                          );
+                          if (timeMatch) {
+                            const hour24 = parseInt(timeMatch[1], 10);
+                            const minute = timeMatch[2];
+                            const hour12 =
+                              hour24 === 0
+                                ? 12
+                                : hour24 > 12
+                                ? hour24 - 12
+                                : hour24;
+                            const ampm = hour24 < 12 ? "AM" : "PM";
+                            return `${hour12}:${minute} ${ampm}`;
+                          }
+                          return timeStr;
+                        };
+
+                        return (
+                          <div
+                            key={index}
+                            className="bg-white/10 backdrop-blur-md p-3 rounded border border-white/20 shadow-lg"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3 flex-1">
+                                <div>
+                                  <div className="text-white font-medium">
+                                    {formatCanadianTime(arrivalTime)}
+                                  </div>
+                                  <div className="text-gray-400 text-sm">
+                                    {arrival.trip_headsign || "Unknown"}
+                                  </div>
+                                  {/* Scheduled時刻を計算または取得 */}
+                                  {(() => {
+                                    let scheduledTime = null;
+
+                                    // まず scheduled_arrival_time があるか確認
+                                    if (arrival.scheduled_arrival_time) {
+                                      scheduledTime =
+                                        arrival.scheduled_arrival_time;
+                                    } else if (
+                                      arrivalTime &&
+                                      arrival.predicted_delay_seconds !==
+                                        null &&
+                                      arrival.predicted_delay_seconds !==
+                                        undefined
+                                    ) {
+                                      // scheduled_arrival_timeがない場合、到着時刻から遅延を引いて計算
+                                      try {
+                                        const arrivalDate = new Date(
+                                          arrivalTime
+                                        );
+                                        if (!isNaN(arrivalDate.getTime())) {
+                                          const delayMs =
+                                            arrival.predicted_delay_seconds *
+                                            1000;
+                                          const scheduledDate = new Date(
+                                            arrivalDate.getTime() - delayMs
+                                          );
+                                          scheduledTime =
+                                            scheduledDate.toISOString();
+                                        }
+                                      } catch (e) {
+                                        // パースに失敗した場合は何もしない
+                                      }
+                                    }
+
+                                    return scheduledTime ? (
+                                      <div className="text-gray-500 text-xs mt-1">
+                                        Scheduled:{" "}
+                                        {formatCanadianTime(scheduledTime)}
+                                      </div>
+                                    ) : null;
+                                  })()}
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="flex items-center gap-2 justify-end">
+                                  <span className="text-gray-300 text-sm font-medium">
+                                    {getDelayLevelName(delayMinutes)}
+                                  </span>
+                                  <span className="text-gray-400">|</span>
+                                  <span className="text-2xl">
+                                    {getDelaySymbol(delayMinutes)}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            {/* 追加情報: Region, Stop, Scheduled Timeなど */}
+                            <div className="">
+                              {arrival.scheduled_arrival_time && (
+                                <div className="flex justify-between">
+                                  <span>Scheduled:</span>
+                                  <span className="text-gray-300">
+                                    {formatCanadianTime(
+                                      arrival.scheduled_arrival_time
+                                    )}
+                                  </span>
+                                </div>
+                              )}
+                              {arrival.stop_name && (
+                                <div className="flex justify-between">
+                                  <span>Stop:</span>
+                                  <span className="text-gray-300 truncate ml-2 max-w-[200px] text-right">
+                                    {arrival.stop_name}
+                                  </span>
+                                </div>
+                              )}
+                              {arrival.stop_id && (
+                                <div className="flex justify-between">
+                                  <span>Stop ID:</span>
+                                  <span className="text-gray-300">
+                                    {arrival.stop_id}
+                                  </span>
+                                </div>
+                              )}
+                              {arrival.region_name && (
+                                <div className="flex justify-between">
+                                  <span>Region:</span>
+                                  <span className="text-gray-300 capitalize">
+                                    {arrival.region_name}
+                                  </span>
+                                </div>
+                              )}
+                              {arrival.region_id && !arrival.region_name && (
+                                <div className="flex justify-between">
+                                  <span>Region ID:</span>
+                                  <span className="text-gray-300 capitalize">
+                                    {arrival.region_id}
+                                  </span>
+                                </div>
+                              )}
+                              {arrival.route_id && (
+                                <div className="flex justify-between">
+                                  <span>Route ID:</span>
+                                  <span className="text-gray-300">
+                                    {arrival.route_id}
+                                  </span>
+                                </div>
+                              )}
+                              {arrival.vehicle_id && (
+                                <div className="flex justify-between">
+                                  <span>Vehicle ID:</span>
+                                  <span className="text-gray-300">
+                                    {arrival.vehicle_id}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>
