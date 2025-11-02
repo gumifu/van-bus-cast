@@ -29,6 +29,8 @@ interface ClientMapProps {
   setPinnedStops?: (stops: Set<string>) => void;
   pinnedStopsData?: { [key: string]: any };
   setPinnedStopsData?: (data: { [key: string]: any }) => void;
+  onMapToggle?: () => void;
+  is3DMode?: boolean;
 }
 
 export default function ClientMap({
@@ -47,6 +49,8 @@ export default function ClientMap({
   setPinnedStops: externalSetPinnedStops,
   pinnedStopsData: externalPinnedStopsData,
   setPinnedStopsData: externalSetPinnedStopsData,
+  onMapToggle,
+  is3DMode = false,
 }: ClientMapProps = {}) {
   const ref = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<Map | null>(null);
@@ -587,17 +591,24 @@ export default function ClientMap({
               coordinates: coordinates,
             },
           };
-          setSelectedStop(stopData);
+          // 外部のハンドラーを優先して使用（URL更新のため）
           if (externalSetSelectedStop) {
             externalSetSelectedStop(stopData);
+          } else {
+            setSelectedStop(stopData);
           }
-          setIsPanelOpen(true);
+
           if (externalSetIsPanelOpen) {
             externalSetIsPanelOpen(true);
+          } else {
+            setIsPanelOpen(true);
           }
-          setSelectedStopId(properties?.stop_id || null);
+
+          const stopId = properties?.stop_id || null;
           if (externalSetSelectedStopId) {
-            externalSetSelectedStopId(properties?.stop_id || null);
+            externalSetSelectedStopId(stopId);
+          } else {
+            setSelectedStopId(stopId);
           }
 
           // マップをクリックしたバス停に移動
@@ -811,54 +822,73 @@ export default function ClientMap({
         (feature: any) => feature.properties?.stop_id === stopId
       );
 
+      const stopData = fullStopData || {
+        properties: properties,
+        geometry: {
+          type: "Point" as const,
+          coordinates: coordinates,
+        },
+      };
+
       if (fullStopData) {
         console.log("Found full stop data:", fullStopData);
-
-        setSelectedStop({
-          properties: fullStopData.properties,
-          geometry: fullStopData.geometry,
-        });
-        setIsPanelOpen(true);
-        setSelectedStopId(stopId);
-
-        mapRef.current.flyTo({
-          center: fullStopData.geometry.coordinates,
-          zoom: 18,
-          essential: true,
-        });
       } else {
         console.warn("Full stop data not found, using saved data");
-
-        // フォールバック: 保存されたデータを使用
-        setSelectedStop({
-          properties: properties,
-          geometry: {
-            type: "Point",
-            coordinates: coordinates,
-          },
-        });
-        setIsPanelOpen(true);
-        setSelectedStopId(stopId);
-
-        mapRef.current.flyTo({
-          center: coordinates,
-          zoom: 18,
-          essential: true,
-        });
       }
+
+      // 外部のハンドラーを優先して使用（URL更新のため）
+      if (externalSetSelectedStop) {
+        externalSetSelectedStop(stopData);
+      } else {
+        setSelectedStop(stopData);
+      }
+
+      if (externalSetIsPanelOpen) {
+        externalSetIsPanelOpen(true);
+      } else {
+        setIsPanelOpen(true);
+      }
+
+      if (externalSetSelectedStopId) {
+        externalSetSelectedStopId(stopId);
+      } else {
+        setSelectedStopId(stopId);
+      }
+
+      mapRef.current.flyTo({
+        center: stopData.geometry.coordinates,
+        zoom: 18,
+        essential: true,
+      });
     } catch (error) {
       console.error("Error loading full stop data:", error);
 
       // エラー時は保存されたデータを使用
-      setSelectedStop({
+      const fallbackStopData = {
         properties: properties,
         geometry: {
-          type: "Point",
+          type: "Point" as const,
           coordinates: coordinates,
         },
-      });
-      setIsPanelOpen(true);
-      setSelectedStopId(stopId);
+      };
+
+      if (externalSetSelectedStop) {
+        externalSetSelectedStop(fallbackStopData);
+      } else {
+        setSelectedStop(fallbackStopData);
+      }
+
+      if (externalSetIsPanelOpen) {
+        externalSetIsPanelOpen(true);
+      } else {
+        setIsPanelOpen(true);
+      }
+
+      if (externalSetSelectedStopId) {
+        externalSetSelectedStopId(stopId);
+      } else {
+        setSelectedStopId(stopId);
+      }
 
       mapRef.current.flyTo({
         center: coordinates,
@@ -1056,14 +1086,44 @@ export default function ClientMap({
 
     console.log("ClientMap: Initializing map...");
 
+    // WebGLサポートチェック
+    if (!mapboxgl.supported()) {
+      console.error("ClientMap: WebGL not supported on this device");
+      if (ref.current) {
+        ref.current.innerHTML = `
+          <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: white; text-align: center; padding: 20px;">
+            <div>
+              <p>WebGL is not supported on this device.</p>
+              <p>Please update your browser or device.</p>
+            </div>
+          </div>
+        `;
+      }
+      return;
+    }
+
     // Mapboxのアクセストークンを設定
     const token =
       process.env.NEXT_PUBLIC_MAPBOX_TOKEN ||
       "pk.eyJ1IjoiZ3VtaWZ1IiwiYSI6ImNtZzF3dmV4NzAxamIya3BvZHdlZnZnZDAifQ.J4DJAlB51QlM6aK7ihx70w";
-    if (token) {
-      mapboxgl.accessToken = token;
-      console.log("ClientMap: Mapbox token set");
+
+    if (!token || token === "your_mapbox_token_here") {
+      console.error("ClientMap: Mapbox token is missing or invalid");
+      if (ref.current) {
+        ref.current.innerHTML = `
+          <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: white; text-align: center; padding: 20px;">
+            <div>
+              <p>Mapbox token is not configured.</p>
+              <p>Please set NEXT_PUBLIC_MAPBOX_TOKEN environment variable.</p>
+            </div>
+          </div>
+        `;
+      }
+      return;
     }
+
+    mapboxgl.accessToken = token;
+    console.log("ClientMap: Mapbox token set");
 
     // 遅延予測データを初期化
     generateDelayPredictions();
@@ -1073,80 +1133,116 @@ export default function ClientMap({
       return;
     }
 
-    const map = new mapboxgl.Map({
-      container: ref.current!,
-      style: "mapbox://styles/mapbox/dark-v11",
-      center: initialCenter || VANCOUVER,
-      zoom: initialZoom || 16, // 3D表示に適した初期ズームレベル
-    });
+    try {
+      // iOS Safari向けの遅延初期化（コンテナのサイズが確実に計算されるまで待つ）
+      const initMap = () => {
+        if (!ref.current) return;
 
-    console.log("ClientMap: Map created");
+        // iOS Safari向け：コンテナのサイズを明示的に計算
+        const container = ref.current;
+        const rect = container.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) {
+          // サイズがまだ計算されていない場合は少し待つ
+          setTimeout(initMap, 100);
+          return;
+        }
 
-    // Mapboxのデフォルトコントロールは削除（Google Maps風のカスタムコントロールを使用）
-    mapRef.current = map;
+        const map = new mapboxgl.Map({
+          container: container,
+          style: "mapbox://styles/mapbox/dark-v11",
+          center: initialCenter || VANCOUVER,
+          zoom: initialZoom || 16,
+          // モバイル向けの最適化
+          renderWorldCopies: true,
+          maxTileCacheSize: 50, // モバイル向けにキャッシュサイズを制限
+          // iOS Safari向けの最適化
+          preserveDrawingBuffer: false, // メモリ使用量を削減
+          antialias: true,
+        });
 
-    // マップの高さを明示的に設定
-    const resizeMap = () => {
-      if (map) {
-        map.resize();
+        console.log("ClientMap: Map created");
+
+        // Mapboxのデフォルトコントロールは削除（Google Maps風のカスタムコントロールを使用）
+        mapRef.current = map;
+
+        // エラーハンドリング
+        map.on("error", (e) => {
+          console.error("ClientMap: Map error:", e);
+          if (e.error && e.error.message) {
+            console.error("ClientMap: Error message:", e.error.message);
+          }
+        });
+
+        map.on("style.load", () => {
+          console.log("ClientMap: Style loaded successfully");
+        });
+
+        map.on("styleimagemissing", (e) => {
+          console.warn("ClientMap: Style image missing:", e.id);
+        });
+
+        // マップの高さを明示的に設定
+        const resizeMap = () => {
+          if (map) {
+            map.resize();
+          }
+        };
+
+        // リサイズイベントを追加
+        window.addEventListener("resize", resizeMap);
+
+        // マップが読み込まれた後にリサイズとレイヤー追加
+        map.on("load", () => {
+          console.log("ClientMap: Map loaded, adding layers...");
+          setTimeout(resizeMap, 100);
+
+          // バス停レイヤーを追加
+          addBusStopsLayer(map);
+
+          // ユーザーの位置情報を取得（マップ読み込み後）
+          getUserLocation();
+
+          console.log("ClientMap: All layers added");
+        });
+
+        // ピンデータを読み込み
+        loadPinnedStops();
+
+        // iOS Safari向け：マップが読み込まれた後に明示的にリサイズ
+        setTimeout(() => {
+          if (map) {
+            map.resize();
+          }
+        }, 300);
+      };
+
+      // 初期化を実行（iOS Safariでは少し遅延させる）
+      if (
+        typeof window !== "undefined" &&
+        /iPad|iPhone|iPod/.test(navigator.userAgent)
+      ) {
+        // iOS Safariの場合、少し待ってから初期化
+        setTimeout(initMap, 100);
+      } else {
+        // その他のブラウザは即座に初期化
+        initMap();
       }
-    };
-
-    // リサイズイベントを追加
-    window.addEventListener("resize", resizeMap);
-
-    // マップが読み込まれた後にリサイズとレイヤー追加
-    map.on("load", () => {
-      console.log("ClientMap: Map loaded, adding layers...");
-      setTimeout(resizeMap, 100);
-
-      // バス停レイヤーを追加
-      addBusStopsLayer(map);
-
-      // ユーザーの位置情報を取得（マップ読み込み後）
-      getUserLocation();
-
-      console.log("ClientMap: All layers added");
-    });
-
-    // ピンデータを読み込み
-    loadPinnedStops();
-
-    return () => {
-      console.log("ClientMap: Cleaning up map");
-      window.removeEventListener("resize", resizeMap);
-      // アニメーションフレームをキャンセル
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
+    } catch (error) {
+      console.error("ClientMap: Failed to initialize map:", error);
+      if (ref.current) {
+        ref.current.innerHTML = `
+          <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: white; text-align: center; padding: 20px;">
+            <div>
+              <p>Failed to load map.</p>
+              <p>Error: ${
+                error instanceof Error ? error.message : String(error)
+              }</p>
+              <p>Please check the browser console for more details.</p>
+            </div>
+          </div>
+        `;
       }
-      // ユーザー位置レイヤーをクリーンアップ
-      if (map.getSource("user-location")) {
-        if (map.getLayer("user-location-pulse")) {
-          map.removeLayer("user-location-pulse");
-        }
-        if (map.getLayer("user-location-pulse-2")) {
-          map.removeLayer("user-location-pulse-2");
-        }
-        if (map.getLayer("user-location-center")) {
-          map.removeLayer("user-location-center");
-        }
-        map.removeSource("user-location");
-      }
-      // ピン留めマーカーのレイヤーをクリーンアップ
-      Object.keys(pinnedStopsData).forEach((stopId) => {
-        if (map.getLayer(`pinned-${stopId}`)) {
-          map.removeLayer(`pinned-${stopId}`);
-        }
-        if (map.getSource(`pinned-${stopId}`)) {
-          map.removeSource(`pinned-${stopId}`);
-        }
-      });
-      // マップを削除
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
-    };
+    }
   }, []);
 
   // ユーザーの位置情報が取得できたら、地図の中心を移動（初回のみ）
@@ -1510,9 +1606,9 @@ export default function ClientMap({
   return (
     <div className="relative h-full w-full flex flex-col md:block">
       {/* 左側のコントロールパネル */}
-      <div className="absolute top-4 left-4 z-10 flex flex-col gap-3">
+      <div className="absolute top-4 left-4 right-4 md:left-4 md:right-auto z-10 flex flex-col gap-3">
         {/* 検索バー */}
-        <div className="w-80">
+        <div className="w-full md:w-80">
           <GoogleMapsSearchBar
             onSearch={handleSearch}
             onSearchStart={handleSearchStart}
@@ -1520,6 +1616,27 @@ export default function ClientMap({
             placeholder="Search places (e.g., Downtown, Richmond)"
           />
         </div>
+
+        {/* 3D表示トグル - スマホサイズのみ表示 */}
+        {onMapToggle && (
+          <div className="md:hidden">
+            <div className="bg-white/10 backdrop-blur-xl rounded-lg shadow-lg border border-white/20 p-2 flex items-center gap-2">
+              <span className="text-xs text-white">3D表示</span>
+              <button
+                onClick={onMapToggle}
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                  is3DMode ? "bg-blue-600" : "bg-gray-600"
+                }`}
+              >
+                <span
+                  className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                    is3DMode ? "translate-x-4" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* 地域選択パネル */}
         {!isSearching && (
@@ -1673,8 +1790,17 @@ export default function ClientMap({
         isOpen={isPanelOpen}
         onClose={() => {
           setIsPanelOpen(false);
+          if (externalSetIsPanelOpen) {
+            externalSetIsPanelOpen(false);
+          }
           setSelectedStop(null);
+          if (externalSetSelectedStop) {
+            externalSetSelectedStop(null);
+          }
           setSelectedStopId(null);
+          if (externalSetSelectedStopId) {
+            externalSetSelectedStopId(null);
+          }
         }}
         selectedStop={selectedStop}
         regionDelays={regionDelays}

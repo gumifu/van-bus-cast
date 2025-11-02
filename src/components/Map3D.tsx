@@ -30,6 +30,8 @@ interface Map3DProps {
   pinnedStopsData?: { [key: string]: any };
   setPinnedStopsData?: (data: { [key: string]: any }) => void;
   onMapReady?: (map: Map) => void;
+  onMapToggle?: () => void;
+  is3DMode?: boolean;
 }
 
 export default function Map3D({
@@ -49,6 +51,8 @@ export default function Map3D({
   pinnedStopsData: externalPinnedStopsData,
   setPinnedStopsData: externalSetPinnedStopsData,
   onMapReady,
+  onMapToggle,
+  is3DMode = true,
 }: Map3DProps) {
   const ref = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<Map | null>(null);
@@ -88,6 +92,25 @@ export default function Map3D({
   const [selectedStopId, setSelectedStopId] = useState<string | null>(
     externalSelectedStopId || null
   );
+
+  // 外部の状態を内部の状態に同期
+  useEffect(() => {
+    if (externalSelectedStop !== undefined) {
+      setSelectedStop(externalSelectedStop);
+    }
+  }, [externalSelectedStop]);
+
+  useEffect(() => {
+    if (externalIsPanelOpen !== undefined) {
+      setIsPanelOpen(externalIsPanelOpen);
+    }
+  }, [externalIsPanelOpen]);
+
+  useEffect(() => {
+    if (externalSelectedStopId !== undefined) {
+      setSelectedStopId(externalSelectedStopId);
+    }
+  }, [externalSelectedStopId]);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showLayers, setShowLayers] = useState(false);
   const [layers, setLayers] = useState([
@@ -531,14 +554,44 @@ export default function Map3D({
 
     console.log("Map3D: Initializing map...");
 
+    // WebGLサポートチェック
+    if (!mapboxgl.supported()) {
+      console.error("Map3D: WebGL not supported on this device");
+      if (ref.current) {
+        ref.current.innerHTML = `
+          <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: white; text-align: center; padding: 20px;">
+            <div>
+              <p>WebGL is not supported on this device.</p>
+              <p>Please update your browser or device.</p>
+            </div>
+          </div>
+        `;
+      }
+      return;
+    }
+
     // Mapboxのアクセストークンを設定
     const token =
       process.env.NEXT_PUBLIC_MAPBOX_TOKEN ||
       "pk.eyJ1IjoiZ3VtaWZ1IiwiYSI6ImNtZzF3dmV4NzAxamIya3BvZHdlZnZnZDAifQ.J4DJAlB51QlM6aK7ihx70w";
-    if (token) {
-      mapboxgl.accessToken = token;
-      console.log("Map3D: Mapbox token set");
+
+    if (!token || token === "your_mapbox_token_here") {
+      console.error("Map3D: Mapbox token is missing or invalid");
+      if (ref.current) {
+        ref.current.innerHTML = `
+          <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: white; text-align: center; padding: 20px;">
+            <div>
+              <p>Mapbox token is not configured.</p>
+              <p>Please set NEXT_PUBLIC_MAPBOX_TOKEN environment variable.</p>
+            </div>
+          </div>
+        `;
+      }
+      return;
     }
+
+    mapboxgl.accessToken = token;
+    console.log("Map3D: Mapbox token set");
 
     // 遅延予測データを初期化
     generateDelayPredictions();
@@ -548,78 +601,149 @@ export default function Map3D({
       return;
     }
 
-    const map = new mapboxgl.Map({
-      container: ref.current!,
-      style: "mapbox://styles/mapbox/dark-v11", // 黒いダークスタイル
-      center: initialCenter || VANCOUVER,
-      zoom: initialZoom || 16, // 3D表示に適した初期ズームレベル
-      pitch: 45, // 初期ピッチを3D効果のある角度に
-      bearing: 0,
-      antialias: true, // アンチエイリアスを有効化
-    });
+    try {
+      // iOS Safari向けの遅延初期化（コンテナのサイズが確実に計算されるまで待つ）
+      const initMap = () => {
+        if (!ref.current) return;
 
-    mapRef.current = map;
-    console.log("Map3D: Map created");
-
-    // マップが読み込まれた後の処理
-    map.on("load", () => {
-      console.log("Map3D: Map loaded, adding layers...");
-
-      // 初期3Dモードを有効化
-      setIs3DEnabled(true);
-
-      // 3D建物レイヤーを追加
-      add3DBuildings(map);
-
-      // 地形の3D表示を有効化
-      enableTerrain3D(map);
-
-      // バス停レイヤーを追加
-      addBusStopsLayer(map);
-
-      if (onMapReady) {
-        onMapReady(map);
-      }
-
-      // ユーザーの位置情報を取得（マップ読み込み後）
-      getUserLocation();
-
-      console.log("Map3D: All layers added");
-    });
-
-    // ピンデータを読み込み
-    loadPinnedStops();
-
-    // ピッチとベアリングの変更を監視
-    map.on("pitch", () => {
-      setPitch(map.getPitch());
-    });
-
-    map.on("rotate", () => {
-      setBearing(map.getBearing());
-    });
-
-    return () => {
-      console.log("Map3D: Cleaning up map");
-      if (mapRef.current) {
-        // ユーザー位置レイヤーをクリーンアップ
-        if (mapRef.current.getSource("user-location")) {
-          if (mapRef.current.getLayer("user-location-pulse")) {
-            mapRef.current.removeLayer("user-location-pulse");
-          }
-          if (mapRef.current.getLayer("user-location-pulse-2")) {
-            mapRef.current.removeLayer("user-location-pulse-2");
-          }
-          if (mapRef.current.getLayer("user-location-center")) {
-            mapRef.current.removeLayer("user-location-center");
-          }
-          mapRef.current.removeSource("user-location");
+        // iOS Safari向け：コンテナのサイズを明示的に計算
+        const container = ref.current;
+        const rect = container.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) {
+          // サイズがまだ計算されていない場合は少し待つ
+          setTimeout(initMap, 100);
+          return;
         }
 
-        mapRef.current.remove();
-        mapRef.current = null;
+        const map = new mapboxgl.Map({
+          container: container,
+          style: "mapbox://styles/mapbox/dark-v11", // 黒いダークスタイル
+          center: initialCenter || VANCOUVER,
+          zoom: initialZoom || 16, // 3D表示に適した初期ズームレベル
+          pitch: 45, // 初期ピッチを3D効果のある角度に
+          bearing: 0,
+          antialias: true, // アンチエイリアスを有効化
+          // モバイル向けの最適化
+          renderWorldCopies: true,
+          maxTileCacheSize: 50, // モバイル向けにキャッシュサイズを制限
+          // iOS Safari向けの最適化
+          preserveDrawingBuffer: false, // メモリ使用量を削減
+        });
+
+        mapRef.current = map;
+        console.log("Map3D: Map created");
+
+        // エラーハンドリング
+        map.on("error", (e) => {
+          console.error("Map3D: Map error:", e);
+          if (e.error && e.error.message) {
+            console.error("Map3D: Error message:", e.error.message);
+          }
+        });
+
+        map.on("style.load", () => {
+          console.log("Map3D: Style loaded successfully");
+        });
+
+        map.on("styleimagemissing", (e) => {
+          console.warn("Map3D: Style image missing:", e.id);
+        });
+
+        // マップが読み込まれた後の処理
+        map.on("load", () => {
+          console.log("Map3D: Map loaded, adding layers...");
+
+          // 初期3Dモードを有効化
+          setIs3DEnabled(true);
+
+          // 3D建物レイヤーを追加
+          add3DBuildings(map);
+
+          // 地形の3D表示を有効化
+          enableTerrain3D(map);
+
+          // バス停レイヤーを追加
+          addBusStopsLayer(map);
+
+          if (onMapReady) {
+            onMapReady(map);
+          }
+
+          // ユーザーの位置情報を取得（マップ読み込み後）
+          getUserLocation();
+
+          console.log("Map3D: All layers added");
+        });
+
+        // ピンデータを読み込み
+        loadPinnedStops();
+
+        // ピッチとベアリングの変更を監視
+        map.on("pitch", () => {
+          setPitch(map.getPitch());
+        });
+
+        map.on("rotate", () => {
+          setBearing(map.getBearing());
+        });
+
+        // iOS Safari向け：マップが読み込まれた後に明示的にリサイズ
+        setTimeout(() => {
+          if (map) {
+            map.resize();
+          }
+        }, 300);
+
+        return () => {
+          console.log("Map3D: Cleaning up map");
+          if (mapRef.current) {
+            // ユーザー位置レイヤーをクリーンアップ
+            if (mapRef.current.getSource("user-location")) {
+              if (mapRef.current.getLayer("user-location-pulse")) {
+                mapRef.current.removeLayer("user-location-pulse");
+              }
+              if (mapRef.current.getLayer("user-location-pulse-2")) {
+                mapRef.current.removeLayer("user-location-pulse-2");
+              }
+              if (mapRef.current.getLayer("user-location-center")) {
+                mapRef.current.removeLayer("user-location-center");
+              }
+              mapRef.current.removeSource("user-location");
+            }
+
+            mapRef.current.remove();
+            mapRef.current = null;
+          }
+        };
+      };
+
+      // 初期化を実行（iOS Safariでは少し遅延させる）
+      if (
+        typeof window !== "undefined" &&
+        /iPad|iPhone|iPod/.test(navigator.userAgent)
+      ) {
+        // iOS Safariの場合、少し待ってから初期化
+        setTimeout(initMap, 100);
+      } else {
+        // その他のブラウザは即座に初期化
+        initMap();
       }
-    };
+    } catch (error) {
+      console.error("Map3D: Failed to initialize map:", error);
+      if (ref.current) {
+        ref.current.innerHTML = `
+          <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: white; text-align: center; padding: 20px;">
+            <div>
+              <p>Failed to load map.</p>
+              <p>Error: ${
+                error instanceof Error ? error.message : String(error)
+              }</p>
+              <p>Please check the browser console for more details.</p>
+            </div>
+          </div>
+        `;
+      }
+    }
   }, []); // 依存配列を空にして一度だけ実行
 
   // 選択されたバス停IDが変更された時にレイヤーを更新
@@ -951,18 +1075,27 @@ export default function Map3D({
             };
 
             console.log("Map3D: Setting selected stop:", selectedStopData);
-            setSelectedStop(selectedStopData);
+
+            // 外部のハンドラーを優先して使用（URL更新のため）
+            const stopId = properties.stop_id;
+
             if (externalSetSelectedStop) {
               externalSetSelectedStop(selectedStopData);
+            } else {
+              setSelectedStop(selectedStopData);
             }
-            setSelectedStopId(properties.stop_id);
+
             if (externalSetSelectedStopId) {
-              externalSetSelectedStopId(properties.stop_id);
+              externalSetSelectedStopId(stopId);
+            } else {
+              setSelectedStopId(stopId);
             }
-            setIsPanelOpen(true);
+
+            // パネルを開く（外部と内部の両方を更新）
             if (externalSetIsPanelOpen) {
               externalSetIsPanelOpen(true);
             }
+            setIsPanelOpen(true);
 
             console.log("Map3D: Panel should be open now");
 
@@ -1041,9 +1174,9 @@ export default function Map3D({
   return (
     <div className="relative h-full w-full flex flex-col md:block">
       {/* 左側のコントロールパネル */}
-      <div className="absolute top-4 left-4 z-10 flex flex-col gap-3">
+      <div className="absolute top-4 left-4 right-4 md:left-4 md:right-auto z-10 flex flex-col gap-3">
         {/* 検索バー */}
-        <div className="w-80">
+        <div className="w-full md:w-80">
           <GoogleMapsSearchBar
             onSearch={handleSearch}
             onSearchStart={handleSearchStart}
@@ -1051,6 +1184,27 @@ export default function Map3D({
             placeholder="Search places (e.g., Downtown, Richmond)"
           />
         </div>
+
+        {/* 3D表示トグル - スマホサイズのみ表示 */}
+        {onMapToggle && (
+          <div className="md:hidden">
+            <div className="bg-white/10 backdrop-blur-xl rounded-lg shadow-lg border border-white/20 p-2 flex items-center gap-2">
+              <span className="text-xs text-white">3D表示</span>
+              <button
+                onClick={onMapToggle}
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                  is3DMode ? "bg-blue-600" : "bg-gray-600"
+                }`}
+              >
+                <span
+                  className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                    is3DMode ? "translate-x-4" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* 地域選択パネル */}
         {!isSearching && (
@@ -1145,50 +1299,60 @@ export default function Map3D({
       )}
 
       {/* バス停詳細パネル */}
-      {isPanelOpen && selectedStop && (
-        <BusStopDetailPanel
-          isOpen={isPanelOpen}
-          onClose={() => {
-            setIsPanelOpen(false);
-            setSelectedStop(null);
-            setSelectedStopId(null);
-          }}
-          selectedStop={selectedStop}
-          regionDelays={regionDelays}
-          stopDelays={stopDelays}
-          routeDelays={routeDelays}
-          routeIdMapping={routeIdMapping}
-          selectedStopId={selectedStopId}
-          getDelaySymbol={getDelaySymbol}
-          getDelayLevelName={getDelayLevelName}
-          pinnedStops={pinnedStops}
-          onTogglePin={(stopId, stopData) => {
-            const newPinnedStops = new Set(pinnedStops);
-            if (newPinnedStops.has(stopId)) {
-              newPinnedStops.delete(stopId);
-              const newPinnedData = { ...pinnedStopsData };
-              delete newPinnedData[stopId];
-              setPinnedStopsData(newPinnedData);
-            } else {
-              newPinnedStops.add(stopId);
-              setPinnedStopsData((prev) => ({
-                ...prev,
-                [stopId]: stopData,
-              }));
-            }
-            setPinnedStops(newPinnedStops);
-            localStorage.setItem(
-              "pinnedStops",
-              JSON.stringify({
-                ids: Array.from(newPinnedStops),
-                data: newPinnedStops.has(stopId)
-                  ? { ...pinnedStopsData, [stopId]: stopData }
-                  : pinnedStopsData,
-              })
-            );
-          }}
-        />
-      )}
+      {(isPanelOpen || externalIsPanelOpen) &&
+        (selectedStop || externalSelectedStop) && (
+          <BusStopDetailPanel
+            isOpen={isPanelOpen || externalIsPanelOpen || false}
+            onClose={() => {
+              setIsPanelOpen(false);
+              if (externalSetIsPanelOpen) {
+                externalSetIsPanelOpen(false);
+              }
+              setSelectedStop(null);
+              if (externalSetSelectedStop) {
+                externalSetSelectedStop(null);
+              }
+              setSelectedStopId(null);
+              if (externalSetSelectedStopId) {
+                externalSetSelectedStopId(null);
+              }
+            }}
+            selectedStop={selectedStop || externalSelectedStop}
+            regionDelays={regionDelays}
+            stopDelays={stopDelays}
+            routeDelays={routeDelays}
+            routeIdMapping={routeIdMapping}
+            selectedStopId={selectedStopId || externalSelectedStopId || null}
+            getDelaySymbol={getDelaySymbol}
+            getDelayLevelName={getDelayLevelName}
+            pinnedStops={pinnedStops}
+            onTogglePin={(stopId, stopData) => {
+              const newPinnedStops = new Set(pinnedStops);
+              if (newPinnedStops.has(stopId)) {
+                newPinnedStops.delete(stopId);
+                const newPinnedData = { ...pinnedStopsData };
+                delete newPinnedData[stopId];
+                setPinnedStopsData(newPinnedData);
+              } else {
+                newPinnedStops.add(stopId);
+                setPinnedStopsData((prev) => ({
+                  ...prev,
+                  [stopId]: stopData,
+                }));
+              }
+              setPinnedStops(newPinnedStops);
+              localStorage.setItem(
+                "pinnedStops",
+                JSON.stringify({
+                  ids: Array.from(newPinnedStops),
+                  data: newPinnedStops.has(stopId)
+                    ? { ...pinnedStopsData, [stopId]: stopData }
+                    : pinnedStopsData,
+                })
+              );
+            }}
+          />
+        )}
 
       {/* Map Markers */}
       <MapMarkers
