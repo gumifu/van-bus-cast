@@ -17,6 +17,8 @@ interface PinnedStopsPanelProps {
   onRemovePin: (stopId: string) => void;
   isVisible: boolean;
   onToggleVisibility: () => void;
+  onMapToggle?: () => void;
+  is3DMode?: boolean;
 }
 
 export default function PinnedStopsPanel({
@@ -26,6 +28,8 @@ export default function PinnedStopsPanel({
   onRemovePin,
   isVisible,
   onToggleVisibility,
+  onMapToggle,
+  is3DMode,
 }: PinnedStopsPanelProps) {
   const pinnedStopsList = Array.from(pinnedStops).map((stopId) => {
     const stopData = pinnedStopsData[stopId];
@@ -42,10 +46,48 @@ export default function PinnedStopsPanel({
 
   return (
     <>
-      {/* Toggle Button */}
+      {/* スマホ時のPinボタンと3Dトグルのコンテナ */}
+      <div className="md:hidden fixed bottom-4 left-4 z-20 flex items-center gap-2">
+        {/* Pinボタン */}
+        <button
+          onClick={onToggleVisibility}
+          className="bg-white/10 backdrop-blur-xl text-white p-3 rounded-lg shadow-lg border border-white/20 hover:bg-white/20 transition-colors cursor-pointer"
+          title={isVisible ? "Hide Pinned Stops" : "Show Pinned Stops"}
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-lg">📍</span>
+            <span className="text-sm font-medium">
+              {pinnedStopsList.length} Pinned
+            </span>
+            <span className="text-xs">{isVisible ? "▼" : "▲"}</span>
+          </div>
+        </button>
+
+        {/* 3D表示トグル */}
+        {onMapToggle && (
+          <div className="bg-white/10 backdrop-blur-xl rounded-lg shadow-lg border border-white/20 p-3 flex items-center gap-2">
+            <span className="text-sm text-white">3D</span>
+            <button
+              onClick={onMapToggle}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer ${
+                is3DMode ? "bg-blue-600" : "bg-gray-600"
+              }`}
+              aria-label={is3DMode ? "Switch to 2D view" : "Switch to 3D view"}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  is3DMode ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* デスクトップ時のPinボタン */}
       <button
         onClick={onToggleVisibility}
-        className="fixed bottom-4 left-4 z-20 bg-white/10 backdrop-blur-xl text-white p-3 rounded-lg shadow-lg border border-white/20 hover:bg-white/20 transition-colors cursor-pointer"
+        className="hidden md:block fixed bottom-4 left-4 z-20 bg-white/10 backdrop-blur-xl text-white p-3 rounded-lg shadow-lg border border-white/20 hover:bg-white/20 transition-colors cursor-pointer"
         title={isVisible ? "Hide Pinned Stops" : "Show Pinned Stops"}
       >
         <div className="flex items-center gap-2">
