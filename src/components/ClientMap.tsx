@@ -1155,9 +1155,21 @@ export default function ClientMap({
             setTimeout(initMap, 100);
             return;
           } else {
-            console.warn(
-              "ClientMap: Container size still 0 after max attempts, proceeding anyway"
+            // サイズが0のままではマップを作成できない（403エラーの原因になる可能性）
+            console.error(
+              "ClientMap: Container size is 0, cannot initialize map. Please check the container's CSS."
             );
+            if (ref.current) {
+              ref.current.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: white; text-align: center; padding: 20px;">
+                  <div>
+                    <p>Failed to initialize map.</p>
+                    <p>Container size is not available.</p>
+                  </div>
+                </div>
+              `;
+            }
+            return;
           }
         }
 
@@ -1178,22 +1190,50 @@ export default function ClientMap({
 
         // エラーハンドリング（タイルエラーは通常ログに記録しない）
         // Mapboxのタイルロードエラーは自動的にリトライされるため、ログに記録する必要がない
+        let hasShown403Error = false;
+
         map.on("error", (e: any) => {
           // エラーメッセージがない、またはタイルエラーの場合は無視
           const errorMessage = e.error?.message?.toLowerCase() || "";
+          const status = (e.error as any)?.status;
+
+          // 403 Forbiddenエラー（トークンの問題）を検出
+          if (status === 403 || errorMessage.includes("forbidden")) {
+            if (!hasShown403Error) {
+              hasShown403Error = true;
+              console.error("ClientMap: Mapbox 403 Forbidden Error", {
+                message:
+                  "Mapbox token may be invalid or expired. Please check your NEXT_PUBLIC_MAPBOX_TOKEN.",
+                status: status,
+                type: e.type,
+              });
+              // ユーザーに表示する
+              if (ref.current) {
+                const errorDiv = document.createElement("div");
+                errorDiv.style.cssText =
+                  "position: absolute; top: 10px; left: 10px; right: 10px; background: rgba(239, 68, 68, 0.9); color: white; padding: 12px; border-radius: 8px; z-index: 1000; font-size: 14px;";
+                errorDiv.innerHTML = `
+                  <strong>Mapbox Token Error</strong><br>
+                  Your Mapbox token appears to be invalid or expired.<br>
+                  Please check your NEXT_PUBLIC_MAPBOX_TOKEN environment variable.
+                `;
+                ref.current.appendChild(errorDiv);
+              }
+            }
+            return;
+          }
 
           // 重要なエラーのみをログに記録（トークン、認証、スタイル関連）
           if (
             errorMessage &&
             (errorMessage.includes("token") ||
               errorMessage.includes("unauthorized") ||
-              errorMessage.includes("forbidden") ||
               errorMessage.includes("style") ||
               errorMessage.includes("access denied"))
           ) {
             console.error("ClientMap: Important map error:", {
               message: e.error?.message,
-              status: (e.error as any)?.status,
+              status: status,
               type: e.type,
             });
           }
