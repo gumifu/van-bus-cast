@@ -645,11 +645,33 @@ export default function Map3D({
         mapRef.current = map;
         console.log("Map3D: Map created");
 
-        // エラーハンドリング
-        map.on("error", (e) => {
-          console.error("Map3D: Map error:", e);
+        // エラーハンドリング（タイルエラーは通常ログに記録しない）
+        let errorCount = 0;
+        const maxErrorLogs = 5; // 最大5回までエラーをログに記録
+
+        map.on("error", (e: any) => {
+          // タイルロードエラーは通常無視して良い（ネットワークの問題などで一時的に発生する）
           if (e.error && e.error.message) {
-            console.error("Map3D: Error message:", e.error.message);
+            const errorMessage = e.error.message.toLowerCase();
+            // 重要なエラーのみをログに記録
+            if (
+              errorMessage.includes("token") ||
+              errorMessage.includes("unauthorized") ||
+              errorMessage.includes("forbidden") ||
+              errorMessage.includes("style") ||
+              errorCount < maxErrorLogs
+            ) {
+              errorCount++;
+              console.error("Map3D: Map error:", {
+                message: e.error.message,
+                status: (e.error as any).status,
+                type: e.type,
+                tile: e.tile ? { url: (e.tile as any).url } : null,
+              });
+            }
+          } else if (errorCount < maxErrorLogs) {
+            errorCount++;
+            console.warn("Map3D: Map error (no details):", e.type);
           }
         });
 
