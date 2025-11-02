@@ -466,7 +466,16 @@ export default function Map3D({
           // 現在地マーカーはMapMarkersコンポーネントで管理
         },
         (error) => {
-          console.error("Map3D: Error getting location:", error);
+          // エラーの種類に応じて適切なメッセージを表示
+          let errorMessage = "Unable to get location";
+          if (error.code === 1) {
+            errorMessage = "Location permission denied";
+          } else if (error.code === 2) {
+            errorMessage = "Location unavailable";
+          } else if (error.code === 3) {
+            errorMessage = "Location request timeout";
+          }
+          console.warn(`Map3D: ${errorMessage} - using default location`);
           // デフォルトでバンクーバー中心部を使用
           setUserLocation(VANCOUVER);
           // 現在地マーカーはMapMarkersコンポーネントで管理

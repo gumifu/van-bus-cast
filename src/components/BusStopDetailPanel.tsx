@@ -862,9 +862,12 @@ export default function BusStopDetailPanel({
 
       {/* Mobile Version (from bottom) */}
       <div
-        className={`md:hidden fixed bottom-0 left-0 right-0 bg-white/10 backdrop-blur-xl text-white shadow-2xl transform transition-transform duration-300 ease-out z-50 border-t border-white/20 ${
+        className={`md:hidden fixed bottom-0 left-0 right-0 bg-white/10 backdrop-blur-xl text-white shadow-2xl transform transition-transform duration-300 ease-in-out z-50 border-t border-white/20 ${
           isOpen ? "translate-y-0" : "translate-y-full"
         }`}
+        style={{
+          willChange: "transform",
+        }}
       >
         <div className="flex items-center justify-between p-3 border-b border-white/20">
           <h2 className="text-lg font-semibold">Bus Stop Details</h2>
@@ -914,26 +917,26 @@ export default function BusStopDetailPanel({
             </div>
             {/* Delay Status */}
             <div className="border-t border-white/20 pt-3">
-              <h3 className="font-semibold text-white mb-2 text-sm">
+              <h3 className="font-semibold text-white mb-2 text-base">
                 Delay Status
               </h3>
               <div className="bg-white/10 backdrop-blur-md rounded-lg p-2 border border-white/20 shadow-lg">
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-white font-medium text-sm">
+                    <span className="text-white font-medium text-base">
                       {getDelayLevelName(
                         stopDelays[selectedStop?.properties?.stop_id] || 0
                       )}
                     </span>
                     <span className="text-gray-400">|</span>
-                    <span className="text-xl">
+                    <span className="text-2xl">
                       {getDelaySymbol(
                         stopDelays[selectedStop?.properties?.stop_id] || 0
                       )}
                     </span>
                   </div>
                 </div>
-                <div className="text-xs text-gray-300">
+                <div className="text-sm text-gray-300">
                   Last updated:{" "}
                   {new Date().toLocaleTimeString("en-US", {
                     hour: "2-digit",
@@ -943,7 +946,7 @@ export default function BusStopDetailPanel({
                 </div>
               </div>
             </div>
-            <div className="space-y-1 text-xs text-gray-400">
+            <div className="space-y-1 text-sm text-gray-400 mt-2">
               <div className="flex justify-between">
                 <span>Stop ID:</span>
                 <span>{selectedStop.properties?.stop_id || "N/A"}</span>
@@ -966,7 +969,7 @@ export default function BusStopDetailPanel({
           {/* 路線別遅延情報 */}
           {getStopRoutes().length > 0 && (
             <div className="mt-3">
-              <h4 className="text-xs font-medium text-gray-300 mb-2">
+              <h4 className="text-sm font-medium text-gray-300 mb-2">
                 Route Delays
               </h4>
               <div className="space-y-2">
@@ -995,32 +998,32 @@ export default function BusStopDetailPanel({
                       <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center gap-2">
                           <span
-                            className="px-2 py-0.5 rounded-md font-bold text-xs text-white"
+                            className="px-2 py-0.5 rounded-md font-bold text-sm text-white"
                             style={{ backgroundColor: color }}
                           >
                             {route}
                           </span>
                           {routeFirstArrivals[route]?.destination && (
-                            <span className="text-white font-medium text-xs">
+                            <span className="text-white font-medium text-sm">
                               {routeFirstArrivals[route].destination}
                             </span>
                           )}
                         </div>
                         <div className="flex items-center gap-1">
-                          <span className="text-xs text-gray-400">
+                          <span className="text-sm text-gray-400">
                             {getDelayLevelName(delay)}
                           </span>
                           <span className="text-gray-400">|</span>
-                          <span className="text-sm">
+                          <span className="text-lg">
                             {getDelaySymbol(delay)}
                           </span>
                         </div>
                       </div>
                       {routeFirstArrivals[route] && (
                         <div className="mt-1.5 pt-1.5 border-t border-white/10">
-                          <div className="flex items-center justify-between text-xs">
+                          <div className="flex items-center justify-between text-sm">
                             <span className="text-gray-400">Scheduled:</span>
-                            <span className="text-white font-medium text-xs">
+                            <span className="text-white font-medium text-sm">
                               {routeFirstArrivals[route].scheduledTime}
                             </span>
                           </div>
@@ -1035,8 +1038,10 @@ export default function BusStopDetailPanel({
 
           {/* 位置情報 */}
           <div className="border-t border-white/20 pt-3">
-            <h3 className="font-semibold text-white mb-2 text-sm">Location</h3>
-            <div className="space-y-1 text-xs text-gray-400">
+            <h3 className="font-semibold text-white mb-2 text-base">
+              Location
+            </h3>
+            <div className="space-y-1 text-sm text-gray-400">
               <div className="flex justify-between">
                 <span>Latitude:</span>
                 <span>
@@ -1082,7 +1087,7 @@ export default function BusStopDetailPanel({
 
                   return (
                     <span
-                      className="px-3 py-1 rounded-md font-bold text-sm text-white"
+                      className="px-3 py-1 rounded-md font-bold text-base md:text-sm text-white"
                       style={{ backgroundColor: color }}
                     >
                       {selectedRoute}
@@ -1091,18 +1096,18 @@ export default function BusStopDetailPanel({
                 })()}
                 {/* 目的地 */}
                 {routeFirstArrivals[selectedRoute]?.destination && (
-                  <span className="text-white font-medium">
+                  <span className="text-white font-medium text-base md:text-base">
                     {routeFirstArrivals[selectedRoute].destination}
                   </span>
                 )}
                 {/* 遅延ステータス */}
                 {selectedRoute && routeDelays[selectedRoute] !== undefined && (
                   <>
-                    <span className="text-gray-400 text-sm">
+                    <span className="text-gray-400 text-base md:text-sm">
                       {getDelayLevelName(routeDelays[selectedRoute])}
                     </span>
                     <span className="text-gray-400">|</span>
-                    <span className="text-lg">
+                    <span className="text-xl md:text-lg">
                       {getDelaySymbol(routeDelays[selectedRoute])}
                     </span>
                   </>
@@ -1185,12 +1190,14 @@ export default function BusStopDetailPanel({
               </div>
             </div>
             {loadingArrivals ? (
-              <div className="text-center py-8 text-gray-400">Loading...</div>
+              <div className="text-center py-8 text-gray-400 text-base">
+                Loading...
+              </div>
             ) : routeArrivals.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* 左側カラム: グラフ */}
                 <div className="space-y-4">
-                  <h3 className="text-sm font-semibold text-white mb-3">
+                  <h3 className="text-base md:text-sm font-semibold text-white mb-3">
                     Delay Trend
                   </h3>
                   {/* 遅延グラフ */}
@@ -1204,10 +1211,10 @@ export default function BusStopDetailPanel({
                   {/* Route情報 */}
                   {routeData?.route && (
                     <div className="bg-white/10 backdrop-blur-md rounded-lg p-4 border border-white/20">
-                      <h3 className="text-sm font-semibold text-white mb-3">
+                      <h3 className="text-base md:text-sm font-semibold text-white mb-3">
                         Route Information
                       </h3>
-                      <div className="space-y-2 text-xs">
+                      <div className="space-y-2 text-sm md:text-xs">
                         <div className="flex justify-between">
                           <span className="text-gray-400">Route:</span>
                           <span className="text-white">
@@ -1238,7 +1245,7 @@ export default function BusStopDetailPanel({
 
                   {/* 到着時刻リスト */}
                   <div>
-                    <h3 className="text-sm font-semibold text-white mb-3">
+                    <h3 className="text-base md:text-sm font-semibold text-white mb-3">
                       Arrival Times
                     </h3>
                     <div className="space-y-3 max-h-[50vh] overflow-y-auto">
@@ -1305,10 +1312,10 @@ export default function BusStopDetailPanel({
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-3 flex-1">
                                 <div>
-                                  <div className="text-white font-medium">
+                                  <div className="text-white font-medium text-base md:text-base">
                                     {formatCanadianTime(arrivalTime)}
                                   </div>
-                                  <div className="text-gray-400 text-sm">
+                                  <div className="text-gray-400 text-base md:text-sm">
                                     {arrival.trip_headsign || "Unknown"}
                                   </div>
                                   {/* Scheduled時刻を計算または取得 */}
@@ -1347,7 +1354,7 @@ export default function BusStopDetailPanel({
                                     }
 
                                     return scheduledTime ? (
-                                      <div className="text-gray-500 text-xs mt-1">
+                                      <div className="text-gray-500 text-sm md:text-xs mt-1">
                                         Scheduled:{" "}
                                         {formatCanadianTime(scheduledTime)}
                                       </div>
@@ -1357,7 +1364,7 @@ export default function BusStopDetailPanel({
                               </div>
                               <div className="text-right">
                                 <div className="flex items-center gap-2 justify-end">
-                                  <span className="text-gray-300 text-sm font-medium">
+                                  <span className="text-gray-300 text-base md:text-sm font-medium">
                                     {getDelayLevelName(delayMinutes)}
                                   </span>
                                   <span className="text-gray-400">|</span>

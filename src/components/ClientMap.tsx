@@ -1066,7 +1066,16 @@ export default function ClientMap({
           // 現在地マーカーはMapMarkersコンポーネントで管理
         },
         (error) => {
-          console.error("Error getting user location:", error);
+          // エラーの種類に応じて適切なメッセージを表示
+          let errorMessage = "Unable to get location";
+          if (error.code === 1) {
+            errorMessage = "Location permission denied";
+          } else if (error.code === 2) {
+            errorMessage = "Location unavailable";
+          } else if (error.code === 3) {
+            errorMessage = "Location request timeout";
+          }
+          console.warn(`ClientMap: ${errorMessage} - using default location`);
           // デフォルトでバンクーバー中心部を使用
           setUserLocation(VANCOUVER);
           // 現在地マーカーはMapMarkersコンポーネントで管理
