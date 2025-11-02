@@ -147,12 +147,12 @@ function HomeContent() {
   };
 
   return (
-    <main className="h-screen w-full bg-black text-white md:h-dvh relative">
+    <main className="h-dvh w-full bg-black text-white relative">
       <div className="h-full flex flex-col">
         {/* 3D表示トグル - デスクトップでは右端、スマホでは非表示（ClientMap/Map3D内で表示） */}
         <div className="hidden md:block absolute top-4 right-4 z-20">
           <div className="bg-white/10 backdrop-blur-xl rounded-lg shadow-lg border border-white/20 p-3 flex items-center gap-2">
-            <span className="text-sm text-white">3D表示</span>
+            <span className="text-sm text-white">3D</span>
             <button
               onClick={handleMapToggle}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
@@ -217,11 +217,13 @@ function HomeContent() {
 
 export default function Home() {
   return (
-    <Suspense fallback={
-      <main className="h-screen w-full bg-black text-white flex items-center justify-center">
-        <div>Loading...</div>
-      </main>
-    }>
+    <Suspense
+      fallback={
+        <main className="h-dvh w-full bg-black text-white flex items-center justify-center">
+          <div>Loading...</div>
+        </main>
+      }
+    >
       <HomeContent />
     </Suspense>
   );

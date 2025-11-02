@@ -1681,7 +1681,7 @@ export default function ClientMap({
         {onMapToggle && (
           <div className="md:hidden">
             <div className="bg-white/10 backdrop-blur-xl rounded-lg shadow-lg border border-white/20 p-2 flex items-center gap-2">
-              <span className="text-xs text-white">3D表示</span>
+              <span className="text-xs text-white">3D</span>
               <button
                 onClick={onMapToggle}
                 className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
@@ -1782,9 +1782,10 @@ export default function ClientMap({
       {/* Main Map */}
       <div
         ref={ref}
-        className={`w-full min-h-0 flex-shrink-0 ${
+        className={`w-full flex-shrink-0 ${
           isPanelOpen ? "h-2/3 md:h-full" : "h-full"
         }`}
+        style={{ minHeight: "100%" }}
       />
 
       {/* Google Maps-style Controls */}
