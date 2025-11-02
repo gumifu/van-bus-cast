@@ -107,11 +107,11 @@ export default function BusStopDetailPanel({
     <>
       {/* Desktop Version (from right) */}
       <div
-        className={`hidden md:block fixed top-16 right-0 h-[calc(100%-4rem)] w-80 bg-gray-900 text-white shadow-2xl transform transition-transform duration-300 ease-out z-50 ${
+        className={`hidden md:block fixed top-16 right-0 h-[calc(100%-4rem)] w-80 bg-white/10 backdrop-blur-xl text-white shadow-2xl transform transition-transform duration-300 ease-out z-50 border-l border-white/20 ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
-        <div className="flex items-center justify-between p-4 border-b border-gray-700">
+        <div className="flex items-center justify-between p-4 border-b border-white/20">
           <h3 className="text-lg font-semibold">Bus Stop Details</h3>
           <button
             onClick={onClose}
@@ -173,22 +173,23 @@ export default function BusStopDetailPanel({
           {/* Delay Status */}
           <div className="border-t border-white/20 pt-4">
             <h4 className="font-semibold text-white mb-2">Delay Status</h4>
-            <div className="bg-gray-800 rounded-lg p-3">
+            <div className="bg-white/10 backdrop-blur-md rounded-lg p-3 border border-white/20 shadow-lg">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-2xl">
-                    {getDelaySymbol(
-                      stopDelays[selectedStop?.properties?.stop_id] || 0
-                    )}
-                  </span>
                   <span className="text-white font-medium">
                     {getDelayLevelName(
                       stopDelays[selectedStop?.properties?.stop_id] || 0
                     )}
                   </span>
+                  <span className="text-gray-400">|</span>
+                  <span className="text-2xl">
+                    {getDelaySymbol(
+                      stopDelays[selectedStop?.properties?.stop_id] || 0
+                    )}
+                  </span>
                 </div>
               </div>
-              <div className="text-xs text-gray-400">
+              <div className="text-xs text-gray-300">
                 Last updated:{" "}
                 {new Date().toLocaleTimeString("ja-JP", {
                   hour: "2-digit",
@@ -221,7 +222,7 @@ export default function BusStopDetailPanel({
                   return (
                     <div
                       key={route}
-                      className="bg-gray-800 rounded-lg p-3 border border-gray-700 cursor-pointer hover:bg-gray-700 transition-colors"
+                      className="bg-white/10 backdrop-blur-md rounded-lg p-3 border border-white/20 cursor-pointer hover:bg-white/20 transition-all shadow-lg hover:shadow-xl"
                       onClick={() => {
                         setSelectedRoute(route);
                         setShowForecast(true);
@@ -240,11 +241,12 @@ export default function BusStopDetailPanel({
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-lg">
-                            {getDelaySymbol(delay)}
-                          </span>
                           <span className="text-sm text-gray-400">
                             {getDelayLevelName(delay)}
+                          </span>
+                          <span className="text-gray-400">|</span>
+                          <span className="text-lg">
+                            {getDelaySymbol(delay)}
                           </span>
                         </div>
                       </div>
@@ -278,11 +280,11 @@ export default function BusStopDetailPanel({
 
       {/* Mobile Version (from bottom) */}
       <div
-        className={`md:hidden fixed bottom-0 left-0 right-0 bg-gray-900 text-white shadow-2xl transform transition-transform duration-300 ease-out z-50 ${
+        className={`md:hidden fixed bottom-0 left-0 right-0 bg-white/10 backdrop-blur-xl text-white shadow-2xl transform transition-transform duration-300 ease-out z-50 border-t border-white/20 ${
           isOpen ? "translate-y-0" : "translate-y-full"
         }`}
       >
-        <div className="flex items-center justify-between p-3 border-b border-gray-700">
+        <div className="flex items-center justify-between p-3 border-b border-white/20">
           <h3 className="text-lg font-semibold">Bus Stop Details</h3>
           <button
             onClick={onClose}
@@ -346,22 +348,23 @@ export default function BusStopDetailPanel({
             <h4 className="font-semibold text-white mb-2 text-sm">
               Delay Status
             </h4>
-            <div className="bg-gray-800 rounded-lg p-2">
+            <div className="bg-white/10 backdrop-blur-md rounded-lg p-2 border border-white/20 shadow-lg">
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-xl">
-                    {getDelaySymbol(
-                      stopDelays[selectedStop?.properties?.stop_id] || 0
-                    )}
-                  </span>
                   <span className="text-white font-medium text-sm">
                     {getDelayLevelName(
                       stopDelays[selectedStop?.properties?.stop_id] || 0
                     )}
                   </span>
+                  <span className="text-gray-400">|</span>
+                  <span className="text-xl">
+                    {getDelaySymbol(
+                      stopDelays[selectedStop?.properties?.stop_id] || 0
+                    )}
+                  </span>
                 </div>
               </div>
-              <div className="text-xs text-gray-400">
+              <div className="text-xs text-gray-300">
                 Last updated:{" "}
                 {new Date().toLocaleTimeString("ja-JP", {
                   hour: "2-digit",
@@ -394,7 +397,7 @@ export default function BusStopDetailPanel({
                   return (
                     <div
                       key={route}
-                      className="bg-gray-800 rounded-lg p-2 border border-gray-700 cursor-pointer hover:bg-gray-700 transition-colors"
+                      className="bg-white/10 backdrop-blur-md rounded-lg p-2 border border-white/20 cursor-pointer hover:bg-white/20 transition-all shadow-lg hover:shadow-xl"
                       onClick={() => {
                         setSelectedRoute(route);
                         setShowForecast(true);
@@ -413,11 +416,12 @@ export default function BusStopDetailPanel({
                           </span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <span className="text-sm">
-                            {getDelaySymbol(delay)}
-                          </span>
                           <span className="text-xs text-gray-400">
                             {getDelayLevelName(delay)}
+                          </span>
+                          <span className="text-gray-400">|</span>
+                          <span className="text-sm">
+                            {getDelaySymbol(delay)}
                           </span>
                         </div>
                       </div>
@@ -451,8 +455,8 @@ export default function BusStopDetailPanel({
 
       {/* 6-Hour Forecast Modal */}
       {showForecast && selectedRoute && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-900 rounded-lg p-6 w-96 max-w-full mx-4 max-h-[80vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white/10 backdrop-blur-xl rounded-lg p-6 w-96 max-w-full mx-4 max-h-[80vh] overflow-y-auto border border-white/20 shadow-2xl">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold text-white">
                 Route {selectedRoute} - Arrival Times
@@ -486,29 +490,30 @@ export default function BusStopDetailPanel({
                   return (
                     <div
                       key={index}
-                      className="flex items-center justify-between bg-gray-800 p-3 rounded"
+                      className="flex items-center justify-between bg-white/10 backdrop-blur-md p-3 rounded border border-white/20 shadow-lg"
                     >
                       <div className="flex items-center gap-3 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-2xl">
-                            {getDelaySymbol(delayMinutes)}
-                          </span>
-                          <div>
-                            <div className="text-white font-medium">
-                              {arrivalTime}
-                            </div>
-                            <div className="text-gray-400 text-sm">
-                              {arrival.trip_headsign ||
-                                `Trip ${
-                                  arrival.trip_id?.substring(0, 8) || "N/A"
-                                }`}
-                            </div>
+                        <div>
+                          <div className="text-white font-medium">
+                            {arrivalTime}
+                          </div>
+                          <div className="text-gray-400 text-sm">
+                            {arrival.trip_headsign ||
+                              `Trip ${
+                                arrival.trip_id?.substring(0, 8) || "N/A"
+                              }`}
                           </div>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-gray-300 text-sm font-medium">
-                          {getDelayLevelName(delayMinutes)}
+                        <div className="flex items-center gap-2 justify-end">
+                          <span className="text-gray-300 text-sm font-medium">
+                            {getDelayLevelName(delayMinutes)}
+                          </span>
+                          <span className="text-gray-400">|</span>
+                          <span className="text-2xl">
+                            {getDelaySymbol(delayMinutes)}
+                          </span>
                         </div>
                       </div>
                     </div>

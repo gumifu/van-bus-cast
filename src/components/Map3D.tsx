@@ -179,24 +179,70 @@ export default function Map3D({
         zoom: number;
       }> = [];
 
+      // 主要な街8つに制限
+      const majorRegions = [
+        "vancouver",
+        "richmond",
+        "burnaby",
+        "surrey",
+        "coquitlam",
+        "delta",
+        "langley",
+        "new_westminster",
+      ];
+
       if (data.regions && Array.isArray(data.regions)) {
         data.regions.forEach((region: any) => {
           const regionId = region.region_id;
-          // region_idを変換（例: "vancouver_city" → "vancouver"）
-          const simplifiedId = regionId.split("_")[0];
-          // 小数点を丸める（負の値も保持：マイナスは「早く来ている」を意味する）
-          const delayMinutes = region.avg_delay_minutes
-            ? Math.round(region.avg_delay_minutes)
+          // region_id は重複回避のためそのまま使用（例: "port_coquitlam" と "port_moody"）
+          const simplifiedId = regionId;
+          // 秒を分に変換して丸める（負の値も保持：マイナスは「早く来ている」を意味する）
+          const delayMinutes = region.avg_delay_seconds
+            ? Math.round(region.avg_delay_seconds / 60)
             : 0;
           regionDelayData[simplifiedId] = delayMinutes;
 
-          // 地域リストに追加
-          if (region.center_lat && region.center_lon) {
+          // 主要な街のみ地域リストに追加
+          const isMajorRegion = majorRegions.some((major) =>
+            simplifiedId.toLowerCase().includes(major.toLowerCase())
+          );
+
+          if (isMajorRegion) {
+            // 緯度経度がAPIから取得できない場合は固定値を使用
+            let center: [number, number];
+            let zoom: number;
+
+            if (region.center_lat && region.center_lon) {
+              center = [region.center_lon, region.center_lat];
+              zoom = 12;
+            } else {
+              // 固定値のマッピング
+              const centerMap: { [key: string]: [number, number] } = {
+                vancouver: [-123.1207, 49.2827],
+                richmond: [-123.1338, 49.1666],
+                burnaby: [-122.9749, 49.2488],
+                surrey: [-122.849, 49.1913],
+                coquitlam: [-122.8289, 49.2838],
+                delta: [-123.0857, 49.0847],
+                langley: [-122.6585, 49.1041],
+                new_westminster: [-122.9119, 49.2057],
+              };
+
+              const matchedMajor = majorRegions.find((major) =>
+                simplifiedId.toLowerCase().includes(major.toLowerCase())
+              );
+              center =
+                matchedMajor && centerMap[matchedMajor]
+                  ? centerMap[matchedMajor]
+                  : [-123.1207, 49.2827]; // デフォルト
+              zoom = simplifiedId.toLowerCase().includes("vancouver") ? 11 : 12;
+            }
+
             regionList.push({
               id: simplifiedId,
               name: region.region_name || formatRegionName(simplifiedId),
-              center: [region.center_lon, region.center_lat],
-              zoom: 12,
+              center,
+              zoom,
             });
           }
         });
@@ -205,8 +251,74 @@ export default function Map3D({
       setRegionDelays(regionDelayData);
 
       // 地域リストを設定（APIから取得したデータがあればそれを使用、なければデフォルト）
+      // 主要な街8つに制限（重複を避けつつ最大8つ）
       if (regionList.length > 0) {
-        setRegions(regionList);
+        // 主要な街の優先順位に基づいてソート
+        const sortedRegions = regionList.sort((a, b) => {
+          const aIndex = majorRegions.findIndex((major) =>
+            a.id.toLowerCase().includes(major.toLowerCase())
+          );
+          const bIndex = majorRegions.findIndex((major) =>
+            b.id.toLowerCase().includes(major.toLowerCase())
+          );
+          return (
+            (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex)
+          );
+        });
+        // 最大8つに制限
+        setRegions(sortedRegions.slice(0, 8));
+      } else {
+        // フォールバック: 主要な街8つ
+        setRegions([
+          {
+            id: "vancouver",
+            name: "Vancouver",
+            center: [-123.1207, 49.2827],
+            zoom: 11,
+          },
+          {
+            id: "richmond",
+            name: "Richmond",
+            center: [-123.1338, 49.1666],
+            zoom: 12,
+          },
+          {
+            id: "burnaby",
+            name: "Burnaby",
+            center: [-122.9749, 49.2488],
+            zoom: 12,
+          },
+          {
+            id: "surrey",
+            name: "Surrey",
+            center: [-122.849, 49.1913],
+            zoom: 12,
+          },
+          {
+            id: "coquitlam",
+            name: "Coquitlam",
+            center: [-122.8289, 49.2838],
+            zoom: 12,
+          },
+          {
+            id: "delta",
+            name: "Delta",
+            center: [-123.0857, 49.0847],
+            zoom: 12,
+          },
+          {
+            id: "langley",
+            name: "Langley",
+            center: [-122.6585, 49.1041],
+            zoom: 12,
+          },
+          {
+            id: "new_westminster",
+            name: "New Westminster",
+            center: [-122.9119, 49.2057],
+            zoom: 12,
+          },
+        ]);
       }
     } catch (error) {
       console.error("Map3D: Error fetching delay predictions from API:", error);
@@ -229,6 +341,58 @@ export default function Map3D({
         new_westminster: Math.floor(Math.random() * 4),
       };
       setRegionDelays(regionDelayData);
+
+      // フォールバック: 主要な街8つ
+      setRegions([
+        {
+          id: "vancouver",
+          name: "Vancouver",
+          center: [-123.1207, 49.2827],
+          zoom: 11,
+        },
+        {
+          id: "richmond",
+          name: "Richmond",
+          center: [-123.1338, 49.1666],
+          zoom: 12,
+        },
+        {
+          id: "burnaby",
+          name: "Burnaby",
+          center: [-122.9749, 49.2488],
+          zoom: 12,
+        },
+        {
+          id: "surrey",
+          name: "Surrey",
+          center: [-122.849, 49.1913],
+          zoom: 12,
+        },
+        {
+          id: "coquitlam",
+          name: "Coquitlam",
+          center: [-122.8289, 49.2838],
+          zoom: 12,
+        },
+        {
+          id: "delta",
+          name: "Delta",
+          center: [-123.0857, 49.0847],
+          zoom: 12,
+        },
+        {
+          id: "langley",
+          name: "Langley",
+          center: [-122.6585, 49.1041],
+          zoom: 12,
+        },
+        {
+          id: "new_westminster",
+          name: "New Westminster",
+          center: [-122.9119, 49.2057],
+          zoom: 12,
+        },
+      ]);
     }
 
     // 路線別遅延予測（デモデータ）
@@ -245,58 +409,6 @@ export default function Map3D({
       stopDelayData[stopId] = Math.floor(Math.random() * 8); // 0-7分
     }
     setStopDelays(stopDelayData);
-
-    // デフォルトの地域リストを設定
-    setRegions([
-      {
-        id: "vancouver",
-        name: "Vancouver",
-        center: [-123.1207, 49.2827],
-        zoom: 11,
-      },
-      {
-        id: "richmond",
-        name: "Richmond",
-        center: [-123.1338, 49.1666],
-        zoom: 12,
-      },
-      {
-        id: "burnaby",
-        name: "Burnaby",
-        center: [-122.9749, 49.2488],
-        zoom: 12,
-      },
-      {
-        id: "surrey",
-        name: "Surrey",
-        center: [-122.849, 49.1913],
-        zoom: 12,
-      },
-      {
-        id: "coquitlam",
-        name: "Coquitlam",
-        center: [-122.8289, 49.2838],
-        zoom: 12,
-      },
-      {
-        id: "delta",
-        name: "Delta",
-        center: [-123.0857, 49.0847],
-        zoom: 12,
-      },
-      {
-        id: "langley",
-        name: "Langley",
-        center: [-122.6585, 49.1041],
-        zoom: 12,
-      },
-      {
-        id: "new_westminster",
-        name: "New Westminster",
-        center: [-122.9119, 49.2057],
-        zoom: 12,
-      },
-    ]);
   };
 
   // ユーザーの位置情報を取得
@@ -942,34 +1054,15 @@ export default function Map3D({
 
         {/* 地域選択パネル */}
         {!isSearching && (
-          <div className="bg-gray-900 rounded-lg shadow-lg border border-gray-700 p-3 w-80 transition-all duration-300">
-            <h3 className="font-semibold text-sm text-white mb-2">Region</h3>
-            <div className="space-y-1">
-              {regions.map((region) => (
-                <button
-                  key={region.id}
-                  onClick={() => handleRegionSelect(region.id)}
-                  className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
-                    selectedRegion === region.id
-                      ? "bg-gray-700 text-white"
-                      : "text-gray-300 hover:bg-gray-800"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span>{region.name}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs">
-                        {getDelaySymbol(regionDelays[region.id] || 0)}
-                      </span>
-                      <span className="text-xs">
-                        {getDelayLevelName(regionDelays[region.id] || 0)}
-                      </span>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
+          <RegionSelector
+            regions={regions}
+            selectedRegion={selectedRegion}
+            onRegionSelect={handleRegionSelect}
+            isPanelOpen={isPanelOpen}
+            regionDelays={regionDelays}
+            getDelaySymbol={getDelaySymbol}
+            getDelayLevelName={getDelayLevelName}
+          />
         )}
 
         {/* ピン留めパネル */}

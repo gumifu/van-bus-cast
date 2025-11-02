@@ -49,13 +49,12 @@ export default function Home() {
   };
 
   return (
-    <main className="h-screen w-full bg-black text-white md:h-dvh">
+    <main className="h-screen w-full bg-black text-white md:h-dvh relative">
       <div className="h-full flex flex-col">
-        <div className="p-4 text-xl font-thin flex-shrink-0 bg-gray-900 text-white border-b border-gray-700 flex items-center justify-between">
-          <Logo size="md" showText={true} />
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-300">3D表示</span>
-            <span className="text-gray-500">|</span>
+        {/* 3D表示トグル - 右端に配置 */}
+        <div className="absolute top-4 right-4 z-20">
+          <div className="bg-white/10 backdrop-blur-xl rounded-lg shadow-lg border border-white/20 p-3 flex items-center gap-2">
+            <span className="text-sm text-white">3D表示</span>
             <button
               onClick={handleMapToggle}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${

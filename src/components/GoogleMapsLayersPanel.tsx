@@ -23,9 +23,9 @@ export default function GoogleMapsLayersPanel({
   if (!isVisible) return null;
 
   return (
-    <div className="absolute top-4 right-4 z-20 bg-gray-900 rounded-lg shadow-lg border border-gray-700 w-64">
+    <div className="absolute top-4 right-4 z-20 bg-white/10 backdrop-blur-xl rounded-lg shadow-lg border border-white/20 w-64">
       {/* ヘッダー */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-700">
+      <div className="flex items-center justify-between p-4 border-b border-white/20">
         <h3 className="text-lg font-semibold text-white">レイヤー</h3>
         <button
           onClick={onClose}
@@ -53,7 +53,7 @@ export default function GoogleMapsLayersPanel({
           {layers.map((layer) => (
             <label
               key={layer.id}
-              className="flex items-center space-x-3 cursor-pointer hover:bg-gray-800 p-2 rounded transition-colors"
+              className="flex items-center space-x-3 cursor-pointer hover:bg-white/10 p-2 rounded transition-colors"
             >
               <input
                 type="checkbox"
@@ -73,7 +73,7 @@ export default function GoogleMapsLayersPanel({
             地図タイプ
           </h4>
           <div className="space-y-2">
-            <label className="flex items-center space-x-3 cursor-pointer hover:bg-gray-800 p-2 rounded transition-colors">
+            <label className="flex items-center space-x-3 cursor-pointer hover:bg-white/10 p-2 rounded transition-colors">
               <input
                 type="radio"
                 name="mapType"
@@ -83,7 +83,7 @@ export default function GoogleMapsLayersPanel({
               />
               <span className="text-gray-200">標準</span>
             </label>
-            <label className="flex items-center space-x-3 cursor-pointer hover:bg-gray-800 p-2 rounded transition-colors">
+            <label className="flex items-center space-x-3 cursor-pointer hover:bg-white/10 p-2 rounded transition-colors">
               <input
                 type="radio"
                 name="mapType"
@@ -92,7 +92,7 @@ export default function GoogleMapsLayersPanel({
               />
               <span className="text-gray-200">衛星</span>
             </label>
-            <label className="flex items-center space-x-3 cursor-pointer hover:bg-gray-800 p-2 rounded transition-colors">
+            <label className="flex items-center space-x-3 cursor-pointer hover:bg-white/10 p-2 rounded transition-colors">
               <input
                 type="radio"
                 name="mapType"

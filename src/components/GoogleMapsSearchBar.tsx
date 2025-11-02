@@ -201,7 +201,7 @@ export default function GoogleMapsSearchBar({
   return (
     <div className="w-full relative">
       <form onSubmit={handleSubmit} className="relative">
-        <div className="bg-gray-900 rounded-lg shadow-lg border border-gray-700 overflow-hidden">
+        <div className="bg-white/10 backdrop-blur-xl rounded-lg shadow-lg border border-white/20 overflow-hidden">
           <div className="flex items-center">
             {/* 検索アイコン */}
             <div className="pl-4 pr-2">
@@ -228,13 +228,13 @@ export default function GoogleMapsSearchBar({
               onFocus={handleInputFocus}
               onBlur={handleInputBlur}
               placeholder={placeholder}
-              className="flex-1 py-3 px-2 text-white placeholder-gray-400 focus:outline-none bg-gray-900"
+              className="flex-1 py-3 px-2 text-white placeholder-gray-300 focus:outline-none bg-transparent"
             />
 
             {/* 検索ボタン */}
             <button
               type="submit"
-              className="px-4 py-3 bg-gray-700 text-white hover:bg-gray-600 transition-colors cursor-pointer"
+              className="px-4 py-3 bg-white/20 text-white hover:bg-white/30 transition-colors cursor-pointer"
             >
               Search
             </button>
@@ -244,7 +244,7 @@ export default function GoogleMapsSearchBar({
 
       {/* 検索候補ドロップダウン */}
       {showSuggestions && (
-        <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-gray-900 border border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white/10 backdrop-blur-xl border border-white/20 rounded-lg shadow-lg max-h-60 overflow-y-auto">
           {isLoading ? (
             <div className="p-3 text-center text-gray-400">
               <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
@@ -255,7 +255,7 @@ export default function GoogleMapsSearchBar({
               <button
                 key={`${suggestion.stop_id}-${index}`}
                 onClick={() => handleSuggestionClick(suggestion)}
-                className="w-full text-left p-3 hover:bg-gray-800 transition-colors border-b border-gray-700 last:border-b-0 cursor-pointer"
+                className="w-full text-left p-3 hover:bg-white/20 transition-colors border-b border-white/20 last:border-b-0 cursor-pointer"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1">

@@ -203,7 +203,7 @@ export default function ClientMap({
         zoom: number;
       }> = [];
 
-      // 主要な街6つに制限
+      // 主要な街8つに制限
       const majorRegions = [
         "vancouver",
         "richmond",
@@ -211,6 +211,8 @@ export default function ClientMap({
         "surrey",
         "coquitlam",
         "delta",
+        "langley",
+        "new_westminster",
       ];
 
       if (data.regions && Array.isArray(data.regions)) {
@@ -246,6 +248,8 @@ export default function ClientMap({
                 surrey: [-122.849, 49.1913],
                 coquitlam: [-122.8289, 49.2838],
                 delta: [-123.0857, 49.0847],
+                langley: [-122.6585, 49.1041],
+                new_westminster: [-122.9119, 49.2057],
               };
 
               const matchedMajor = majorRegions.find((major) =>
@@ -285,10 +289,10 @@ export default function ClientMap({
             (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex)
           );
         });
-        // 最大6つに制限
-        setRegions(sortedRegions.slice(0, 6));
+        // 最大8つに制限
+        setRegions(sortedRegions.slice(0, 8));
       } else {
-        // フォールバック: 主要な街6つ
+        // フォールバック: 主要な街8つ
         setRegions([
           {
             id: "vancouver",
@@ -324,6 +328,18 @@ export default function ClientMap({
             id: "delta",
             name: "Delta",
             center: [-123.0857, 49.0847],
+            zoom: 12,
+          },
+          {
+            id: "langley",
+            name: "Langley",
+            center: [-122.6585, 49.1041],
+            zoom: 12,
+          },
+          {
+            id: "new_westminster",
+            name: "New Westminster",
+            center: [-122.9119, 49.2057],
             zoom: 12,
           },
         ]);
@@ -1507,48 +1523,27 @@ export default function ClientMap({
 
         {/* 地域選択パネル */}
         {!isSearching && (
-          <div className="bg-gray-900 rounded-lg shadow-lg border border-gray-700 p-3 w-80 transition-all duration-300">
-            <h3 className="font-semibold text-sm text-white mb-2">Region</h3>
-            <div className="space-y-1">
-              {regions.map((region) => (
-                <button
-                  key={region.id}
-                  onClick={() => {
-                    setSelectedRegion(region.id);
-                    if (mapRef.current) {
-                      const regionData = regions.find(
-                        (r) => r.id === region.id
-                      );
-                      if (regionData) {
-                        mapRef.current.flyTo({
-                          center: regionData.center,
-                          zoom: regionData.zoom,
-                          essential: true,
-                        });
-                      }
-                    }
-                  }}
-                  className={`w-full text-left p-2 rounded text-xs transition-colors ${
-                    selectedRegion === region.id
-                      ? "bg-gray-700 text-white"
-                      : "text-gray-300 hover:bg-gray-800"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span>{region.name}</span>
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm">
-                        {getDelaySymbol(regionDelays[region.id] || 0)}
-                      </span>
-                      <span className="text-xs text-gray-400">
-                        {getDelayLevelName(regionDelays[region.id] || 0)}
-                      </span>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
+          <RegionSelector
+            regions={regions}
+            selectedRegion={selectedRegion}
+            onRegionSelect={(regionId) => {
+              setSelectedRegion(regionId);
+              if (mapRef.current) {
+                const regionData = regions.find((r) => r.id === regionId);
+                if (regionData) {
+                  mapRef.current.flyTo({
+                    center: regionData.center,
+                    zoom: regionData.zoom,
+                    essential: true,
+                  });
+                }
+              }
+            }}
+            isPanelOpen={isPanelOpen}
+            regionDelays={regionDelays}
+            getDelaySymbol={getDelaySymbol}
+            getDelayLevelName={getDelayLevelName}
+          />
         )}
 
         {/* Search Results Panel */}
@@ -1628,7 +1623,7 @@ export default function ClientMap({
       />
 
       {/* Information Button */}
-      <div className="absolute bottom-4 right-4 z-10">
+      {/* <div className="absolute bottom-4 right-4 z-10">
         <div className="relative group">
           <button className="w-10 h-10 bg-gray-900 rounded-lg shadow-lg border border-gray-700 flex items-center justify-center hover:bg-gray-800 transition-colors cursor-help">
             <span className="text-gray-400 hover:text-white text-lg">i</span>
@@ -1663,7 +1658,7 @@ export default function ClientMap({
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Google Maps-style Layers Panel */}
       <GoogleMapsLayersPanel

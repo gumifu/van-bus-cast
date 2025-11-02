@@ -45,7 +45,7 @@ export default function PinnedStopsPanel({
       {/* Toggle Button */}
       <button
         onClick={onToggleVisibility}
-        className="fixed bottom-4 left-4 z-20 bg-gray-900 text-white p-3 rounded-lg shadow-lg border border-gray-700 hover:bg-gray-800 transition-colors"
+        className="fixed bottom-4 left-4 z-20 bg-white/10 backdrop-blur-xl text-white p-3 rounded-lg shadow-lg border border-white/20 hover:bg-white/20 transition-colors"
         title={isVisible ? "Hide Pinned Stops" : "Show Pinned Stops"}
       >
         <div className="flex items-center gap-2">
@@ -59,8 +59,8 @@ export default function PinnedStopsPanel({
 
       {/* Pinned Stops Panel */}
       {isVisible && (
-        <div className="fixed bottom-20 left-4 z-20 w-80 max-h-96 bg-gray-900 rounded-lg shadow-lg border border-gray-700 overflow-hidden">
-          <div className="p-3 border-b border-gray-700">
+        <div className="fixed bottom-20 left-4 z-20 w-80 max-h-96 bg-white/10 backdrop-blur-xl rounded-lg shadow-lg border border-white/20 overflow-hidden">
+          <div className="p-3 border-b border-white/20">
             <h3 className="text-sm font-semibold text-white">
               Pinned Bus Stops ({pinnedStopsList.length})
             </h3>
@@ -70,10 +70,10 @@ export default function PinnedStopsPanel({
             {pinnedStopsList.length > 0 ? (
               <div className="space-y-1 p-2">
                 {pinnedStopsList.map((stop) => (
-                  <div
-                    key={stop.stopId}
-                    className="flex items-center justify-between p-2 bg-gray-800 rounded hover:bg-gray-700 transition-colors group"
-                  >
+                    <div
+                      key={stop.stopId}
+                      className="flex items-center justify-between p-2 bg-white/10 rounded hover:bg-white/20 transition-colors group border border-white/10"
+                    >
                     <button
                       onClick={() => onStopClick(stop)}
                       className="flex-1 text-left cursor-pointer"
