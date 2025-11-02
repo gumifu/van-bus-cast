@@ -28,7 +28,8 @@ export default function GoogleMapsControls({
         <button
           onClick={onZoomIn}
           className="w-10 h-10 flex items-center justify-center hover:bg-white/20 transition-colors border-b border-white/20 cursor-pointer"
-          title="ズームイン"
+          title="Zoom In"
+          aria-label="Zoom in"
         >
           <svg
             className="w-5 h-5 text-gray-300"
@@ -47,7 +48,8 @@ export default function GoogleMapsControls({
         <button
           onClick={onZoomOut}
           className="w-10 h-10 flex items-center justify-center hover:bg-white/20 transition-colors cursor-pointer"
-          title="ズームアウト"
+          title="Zoom Out"
+          aria-label="Zoom out"
         >
           <svg
             className="w-5 h-5 text-gray-300"
@@ -69,7 +71,8 @@ export default function GoogleMapsControls({
       <button
         onClick={onMyLocation}
         className="w-10 h-10 bg-white/10 backdrop-blur-xl rounded-lg shadow-lg border border-white/20 flex items-center justify-center hover:bg-white/20 transition-colors cursor-pointer"
-        title="現在地"
+        title="My Location"
+        aria-label="Show my current location"
       >
         <svg
           className="w-5 h-5 text-gray-300"
@@ -142,7 +145,8 @@ export default function GoogleMapsControls({
       <button
         onClick={onFullscreen}
         className="w-10 h-10 bg-white/10 backdrop-blur-xl rounded-lg shadow-lg border border-white/20 flex items-center justify-center hover:bg-white/20 transition-colors cursor-pointer"
-        title={isFullscreen ? "フルスクリーン終了" : "フルスクリーン"}
+        title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+        aria-label={isFullscreen ? "Exit fullscreen mode" : "Enter fullscreen mode"}
       >
         {isFullscreen ? (
           <svg

@@ -45,7 +45,7 @@ export default function PinnedStopsPanel({
       {/* Toggle Button */}
       <button
         onClick={onToggleVisibility}
-        className="fixed bottom-4 left-4 z-20 bg-white/10 backdrop-blur-xl text-white p-3 rounded-lg shadow-lg border border-white/20 hover:bg-white/20 transition-colors"
+        className="fixed bottom-4 left-4 z-20 bg-white/10 backdrop-blur-xl text-white p-3 rounded-lg shadow-lg border border-white/20 hover:bg-white/20 transition-colors cursor-pointer"
         title={isVisible ? "Hide Pinned Stops" : "Show Pinned Stops"}
       >
         <div className="flex items-center gap-2">
@@ -108,7 +108,7 @@ export default function PinnedStopsPanel({
                         e.stopPropagation();
                         onRemovePin(stop.stopId);
                       }}
-                      className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-400 transition-all p-1 cursor-pointer"
+                      className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-400 hover:bg-white/10 rounded transition-all p-1 cursor-pointer"
                       title="Remove Pin"
                     >
                       ×
