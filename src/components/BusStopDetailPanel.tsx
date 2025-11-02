@@ -1089,16 +1089,82 @@ export default function BusStopDetailPanel({
                   </>
                 )}
               </div>
-              <button
-                onClick={() => {
-                  setShowForecast(false);
-                  setSelectedRoute(null);
-                  setRouteData(null);
-                }}
-                className="text-gray-400 hover:text-white text-xl"
-              >
-                ×
-              </button>
+              <div className="flex items-center gap-2">
+                {/* URLコピーボタン */}
+                <button
+                  onClick={async (e) => {
+                    if (selectedStopId) {
+                      const url = `${window.location.origin}${window.location.pathname}?stop=${selectedStopId}`;
+
+                      // フォールバック方法: テキストエリアを使う
+                      const fallbackCopy = (): boolean => {
+                        try {
+                          const textArea = document.createElement("textarea");
+                          textArea.value = url;
+                          textArea.style.position = "fixed";
+                          textArea.style.left = "-999999px";
+                          textArea.style.top = "-999999px";
+                          document.body.appendChild(textArea);
+                          textArea.focus();
+                          textArea.select();
+                          const successful = document.execCommand("copy");
+                          document.body.removeChild(textArea);
+                          return successful;
+                        } catch (err) {
+                          console.error("Fallback copy failed:", err);
+                          return false;
+                        }
+                      };
+
+                      try {
+                        // モダンブラウザのクリップボードAPIを試す
+                        if (
+                          navigator.clipboard &&
+                          navigator.clipboard.writeText
+                        ) {
+                          await navigator.clipboard.writeText(url);
+                        } else {
+                          // フォールバック方法を使用
+                          if (!fallbackCopy()) {
+                            throw new Error("Both clipboard methods failed");
+                          }
+                        }
+
+                        // コピー成功のフィードバック（一時的にボタンを変更）
+                        const button = e.currentTarget;
+                        const originalText = button.innerHTML;
+                        button.innerHTML = "✓";
+                        button.classList.add("text-green-400");
+                        setTimeout(() => {
+                          button.innerHTML = originalText;
+                          button.classList.remove("text-green-400");
+                        }, 2000);
+                      } catch (err) {
+                        console.error("Failed to copy URL:", err);
+                        // エラー時はpromptでURLを表示して手動コピーを促す
+                        prompt(
+                          "URLをコピーしてください (Ctrl+C / Cmd+C):",
+                          url
+                        );
+                      }
+                    }
+                  }}
+                  className="text-gray-400 hover:text-white text-lg transition-colors"
+                  title="URLをコピー"
+                >
+                  📋
+                </button>
+                <button
+                  onClick={() => {
+                    setShowForecast(false);
+                    setSelectedRoute(null);
+                    setRouteData(null);
+                  }}
+                  className="text-gray-400 hover:text-white text-xl"
+                >
+                  ×
+                </button>
+              </div>
             </div>
             {loadingArrivals ? (
               <div className="text-center py-8 text-gray-400">Loading...</div>

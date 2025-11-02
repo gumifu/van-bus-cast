@@ -88,6 +88,25 @@ export default function Map3D({
   const [selectedStopId, setSelectedStopId] = useState<string | null>(
     externalSelectedStopId || null
   );
+
+  // 外部の状態を内部の状態に同期
+  useEffect(() => {
+    if (externalSelectedStop !== undefined) {
+      setSelectedStop(externalSelectedStop);
+    }
+  }, [externalSelectedStop]);
+
+  useEffect(() => {
+    if (externalIsPanelOpen !== undefined) {
+      setIsPanelOpen(externalIsPanelOpen);
+    }
+  }, [externalIsPanelOpen]);
+
+  useEffect(() => {
+    if (externalSelectedStopId !== undefined) {
+      setSelectedStopId(externalSelectedStopId);
+    }
+  }, [externalSelectedStopId]);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showLayers, setShowLayers] = useState(false);
   const [layers, setLayers] = useState([
@@ -951,18 +970,27 @@ export default function Map3D({
             };
 
             console.log("Map3D: Setting selected stop:", selectedStopData);
-            setSelectedStop(selectedStopData);
+
+            // 外部のハンドラーを優先して使用（URL更新のため）
+            const stopId = properties.stop_id;
+
             if (externalSetSelectedStop) {
               externalSetSelectedStop(selectedStopData);
+            } else {
+              setSelectedStop(selectedStopData);
             }
-            setSelectedStopId(properties.stop_id);
+
             if (externalSetSelectedStopId) {
-              externalSetSelectedStopId(properties.stop_id);
+              externalSetSelectedStopId(stopId);
+            } else {
+              setSelectedStopId(stopId);
             }
-            setIsPanelOpen(true);
+
+            // パネルを開く（外部と内部の両方を更新）
             if (externalSetIsPanelOpen) {
               externalSetIsPanelOpen(true);
             }
+            setIsPanelOpen(true);
 
             console.log("Map3D: Panel should be open now");
 
@@ -1145,50 +1173,60 @@ export default function Map3D({
       )}
 
       {/* バス停詳細パネル */}
-      {isPanelOpen && selectedStop && (
-        <BusStopDetailPanel
-          isOpen={isPanelOpen}
-          onClose={() => {
-            setIsPanelOpen(false);
-            setSelectedStop(null);
-            setSelectedStopId(null);
-          }}
-          selectedStop={selectedStop}
-          regionDelays={regionDelays}
-          stopDelays={stopDelays}
-          routeDelays={routeDelays}
-          routeIdMapping={routeIdMapping}
-          selectedStopId={selectedStopId}
-          getDelaySymbol={getDelaySymbol}
-          getDelayLevelName={getDelayLevelName}
-          pinnedStops={pinnedStops}
-          onTogglePin={(stopId, stopData) => {
-            const newPinnedStops = new Set(pinnedStops);
-            if (newPinnedStops.has(stopId)) {
-              newPinnedStops.delete(stopId);
-              const newPinnedData = { ...pinnedStopsData };
-              delete newPinnedData[stopId];
-              setPinnedStopsData(newPinnedData);
-            } else {
-              newPinnedStops.add(stopId);
-              setPinnedStopsData((prev) => ({
-                ...prev,
-                [stopId]: stopData,
-              }));
-            }
-            setPinnedStops(newPinnedStops);
-            localStorage.setItem(
-              "pinnedStops",
-              JSON.stringify({
-                ids: Array.from(newPinnedStops),
-                data: newPinnedStops.has(stopId)
-                  ? { ...pinnedStopsData, [stopId]: stopData }
-                  : pinnedStopsData,
-              })
-            );
-          }}
-        />
-      )}
+      {(isPanelOpen || externalIsPanelOpen) &&
+        (selectedStop || externalSelectedStop) && (
+          <BusStopDetailPanel
+            isOpen={isPanelOpen || externalIsPanelOpen || false}
+            onClose={() => {
+              setIsPanelOpen(false);
+              if (externalSetIsPanelOpen) {
+                externalSetIsPanelOpen(false);
+              }
+              setSelectedStop(null);
+              if (externalSetSelectedStop) {
+                externalSetSelectedStop(null);
+              }
+              setSelectedStopId(null);
+              if (externalSetSelectedStopId) {
+                externalSetSelectedStopId(null);
+              }
+            }}
+            selectedStop={selectedStop || externalSelectedStop}
+            regionDelays={regionDelays}
+            stopDelays={stopDelays}
+            routeDelays={routeDelays}
+            routeIdMapping={routeIdMapping}
+            selectedStopId={selectedStopId || externalSelectedStopId || null}
+            getDelaySymbol={getDelaySymbol}
+            getDelayLevelName={getDelayLevelName}
+            pinnedStops={pinnedStops}
+            onTogglePin={(stopId, stopData) => {
+              const newPinnedStops = new Set(pinnedStops);
+              if (newPinnedStops.has(stopId)) {
+                newPinnedStops.delete(stopId);
+                const newPinnedData = { ...pinnedStopsData };
+                delete newPinnedData[stopId];
+                setPinnedStopsData(newPinnedData);
+              } else {
+                newPinnedStops.add(stopId);
+                setPinnedStopsData((prev) => ({
+                  ...prev,
+                  [stopId]: stopData,
+                }));
+              }
+              setPinnedStops(newPinnedStops);
+              localStorage.setItem(
+                "pinnedStops",
+                JSON.stringify({
+                  ids: Array.from(newPinnedStops),
+                  data: newPinnedStops.has(stopId)
+                    ? { ...pinnedStopsData, [stopId]: stopData }
+                    : pinnedStopsData,
+                })
+              );
+            }}
+          />
+        )}
 
       {/* Map Markers */}
       <MapMarkers

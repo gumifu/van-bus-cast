@@ -587,17 +587,24 @@ export default function ClientMap({
               coordinates: coordinates,
             },
           };
-          setSelectedStop(stopData);
+          // 外部のハンドラーを優先して使用（URL更新のため）
           if (externalSetSelectedStop) {
             externalSetSelectedStop(stopData);
+          } else {
+            setSelectedStop(stopData);
           }
-          setIsPanelOpen(true);
+
           if (externalSetIsPanelOpen) {
             externalSetIsPanelOpen(true);
+          } else {
+            setIsPanelOpen(true);
           }
-          setSelectedStopId(properties?.stop_id || null);
+
+          const stopId = properties?.stop_id || null;
           if (externalSetSelectedStopId) {
-            externalSetSelectedStopId(properties?.stop_id || null);
+            externalSetSelectedStopId(stopId);
+          } else {
+            setSelectedStopId(stopId);
           }
 
           // マップをクリックしたバス停に移動
@@ -811,54 +818,73 @@ export default function ClientMap({
         (feature: any) => feature.properties?.stop_id === stopId
       );
 
+      const stopData = fullStopData || {
+        properties: properties,
+        geometry: {
+          type: "Point" as const,
+          coordinates: coordinates,
+        },
+      };
+
       if (fullStopData) {
         console.log("Found full stop data:", fullStopData);
-
-        setSelectedStop({
-          properties: fullStopData.properties,
-          geometry: fullStopData.geometry,
-        });
-        setIsPanelOpen(true);
-        setSelectedStopId(stopId);
-
-        mapRef.current.flyTo({
-          center: fullStopData.geometry.coordinates,
-          zoom: 18,
-          essential: true,
-        });
       } else {
         console.warn("Full stop data not found, using saved data");
-
-        // フォールバック: 保存されたデータを使用
-        setSelectedStop({
-          properties: properties,
-          geometry: {
-            type: "Point",
-            coordinates: coordinates,
-          },
-        });
-        setIsPanelOpen(true);
-        setSelectedStopId(stopId);
-
-        mapRef.current.flyTo({
-          center: coordinates,
-          zoom: 18,
-          essential: true,
-        });
       }
+
+      // 外部のハンドラーを優先して使用（URL更新のため）
+      if (externalSetSelectedStop) {
+        externalSetSelectedStop(stopData);
+      } else {
+        setSelectedStop(stopData);
+      }
+
+      if (externalSetIsPanelOpen) {
+        externalSetIsPanelOpen(true);
+      } else {
+        setIsPanelOpen(true);
+      }
+
+      if (externalSetSelectedStopId) {
+        externalSetSelectedStopId(stopId);
+      } else {
+        setSelectedStopId(stopId);
+      }
+
+      mapRef.current.flyTo({
+        center: stopData.geometry.coordinates,
+        zoom: 18,
+        essential: true,
+      });
     } catch (error) {
       console.error("Error loading full stop data:", error);
 
       // エラー時は保存されたデータを使用
-      setSelectedStop({
+      const fallbackStopData = {
         properties: properties,
         geometry: {
-          type: "Point",
+          type: "Point" as const,
           coordinates: coordinates,
         },
-      });
-      setIsPanelOpen(true);
-      setSelectedStopId(stopId);
+      };
+
+      if (externalSetSelectedStop) {
+        externalSetSelectedStop(fallbackStopData);
+      } else {
+        setSelectedStop(fallbackStopData);
+      }
+
+      if (externalSetIsPanelOpen) {
+        externalSetIsPanelOpen(true);
+      } else {
+        setIsPanelOpen(true);
+      }
+
+      if (externalSetSelectedStopId) {
+        externalSetSelectedStopId(stopId);
+      } else {
+        setSelectedStopId(stopId);
+      }
 
       mapRef.current.flyTo({
         center: coordinates,
@@ -1673,8 +1699,17 @@ export default function ClientMap({
         isOpen={isPanelOpen}
         onClose={() => {
           setIsPanelOpen(false);
+          if (externalSetIsPanelOpen) {
+            externalSetIsPanelOpen(false);
+          }
           setSelectedStop(null);
+          if (externalSetSelectedStop) {
+            externalSetSelectedStop(null);
+          }
           setSelectedStopId(null);
+          if (externalSetSelectedStopId) {
+            externalSetSelectedStopId(null);
+          }
         }}
         selectedStop={selectedStop}
         regionDelays={regionDelays}
