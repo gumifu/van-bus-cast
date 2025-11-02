@@ -149,8 +149,8 @@ function HomeContent() {
   return (
     <main className="h-screen w-full bg-black text-white md:h-dvh relative">
       <div className="h-full flex flex-col">
-        {/* 3D表示トグル - 右端に配置 */}
-        <div className="absolute top-4 right-4 z-20">
+        {/* 3D表示トグル - デスクトップでは右端、スマホでは非表示（ClientMap/Map3D内で表示） */}
+        <div className="hidden md:block absolute top-4 right-4 z-20">
           <div className="bg-white/10 backdrop-blur-xl rounded-lg shadow-lg border border-white/20 p-3 flex items-center gap-2">
             <span className="text-sm text-white">3D表示</span>
             <button
@@ -185,6 +185,8 @@ function HomeContent() {
               setPinnedStops={setPinnedStops}
               pinnedStopsData={pinnedStopsData}
               setPinnedStopsData={setPinnedStopsData}
+              onMapToggle={handleMapToggle}
+              is3DMode={is3DMode}
             />
           ) : (
             <ClientMap
@@ -203,6 +205,8 @@ function HomeContent() {
               setPinnedStops={setPinnedStops}
               pinnedStopsData={pinnedStopsData}
               setPinnedStopsData={setPinnedStopsData}
+              onMapToggle={handleMapToggle}
+              is3DMode={is3DMode}
             />
           )}
         </div>

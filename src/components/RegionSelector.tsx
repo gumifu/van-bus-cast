@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface Region {
   id: string;
@@ -28,10 +28,25 @@ export default function RegionSelector({
   getDelaySymbol,
   getDelayLevelName,
 }: RegionSelectorProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  // モバイルでは閉じた状態、デスクトップでは開いた状態をデフォルトに
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  useEffect(() => {
+    // デスクトップサイズ（md以上）では開いた状態にする
+    const checkScreenSize = () => {
+      if (typeof window !== "undefined" && window.innerWidth >= 768) {
+        setIsExpanded(true);
+      }
+    };
+
+    checkScreenSize();
+    window.addEventListener("resize", checkScreenSize);
+
+    return () => window.removeEventListener("resize", checkScreenSize);
+  }, []);
 
   return (
-    <div className="bg-white/10 backdrop-blur-xl rounded-lg shadow-lg border border-white/20 p-3 w-80 transition-all duration-300">
+    <div className="bg-white/10 backdrop-blur-xl rounded-lg shadow-lg border border-white/20 p-3 w-full md:w-80 transition-all duration-300">
       <div className="flex items-center justify-between mb-2">
         <h3 className="font-semibold text-sm text-white">Region</h3>
         <button

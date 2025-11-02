@@ -29,6 +29,8 @@ interface ClientMapProps {
   setPinnedStops?: (stops: Set<string>) => void;
   pinnedStopsData?: { [key: string]: any };
   setPinnedStopsData?: (data: { [key: string]: any }) => void;
+  onMapToggle?: () => void;
+  is3DMode?: boolean;
 }
 
 export default function ClientMap({
@@ -47,6 +49,8 @@ export default function ClientMap({
   setPinnedStops: externalSetPinnedStops,
   pinnedStopsData: externalPinnedStopsData,
   setPinnedStopsData: externalSetPinnedStopsData,
+  onMapToggle,
+  is3DMode = false,
 }: ClientMapProps = {}) {
   const ref = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<Map | null>(null);
@@ -1602,9 +1606,9 @@ export default function ClientMap({
   return (
     <div className="relative h-full w-full flex flex-col md:block">
       {/* 左側のコントロールパネル */}
-      <div className="absolute top-4 left-4 z-10 flex flex-col gap-3">
+      <div className="absolute top-4 left-4 right-4 md:left-4 md:right-auto z-10 flex flex-col gap-3">
         {/* 検索バー */}
-        <div className="w-80">
+        <div className="w-full md:w-80">
           <GoogleMapsSearchBar
             onSearch={handleSearch}
             onSearchStart={handleSearchStart}
@@ -1612,6 +1616,27 @@ export default function ClientMap({
             placeholder="Search places (e.g., Downtown, Richmond)"
           />
         </div>
+
+        {/* 3D表示トグル - スマホサイズのみ表示 */}
+        {onMapToggle && (
+          <div className="md:hidden">
+            <div className="bg-white/10 backdrop-blur-xl rounded-lg shadow-lg border border-white/20 p-2 flex items-center gap-2">
+              <span className="text-xs text-white">3D表示</span>
+              <button
+                onClick={onMapToggle}
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                  is3DMode ? "bg-blue-600" : "bg-gray-600"
+                }`}
+              >
+                <span
+                  className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                    is3DMode ? "translate-x-4" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* 地域選択パネル */}
         {!isSearching && (
