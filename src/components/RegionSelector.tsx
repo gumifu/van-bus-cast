@@ -51,8 +51,9 @@ export default function RegionSelector({
         <h3 className="font-semibold text-sm text-white">Region</h3>
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="text-white hover:text-gray-300 transition-colors text-lg leading-none w-6 h-6 flex items-center justify-center"
-          title={isExpanded ? "閉じる" : "開く"}
+          className="text-white hover:text-gray-300 hover:bg-white/10 rounded-full transition-colors text-lg leading-none w-11 h-11 flex items-center justify-center cursor-pointer"
+          title={isExpanded ? "Collapse" : "Expand"}
+          aria-label={isExpanded ? "Collapse region list" : "Expand region list"}
         >
           {isExpanded ? "−" : "+"}
         </button>
@@ -70,6 +71,8 @@ export default function RegionSelector({
                   ? "bg-white/20 text-white"
                   : "text-gray-300 hover:bg-white/10"
               }`}
+              aria-label={`Select ${region.name} region`}
+              aria-pressed={selectedRegion === region.id}
             >
               <div className="flex items-center justify-between">
                 <span>{region.name}</span>

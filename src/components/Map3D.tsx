@@ -682,9 +682,9 @@ export default function Map3D({
                 errorDiv.style.cssText =
                   "position: absolute; top: 10px; left: 10px; right: 10px; background: rgba(239, 68, 68, 0.9); color: white; padding: 12px; border-radius: 8px; z-index: 1000; font-size: 14px;";
                 errorDiv.innerHTML = `
-                  <strong>Mapbox Token Error</strong><br>
-                  Your Mapbox token appears to be invalid or expired.<br>
-                  Please check your NEXT_PUBLIC_MAPBOX_TOKEN environment variable.
+                  <strong>Map Loading Error</strong><br>
+                  Unable to load the map. Please try refreshing the page.<br>
+                  If the problem persists, please contact support.
                 `;
                 ref.current.appendChild(errorDiv);
               }

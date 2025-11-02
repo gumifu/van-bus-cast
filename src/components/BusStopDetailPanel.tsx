@@ -677,10 +677,11 @@ export default function BusStopDetailPanel({
         }`}
       >
         <div className="flex items-center justify-between p-4 border-b border-white/20">
-          <h3 className="text-lg font-semibold">Bus Stop Details</h3>
+          <h2 className="text-lg font-semibold">Bus Stop Details</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white text-xl"
+            className="text-gray-400 hover:text-white hover:bg-white/10 rounded-full transition-colors text-xl w-11 h-11 flex items-center justify-center cursor-pointer"
+            aria-label="Close bus stop details"
           >
             ×
           </button>
@@ -690,16 +691,16 @@ export default function BusStopDetailPanel({
           {/* バス停情報 */}
           <div>
             <div className="flex items-center justify-between mb-2 text-lg pr-1">
-              <h4 className="font-semibold text-white">
+              <h3 className="font-semibold text-white">
                 {selectedStop.properties?.stop_name || "Unknown Stop"}
-              </h4>
+              </h3>
               <button
                 onClick={() => {
                   if (selectedStop?.properties?.stop_id) {
                     onTogglePin(selectedStop.properties.stop_id, selectedStop);
                   }
                 }}
-                className={`w-10 h-10 flex items-center justify-center rounded text-lg hover:bg-gray-700 hover:cursor-pointer transition-colors ${
+                className={`w-11 h-11 flex items-center justify-center rounded text-lg hover:bg-gray-700 transition-colors cursor-pointer ${
                   selectedStop?.properties?.stop_id &&
                   pinnedStops.has(selectedStop.properties.stop_id)
                     ? "text-yellow-400 bg-gray-700 border border-gray-500"
@@ -711,12 +712,21 @@ export default function BusStopDetailPanel({
                     ? "Remove Pin"
                     : "Pin this stop"
                 }
+                aria-label={
+                  selectedStop?.properties?.stop_id &&
+                  pinnedStops.has(selectedStop.properties.stop_id)
+                    ? "Remove pin from this bus stop"
+                    : "Pin this bus stop"
+                }
               >
                 📍
               </button>
             </div>
             {/* Delay Status */}
             <div className="bg-white/10 backdrop-blur-md rounded-lg p-3 border border-white/20 shadow-lg">
+              <h3 className="font-semibold text-white mb-2 text-sm">
+                Delay Status
+              </h3>
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <span className="text-white font-medium">
@@ -734,7 +744,7 @@ export default function BusStopDetailPanel({
               </div>
               <div className="text-xs text-gray-300">
                 Last updated:{" "}
-                {new Date().toLocaleTimeString("ja-JP", {
+                {new Date().toLocaleTimeString("en-US", {
                   hour: "2-digit",
                   minute: "2-digit",
                   second: "2-digit",
@@ -764,7 +774,7 @@ export default function BusStopDetailPanel({
           {/* 路線別遅延情報 */}
           {getStopRoutes().length > 0 && (
             <div className="mt-4 border-t border-white/20 pt-4">
-              <h5 className=" text-white mb-3 font-semibold">Route Delays</h5>
+              <h4 className="text-white mb-3 font-semibold">Route Delays</h4>
               <div className="space-y-2">
                 {getStopRoutes().map((route, index) => {
                   const delay = routeDelays[route] || 0;
@@ -779,13 +789,14 @@ export default function BusStopDetailPanel({
                   const color = colors[index % colors.length];
 
                   return (
-                    <div
+                    <button
                       key={route}
-                      className="bg-white/10 backdrop-blur-md rounded-lg p-3 border border-white/20 cursor-pointer hover:bg-white/20 transition-all shadow-lg hover:shadow-xl"
+                      className="w-full text-left bg-white/10 backdrop-blur-md rounded-lg p-3 border border-white/20 cursor-pointer hover:bg-white/20 transition-all shadow-lg hover:shadow-xl"
                       onClick={() => {
                         setSelectedRoute(route);
                         setShowForecast(true);
                       }}
+                      aria-label={`View details for route ${route}`}
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
@@ -821,7 +832,7 @@ export default function BusStopDetailPanel({
                           </div>
                         </div>
                       )}
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -830,7 +841,7 @@ export default function BusStopDetailPanel({
 
           {/* 位置情報 */}
           <div className="border-t border-white/20 pt-4">
-            <h4 className="font-semibold text-white mb-2">Location</h4>
+            <h3 className="font-semibold text-white mb-2">Location</h3>
             <div className="space-y-1 text-sm text-gray-400">
               <div className="flex justify-between">
                 <span>Latitude:</span>
@@ -856,10 +867,11 @@ export default function BusStopDetailPanel({
         }`}
       >
         <div className="flex items-center justify-between p-3 border-b border-white/20">
-          <h3 className="text-lg font-semibold">Bus Stop Details</h3>
+          <h2 className="text-lg font-semibold">Bus Stop Details</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white text-xl"
+            className="text-gray-400 hover:text-white hover:bg-white/10 rounded-full transition-colors text-xl w-11 h-11 flex items-center justify-center cursor-pointer"
+            aria-label="Close bus stop details"
           >
             ×
           </button>
@@ -869,16 +881,16 @@ export default function BusStopDetailPanel({
           {/* バス停情報 */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <h4 className="font-semibold text-white text-lg">
+              <h3 className="font-semibold text-white text-lg">
                 {selectedStop.properties?.stop_name || "Unknown Stop"}
-              </h4>
+              </h3>
               <button
                 onClick={() => {
                   if (selectedStop?.properties?.stop_id) {
                     onTogglePin(selectedStop.properties.stop_id, selectedStop);
                   }
                 }}
-                className={`w-8 h-8 flex items-center justify-center rounded text-base hover:bg-gray-700 transition-colors ${
+                className={`w-11 h-11 flex items-center justify-center rounded text-base hover:bg-gray-700 transition-colors ${
                   selectedStop?.properties?.stop_id &&
                   pinnedStops.has(selectedStop.properties.stop_id)
                     ? "text-yellow-400 bg-gray-300 border border-gray-400"
@@ -890,15 +902,21 @@ export default function BusStopDetailPanel({
                     ? "Remove Pin"
                     : "Pin this stop"
                 }
+                aria-label={
+                  selectedStop?.properties?.stop_id &&
+                  pinnedStops.has(selectedStop.properties.stop_id)
+                    ? "Remove pin from this bus stop"
+                    : "Pin this bus stop"
+                }
               >
                 📍
               </button>
             </div>
             {/* Delay Status */}
             <div className="border-t border-white/20 pt-3">
-              <h4 className="font-semibold text-white mb-2 text-sm">
+              <h3 className="font-semibold text-white mb-2 text-sm">
                 Delay Status
-              </h4>
+              </h3>
               <div className="bg-white/10 backdrop-blur-md rounded-lg p-2 border border-white/20 shadow-lg">
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
@@ -917,7 +935,7 @@ export default function BusStopDetailPanel({
                 </div>
                 <div className="text-xs text-gray-300">
                   Last updated:{" "}
-                  {new Date().toLocaleTimeString("ja-JP", {
+                  {new Date().toLocaleTimeString("en-US", {
                     hour: "2-digit",
                     minute: "2-digit",
                     second: "2-digit",
@@ -948,9 +966,9 @@ export default function BusStopDetailPanel({
           {/* 路線別遅延情報 */}
           {getStopRoutes().length > 0 && (
             <div className="mt-3">
-              <h5 className="text-xs font-medium text-gray-300 mb-2">
-                路線遅延
-              </h5>
+              <h4 className="text-xs font-medium text-gray-300 mb-2">
+                Route Delays
+              </h4>
               <div className="space-y-2">
                 {getStopRoutes().map((route, index) => {
                   const delay = routeDelays[route] || 0;
@@ -965,13 +983,14 @@ export default function BusStopDetailPanel({
                   const color = colors[index % colors.length];
 
                   return (
-                    <div
+                    <button
                       key={route}
-                      className="bg-white/10 backdrop-blur-md rounded-lg p-2 border border-white/20 cursor-pointer hover:bg-white/20 transition-all shadow-lg hover:shadow-xl"
+                      className="w-full text-left bg-white/10 backdrop-blur-md rounded-lg p-2 border border-white/20 cursor-pointer hover:bg-white/20 transition-all shadow-lg hover:shadow-xl"
                       onClick={() => {
                         setSelectedRoute(route);
                         setShowForecast(true);
                       }}
+                      aria-label={`View details for route ${route}`}
                     >
                       <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center gap-2">
@@ -1007,7 +1026,7 @@ export default function BusStopDetailPanel({
                           </div>
                         </div>
                       )}
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -1016,7 +1035,7 @@ export default function BusStopDetailPanel({
 
           {/* 位置情報 */}
           <div className="border-t border-white/20 pt-3">
-            <h4 className="font-semibold text-white mb-2 text-sm">Location</h4>
+            <h3 className="font-semibold text-white mb-2 text-sm">Location</h3>
             <div className="space-y-1 text-xs text-gray-400">
               <div className="flex justify-between">
                 <span>Latitude:</span>
@@ -1142,15 +1161,13 @@ export default function BusStopDetailPanel({
                       } catch (err) {
                         console.error("Failed to copy URL:", err);
                         // エラー時はpromptでURLを表示して手動コピーを促す
-                        prompt(
-                          "URLをコピーしてください (Ctrl+C / Cmd+C):",
-                          url
-                        );
+                        prompt("Please copy the URL (Ctrl+C / Cmd+C):", url);
                       }
                     }
                   }}
-                  className="text-gray-400 hover:text-white text-lg transition-colors"
-                  title="URLをコピー"
+                  className="text-gray-400 hover:text-white hover:bg-white/10 rounded-full transition-colors text-lg w-11 h-11 flex items-center justify-center cursor-pointer"
+                  title="Copy URL"
+                  aria-label="Copy URL to clipboard"
                 >
                   📋
                 </button>
@@ -1160,7 +1177,8 @@ export default function BusStopDetailPanel({
                     setSelectedRoute(null);
                     setRouteData(null);
                   }}
-                  className="text-gray-400 hover:text-white text-xl"
+                  className="text-gray-400 hover:text-white hover:bg-white/10 rounded-full transition-colors text-xl w-11 h-11 flex items-center justify-center cursor-pointer"
+                  aria-label="Close forecast modal"
                 >
                   ×
                 </button>
@@ -1172,9 +1190,9 @@ export default function BusStopDetailPanel({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* 左側カラム: グラフ */}
                 <div className="space-y-4">
-                  <h4 className="text-sm font-semibold text-white mb-3">
+                  <h3 className="text-sm font-semibold text-white mb-3">
                     Delay Trend
-                  </h4>
+                  </h3>
                   {/* 遅延グラフ */}
                   <div className="bg-white/10 backdrop-blur-md rounded-lg p-4 border border-white/20">
                     <DelayChart arrivals={routeArrivals} />
@@ -1186,9 +1204,9 @@ export default function BusStopDetailPanel({
                   {/* Route情報 */}
                   {routeData?.route && (
                     <div className="bg-white/10 backdrop-blur-md rounded-lg p-4 border border-white/20">
-                      <h4 className="text-sm font-semibold text-white mb-3">
+                      <h3 className="text-sm font-semibold text-white mb-3">
                         Route Information
-                      </h4>
+                      </h3>
                       <div className="space-y-2 text-xs">
                         <div className="flex justify-between">
                           <span className="text-gray-400">Route:</span>
@@ -1220,9 +1238,9 @@ export default function BusStopDetailPanel({
 
                   {/* 到着時刻リスト */}
                   <div>
-                    <h4 className="text-sm font-semibold text-white mb-3">
+                    <h3 className="text-sm font-semibold text-white mb-3">
                       Arrival Times
-                    </h4>
+                    </h3>
                     <div className="space-y-3 max-h-[50vh] overflow-y-auto">
                       {routeArrivals.map((arrival: any, index: number) => {
                         const delayMinutes =
