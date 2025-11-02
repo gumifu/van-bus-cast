@@ -1250,7 +1250,7 @@ export default function Map3D({
         {onMapToggle && (
           <div className="md:hidden">
             <div className="bg-white/10 backdrop-blur-xl rounded-lg shadow-lg border border-white/20 p-2 flex items-center gap-2">
-              <span className="text-xs text-white">3D表示</span>
+              <span className="text-xs text-white">3D</span>
               <button
                 onClick={onMapToggle}
                 className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
@@ -1305,7 +1305,11 @@ export default function Map3D({
       </div>
 
       {/* メインマップ */}
-      <div ref={ref} className="h-full w-full" />
+      <div
+        ref={ref}
+        className="h-full w-full"
+        style={{ minHeight: "100%", height: "100%" }}
+      />
 
       {/* 右下のコントロール */}
       <div className="absolute bottom-4 right-4 z-10 flex flex-col gap-2">
