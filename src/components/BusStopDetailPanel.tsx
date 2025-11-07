@@ -377,7 +377,7 @@ export default function BusStopDetailPanel({
       scheduledTime: string;
       predictedTime: string;
       arrivalTimeFormatted: string; // HH:MM:SS形式の時刻
-      delayMinutes: number; // 遅延分数（モーダルの最初の到着時刻から）
+      delayMinutes: number | null; // 遅延分数（モーダルの最初の到着時刻から、nullを許容）
     };
   }>({});
 
