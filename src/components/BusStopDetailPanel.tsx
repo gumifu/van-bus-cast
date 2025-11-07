@@ -1577,6 +1577,16 @@ export default function BusStopDetailPanel({
                         // 予測時間を計算（scheduled_arrival_timeを基準に遅延を加算）
                         let predictedTime =
                           arrival.scheduled_arrival_time || arrivalTime;
+                        
+                        // デバッグログ：条件確認
+                        console.log("predictedTime debug:", {
+                          scheduled_arrival_time: arrival.scheduled_arrival_time,
+                          predicted_delay_seconds: arrival.predicted_delay_seconds,
+                          arrivalTime: arrivalTime,
+                          hasScheduled: !!arrival.scheduled_arrival_time,
+                          hasDelay: arrival.predicted_delay_seconds !== null && arrival.predicted_delay_seconds !== undefined,
+                        });
+                        
                         if (
                           arrival.scheduled_arrival_time &&
                           arrival.predicted_delay_seconds !== null &&
@@ -1600,6 +1610,8 @@ export default function BusStopDetailPanel({
                                 delayMs: delayMs,
                                 predicted: predictedTime,
                               });
+                            } else {
+                              console.warn("Invalid scheduled date:", arrival.scheduled_arrival_time);
                             }
                           } catch (e) {
                             console.error(
