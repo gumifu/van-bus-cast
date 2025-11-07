@@ -203,23 +203,6 @@ export default function GoogleMapsSearchBar({
       <form onSubmit={handleSubmit} className="relative">
         <div className="bg-white/10 backdrop-blur-xl rounded-lg shadow-lg border border-white/20 overflow-hidden">
           <div className="flex items-center">
-            {/* 検索アイコン */}
-            <div className="pl-4 pr-2">
-              <svg
-                className="w-5 h-5 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-            </div>
-
             {/* 検索入力フィールド */}
             <input
               type="text"
@@ -234,9 +217,21 @@ export default function GoogleMapsSearchBar({
             {/* 検索ボタン */}
             <button
               type="submit"
-              className="px-4 py-3 bg-white/20 text-white hover:bg-white/30 transition-colors cursor-pointer"
+              className="px-4 h-[48px] bg-white/20 text-white hover:bg-white/30 transition-colors cursor-pointer self-stretch flex items-center justify-center"
             >
-              Search
+              <svg
+                className="w-5 h-5 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
             </button>
           </div>
         </div>

@@ -89,7 +89,7 @@ export default function RegionSelector({
             </button>
           );
         })}
-        </div>
+      </div>
       )}
     </div>
   );

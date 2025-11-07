@@ -722,7 +722,7 @@ export default function BusStopDetailPanel({
                 📍
               </button>
             </div>
-            {/* Delay Status */}
+          {/* Delay Status */}
             <div className="bg-white/10 backdrop-blur-md rounded-lg p-3 border border-white/20 shadow-lg">
               <h3 className="font-semibold text-white mb-2 text-sm">
                 Delay Status
@@ -809,7 +809,7 @@ export default function BusStopDetailPanel({
                           {routeFirstArrivals[route]?.destination && (
                             <span className="text-white font-medium text-sm">
                               {routeFirstArrivals[route].destination}
-                            </span>
+                          </span>
                           )}
                         </div>
                         <div className="flex items-center gap-2">
@@ -829,7 +829,7 @@ export default function BusStopDetailPanel({
                             <span className="text-white font-medium">
                               {routeFirstArrivals[route].scheduledTime}
                             </span>
-                          </div>
+                    </div>
                         </div>
                       )}
                     </button>
@@ -915,34 +915,34 @@ export default function BusStopDetailPanel({
                 📍
               </button>
             </div>
-            {/* Delay Status */}
-            <div className="border-t border-white/20 pt-3">
+          {/* Delay Status */}
+          <div className="border-t border-white/20 pt-3">
               <h3 className="font-semibold text-white mb-2 text-base">
-                Delay Status
+              Delay Status
               </h3>
               <div className="bg-white/10 backdrop-blur-md rounded-lg p-2 border border-white/20 shadow-lg">
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2">
                     <span className="text-white font-medium text-base">
                       {getDelayLevelName(
-                        stopDelays[selectedStop?.properties?.stop_id] || 0
-                      )}
-                    </span>
+                      stopDelays[selectedStop?.properties?.stop_id] || 0
+                    )}
+                  </span>
                     <span className="text-gray-400">|</span>
                     <span className="text-2xl">
                       {getDelaySymbol(
-                        stopDelays[selectedStop?.properties?.stop_id] || 0
-                      )}
-                    </span>
-                  </div>
+                      stopDelays[selectedStop?.properties?.stop_id] || 0
+                    )}
+                  </span>
                 </div>
+              </div>
                 <div className="text-sm text-gray-300">
-                  Last updated:{" "}
+                Last updated:{" "}
                   {new Date().toLocaleTimeString("en-US", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    second: "2-digit",
-                  })}
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  second: "2-digit",
+                })}
                 </div>
               </div>
             </div>
@@ -1006,7 +1006,7 @@ export default function BusStopDetailPanel({
                           {routeFirstArrivals[route]?.destination && (
                             <span className="text-white font-medium text-sm">
                               {routeFirstArrivals[route].destination}
-                            </span>
+                          </span>
                           )}
                         </div>
                         <div className="flex items-center gap-1">
@@ -1026,7 +1026,7 @@ export default function BusStopDetailPanel({
                             <span className="text-white font-medium text-sm">
                               {routeFirstArrivals[route].scheduledTime}
                             </span>
-                          </div>
+                    </div>
                         </div>
                       )}
                     </button>
@@ -1176,17 +1176,17 @@ export default function BusStopDetailPanel({
                 >
                   📋
                 </button>
-                <button
-                  onClick={() => {
-                    setShowForecast(false);
-                    setSelectedRoute(null);
+              <button
+                onClick={() => {
+                  setShowForecast(false);
+                  setSelectedRoute(null);
                     setRouteData(null);
-                  }}
+                }}
                   className="text-gray-400 hover:text-white hover:bg-white/10 rounded-full transition-colors text-xl w-11 h-11 flex items-center justify-center cursor-pointer"
                   aria-label="Close forecast modal"
-                >
-                  ×
-                </button>
+              >
+                ×
+              </button>
               </div>
             </div>
             {loadingArrivals ? (
@@ -1249,16 +1249,16 @@ export default function BusStopDetailPanel({
                       Arrival Times
                     </h3>
                     <div className="space-y-3 max-h-[50vh] overflow-y-auto">
-                      {routeArrivals.map((arrival: any, index: number) => {
-                        const delayMinutes =
-                          arrival.predicted_delay_seconds !== null &&
-                          arrival.predicted_delay_seconds !== undefined
-                            ? Math.max(
-                                0,
-                                Math.round(arrival.predicted_delay_seconds / 60)
-                              )
-                            : 0;
-                        const arrivalTime =
+                {routeArrivals.map((arrival: any, index: number) => {
+                  const delayMinutes =
+                    arrival.predicted_delay_seconds !== null &&
+                    arrival.predicted_delay_seconds !== undefined
+                      ? Math.max(
+                          0,
+                          Math.round(arrival.predicted_delay_seconds / 60)
+                        )
+                      : 0;
+                  const arrivalTime =
                           arrival.arrival_time ||
                           arrival.next_arrival_time ||
                           "";
@@ -1304,20 +1304,20 @@ export default function BusStopDetailPanel({
                           return timeStr;
                         };
 
-                        return (
-                          <div
-                            key={index}
+                  return (
+                    <div
+                      key={index}
                             className="bg-white/10 backdrop-blur-md p-3 rounded border border-white/20 shadow-lg"
-                          >
+                    >
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-3 flex-1">
-                                <div>
+                      <div>
                                   <div className="text-white font-medium text-base md:text-base">
                                     {formatCanadianTime(arrivalTime)}
-                                  </div>
+                        </div>
                                   <div className="text-gray-400 text-base md:text-sm">
                                     {arrival.trip_headsign || "Unknown"}
-                                  </div>
+                        </div>
                                   {/* Scheduled時刻を計算または取得 */}
                                   {(() => {
                                     let scheduledTime = null;
@@ -1357,7 +1357,7 @@ export default function BusStopDetailPanel({
                                       <div className="text-gray-500 text-sm md:text-xs mt-1">
                                         Scheduled:{" "}
                                         {formatCanadianTime(scheduledTime)}
-                                      </div>
+                      </div>
                                     ) : null;
                                   })()}
                                 </div>
@@ -1368,9 +1368,9 @@ export default function BusStopDetailPanel({
                                     {getDelayLevelName(delayMinutes)}
                                   </span>
                                   <span className="text-gray-400">|</span>
-                                  <span className="text-2xl">
-                                    {getDelaySymbol(delayMinutes)}
-                                  </span>
+                        <span className="text-2xl">
+                          {getDelaySymbol(delayMinutes)}
+                        </span>
                                 </div>
                               </div>
                             </div>
@@ -1379,11 +1379,11 @@ export default function BusStopDetailPanel({
                               {arrival.scheduled_arrival_time && (
                                 <div className="flex justify-between">
                                   <span>Scheduled:</span>
-                                  <span className="text-gray-300">
+                        <span className="text-gray-300">
                                     {formatCanadianTime(
                                       arrival.scheduled_arrival_time
                                     )}
-                                  </span>
+                        </span>
                                 </div>
                               )}
                               {arrival.stop_name && (
@@ -1434,10 +1434,10 @@ export default function BusStopDetailPanel({
                                   </span>
                                 </div>
                               )}
-                            </div>
-                          </div>
-                        );
-                      })}
+                      </div>
+                    </div>
+                  );
+                })}
                     </div>
                   </div>
                 </div>

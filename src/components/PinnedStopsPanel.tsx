@@ -112,10 +112,10 @@ export default function PinnedStopsPanel({
             {pinnedStopsList.length > 0 ? (
               <div className="space-y-1 p-2">
                 {pinnedStopsList.map((stop) => (
-                    <div
-                      key={stop.stopId}
+                  <div
+                    key={stop.stopId}
                       className="flex items-center justify-between p-2 bg-white/10 rounded hover:bg-white/20 transition-colors group border border-white/10"
-                    >
+                  >
                     <button
                       onClick={() => onStopClick(stop)}
                       className="flex-1 text-left cursor-pointer"
