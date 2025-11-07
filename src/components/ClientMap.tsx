@@ -83,7 +83,9 @@ export default function ClientMap({
     {}
   );
   const [stopDelays, setStopDelays] = useState<{ [key: string]: number }>({});
-  const [routeDelays, setRouteDelays] = useState<{ [key: string]: number }>({});
+  const [routeDelays, setRouteDelays] = useState<{
+    [key: string]: number | null;
+  }>({});
   const [routeIdMapping, setRouteIdMapping] = useState<{
     [routeNumber: string]: string;
   }>({}); // 路線番号 -> route_id（GTFS内部ID）
@@ -1377,7 +1379,7 @@ export default function ClientMap({
 
         // ルート別遅延データを更新
         if (data.arrivals && Array.isArray(data.arrivals)) {
-          const routeDelayData: { [key: string]: number } = {};
+          const routeDelayData: { [key: string]: number | null } = {};
 
           // trip_headsignから路線番号を抽出するヘルパー関数
           const extractRouteNumber = (
@@ -1409,7 +1411,7 @@ export default function ClientMap({
               routeIdMap[routeNumber] = arrival.route_id;
             }
 
-            // 遅延予測がある場合は計算、ない場合は0を設定
+            // 遅延予測がある場合は計算、nullの場合はバス番号だけ表示するためnullとして保存
             if (
               arrival.predicted_delay_seconds !== null &&
               arrival.predicted_delay_seconds !== undefined
@@ -1420,17 +1422,20 @@ export default function ClientMap({
               ); // 秒を分に変換、負の値は0として扱う
 
               // 同じルートの複数の予測がある場合は平均を取る
-              if (routeDelayData[routeNumber] !== undefined) {
+              if (
+                routeDelayData[routeNumber] !== undefined &&
+                routeDelayData[routeNumber] !== null
+              ) {
                 routeDelayData[routeNumber] = Math.round(
-                  (routeDelayData[routeNumber] + delayMinutes) / 2
+                  (routeDelayData[routeNumber]! + delayMinutes) / 2
                 );
               } else {
                 routeDelayData[routeNumber] = delayMinutes;
               }
             } else {
-              // 遅延予測がない場合でもルートを追加（遅延は0）
+              // 遅延予測がnullの場合は、バス番号だけ表示するためnullとして保存
               if (routeDelayData[routeNumber] === undefined) {
-                routeDelayData[routeNumber] = 0;
+                routeDelayData[routeNumber] = null;
               }
             }
           });
@@ -1909,61 +1914,6 @@ export default function ClientMap({
             getDelaySymbol={getDelaySymbol}
             getDelayLevelName={getDelayLevelName}
           />
-        )}
-
-        {/* Search Results Panel */}
-        {searchResults.length > 0 && (
-          <div className="bg-gray-900 rounded-lg shadow-lg border border-gray-700 p-3 w-80">
-            <div className="flex justify-between items-start mb-2">
-              <h3 className="font-semibold text-sm text-white">
-                Search Results: "{searchQuery}"
-              </h3>
-              <button
-                onClick={clearSearchResults}
-                className="text-gray-400 hover:text-gray-200 text-lg ml-2 cursor-pointer"
-              >
-                ×
-              </button>
-            </div>
-            <p className="text-xs text-gray-300 mb-3">
-              Found {searchResults.length} bus stops
-            </p>
-            <div className="max-h-40 overflow-y-auto space-y-1">
-              {searchResults.slice(0, 10).map((stop, index) => (
-                <button
-                  key={index}
-                  onClick={() => {
-                    const coordinates = stop.geometry.coordinates;
-                    mapRef.current?.flyTo({
-                      center: coordinates,
-                      zoom: 18,
-                      essential: true,
-                    });
-                    setSelectedStop({
-                      properties: stop.properties,
-                      geometry: stop.geometry,
-                    });
-                    setIsPanelOpen(true);
-                    setSelectedStopId(stop.properties.stop_id);
-                  }}
-                  className="w-full text-left p-2 rounded text-xs transition-colors hover:bg-gray-800 text-gray-300 cursor-pointer"
-                >
-                  <div className="font-medium text-white">
-                    {stop.properties.stop_name || "Unknown Stop"}
-                  </div>
-                  <div className="text-gray-400">
-                    ID: {stop.properties.stop_id} | Code:{" "}
-                    {stop.properties.stop_code}
-                  </div>
-                </button>
-              ))}
-              {searchResults.length > 10 && (
-                <div className="text-xs text-gray-400 text-center pt-2">
-                  ...and {searchResults.length - 10} more
-                </div>
-              )}
-            </div>
-          </div>
         )}
       </div>
 

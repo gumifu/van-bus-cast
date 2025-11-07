@@ -86,7 +86,7 @@ export default function Map3D({
     {}
   );
   const [stopDelays, setStopDelays] = useState<{ [key: string]: number }>({});
-  const [routeDelays, setRouteDelays] = useState<{ [key: string]: number }>({});
+  const [routeDelays, setRouteDelays] = useState<{ [key: string]: number | null }>({});
   const [routeIdMapping, setRouteIdMapping] = useState<{
     [routeNumber: string]: string;
   }>({}); // 路線番号 -> route_id（GTFS内部ID）
@@ -882,7 +882,7 @@ export default function Map3D({
 
         // ルート別遅延データを更新
         if (data.arrivals && Array.isArray(data.arrivals)) {
-          const routeDelayData: { [key: string]: number } = {};
+          const routeDelayData: { [key: string]: number | null } = {};
 
           // trip_headsignから路線番号を抽出するヘルパー関数
           const extractRouteNumber = (
@@ -914,7 +914,7 @@ export default function Map3D({
               routeIdMap[routeNumber] = arrival.route_id;
             }
 
-            // 遅延予測がある場合は計算、ない場合は0を設定
+            // 遅延予測がある場合は計算、nullの場合はバス番号だけ表示するためnullとして保存
             if (
               arrival.predicted_delay_seconds !== null &&
               arrival.predicted_delay_seconds !== undefined
@@ -925,17 +925,17 @@ export default function Map3D({
               ); // 秒を分に変換、負の値は0として扱う
 
               // 同じルートの複数の予測がある場合は平均を取る
-              if (routeDelayData[routeNumber] !== undefined) {
+              if (routeDelayData[routeNumber] !== undefined && routeDelayData[routeNumber] !== null) {
                 routeDelayData[routeNumber] = Math.round(
-                  (routeDelayData[routeNumber] + delayMinutes) / 2
+                  (routeDelayData[routeNumber]! + delayMinutes) / 2
                 );
               } else {
                 routeDelayData[routeNumber] = delayMinutes;
               }
             } else {
-              // 遅延予測がない場合でもルートを追加（遅延は0）
+              // 遅延予測がnullの場合は、バス番号だけ表示するためnullとして保存
               if (routeDelayData[routeNumber] === undefined) {
-                routeDelayData[routeNumber] = 0;
+                routeDelayData[routeNumber] = null;
               }
             }
           });
