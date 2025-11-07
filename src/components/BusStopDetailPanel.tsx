@@ -995,9 +995,13 @@ export default function BusStopDetailPanel({
           <div className="mt-4 border-t border-white/20 pt-4">
             <h4 className="text-white mb-3 font-semibold">Route Delays</h4>
             {loadingRoutes ? (
-              <div className="text-center py-4 flex items-center justify-center gap-2">
-                <div className="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin opacity-60"></div>
-                <span className="text-gray-400 text-sm animate-pulse">
+              <div 
+                className="text-center py-4 flex items-center justify-center gap-2"
+                style={{
+                  animation: "fadeIn 0.3s ease-in",
+                }}
+              >
+                <span className="text-gray-400 text-sm">
                   Loading...
                 </span>
               </div>
@@ -1231,9 +1235,13 @@ export default function BusStopDetailPanel({
               Route Delays
             </h4>
             {loadingRoutes ? (
-              <div className="text-center py-3 flex items-center justify-center gap-2">
-                <div className="w-3 h-3 border-2 border-gray-500 border-t-transparent rounded-full animate-spin opacity-60"></div>
-                <span className="text-gray-400 text-sm animate-pulse">
+              <div 
+                className="text-center py-3 flex items-center justify-center gap-2"
+                style={{
+                  animation: "fadeIn 0.3s ease-in",
+                }}
+              >
+                <span className="text-gray-400 text-sm">
                   Loading...
                 </span>
               </div>

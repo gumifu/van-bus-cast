@@ -41,3 +41,13 @@ html, body {
     height: -webkit-fill-available;
   }
 }
+
+/* フェードインアニメーション */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
