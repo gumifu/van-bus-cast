@@ -20,103 +20,120 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
 
   return (
     <motion.div
-      className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none"
+      className="fixed top-0 left-0 right-0 bottom-0 w-screen h-screen z-[9999] flex items-center justify-center pointer-events-none"
       initial={{ opacity: 1 }}
       animate={{
         opacity: [1, 1, 0],
-        filter: ["blur(0px)", "blur(0px)", "blur(2px)"],
       }}
       transition={{
         duration: 1.2,
-        delay: 3.2, // マーク(1.2s) + タイプ(1.4s) + ホールド(0.6s) = 3.2s
+        delay: 3.2, // マークの左移動完了(2.6s) + ホールド(0.6s) = 3.2s
         ease: "easeInOut",
       }}
       onAnimationComplete={onComplete}
+      style={{
+        background: "#000000",
+        position: "fixed",
+        overflow: "hidden",
+        width: "100vw",
+        height: "100vh",
+        minWidth: "100%",
+        minHeight: "100%",
+      }}
     >
-      {/* 既存の背景（変更しない） */}
-      <div className="absolute inset-0 w-full h-full">
-        {/* 円形グラデーション背景 */}
-        <div
-          className="absolute inset-0 w-full h-full"
-          style={{
-            background: `
-              radial-gradient(circle at 30% 20%, #FF00FF 0%, transparent 50%),
-              radial-gradient(circle at 70% 50%, #8B00FF 0%, transparent 50%),
-              radial-gradient(circle at 50% 80%, #0000FF 0%, transparent 50%)
-            `,
-          }}
-        />
+      {/* 円形グラデーション背景 */}
+      <div
+        className="absolute top-0 left-0 right-0 bottom-0 w-full h-full"
+        style={{
+          background: `
+            radial-gradient(circle at 30% 20%, #FF00FF 0%, transparent 50%),
+            radial-gradient(circle at 70% 50%, #8B00FF 0%, transparent 50%),
+            radial-gradient(circle at 50% 80%, #0000FF 0%, transparent 50%)
+          `,
+        }}
+      />
 
-        {/* ぼかし付き黒幕（ほぼ黒） */}
-        <div
-          className="absolute inset-0 w-full h-full"
-          style={{
-            backgroundColor: "rgba(0, 0, 0, 0.85)",
-            backdropFilter: "blur(60px)",
-            WebkitBackdropFilter: "blur(60px)",
-          }}
-        />
-      </div>
+      {/* ぼかし付き黒幕（ほぼ黒） */}
+      <div
+        className="absolute top-0 left-0 right-0 bottom-0 w-full h-full"
+        style={{
+          backgroundColor: "rgba(0, 0, 0, 0.85)",
+          backdropFilter: "blur(60px)",
+          WebkitBackdropFilter: "blur(60px)",
+        }}
+      />
 
-      {/* ロゴコンテナ（中央揃え） */}
-      <div className="relative z-10 flex flex-col items-center justify-center gap-4">
-        {/* ロゴマーク */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.85 }}
-          animate={{
-            opacity: [0, 1],
-            scale: [0.85, 1.04, 1],
-          }}
-          transition={{
-            duration: 1.2,
-            times: [0, 0.7, 1],
-            ease: [0.33, 1, 0.68, 1],
-          }}
-          className="relative"
-        >
-          <Image
-            src="/logo-mark.svg"
-            alt="VanBusCast Logo Mark"
-            width={907}
-            height={1000}
-            className="w-36 h-36 md:w-40 md:h-40"
-            priority
-            style={{
-              filter: "drop-shadow(0 10px 30px rgba(0, 0, 0, 0.5))",
+      {/* ロゴコンテナ（マークとタイプを囲む） */}
+      <div className="relative z-10 flex items-center justify-center">
+        <div className="relative flex items-center">
+          {/* ロゴマーク */}
+          <motion.div
+            initial={{ opacity: 0, y: 30, x: 10 }}
+            animate={{
+              opacity: [0, 1, 1],
+              y: [30, 0, 0], // 中央の少し下から中央に
+              x: [10, 10, -12], // 最初は少し右に配置して中央に見えるように、その後左に移動
             }}
-          />
-        </motion.div>
-
-        {/* ロゴタイプ */}
-        <motion.div
-          initial={{ opacity: 0, scaleX: 0 }}
-          animate={{
-            opacity: [0, 1],
-            scaleX: [0, 1.06, 1],
-          }}
-          transition={{
-            duration: 1.4,
-            times: [0, 0.8, 1],
-            ease: [0.22, 1, 0.36, 1],
-            delay: 1.2, // マークの後に開始
-          }}
-          style={{
-            transformOrigin: "center",
-          }}
-          className="relative"
-        >
-          <Image
-            src="/logo-type.svg"
-            alt="VanBusCast Logo Type"
-            width={479}
-            height={137}
-            className="h-8 md:h-10 w-auto"
-            priority
-            style={{
-              filter: "drop-shadow(0 10px 30px rgba(0, 0, 0, 0.5))",
+            transition={{
+              duration: 2.6, // フェードイン(1.2s) + 左移動(1.4s)
+              times: [0, 0.46, 1], // 1.2sで中央、その後左移動
+              ease: [0.33, 1, 0.68, 1],
             }}
-          />
-        </motion.div>
+            className="relative"
+          >
+            <Image
+              src="/logo-mark.svg"
+              alt="VanBusCast Logo Mark"
+              width={907}
+              height={1000}
+              className="w-12 h-12 md:w-16 md:h-16"
+              priority
+              style={{
+                filter: "drop-shadow(0 10px 30px rgba(0, 0, 0, 0.5))",
+              }}
+            />
+          </motion.div>
+
+          {/* ロゴタイプ（左から出現、マークの右側に配置） */}
+          <motion.div
+            style={{
+              overflow: "hidden",
+              display: "flex",
+              justifyContent: "flex-start",
+            }}
+            className="relative ml-0.5 md:ml-1"
+          >
+            <motion.div
+              initial={{ clipPath: "inset(0 100% 0 0%)", opacity: 0 }}
+              animate={{
+                clipPath: [
+                  "inset(0 100% 0 0%)", // 左から開始（右側100%隠す）
+                  "inset(0 0% 0 0%)", // 完全に表示
+                  "inset(0 0% 0 0%)", // 最後まで表示
+                ],
+                opacity: [0, 0.4, 1], // フェードイン（clipPathと同期）
+              }}
+              transition={{
+                duration: 1.4,
+                times: [0, 0.6, 1], // clipPathとopacityのタイミングを統一
+                ease: [0.22, 1, 0.36, 1],
+                delay: 1.2,
+              }}
+            >
+              <Image
+                src="/logo-type.svg"
+                alt="VanBusCast Logo Type"
+                width={479}
+                height={137}
+                className="h-12 md:h-16 w-auto"
+                priority
+                style={{
+                  filter: "drop-shadow(0 10px 30px rgba(0, 0, 0, 0.5))",
+                }}
+              />
+            </motion.div>
+          </motion.div>
+        </div>
       </div>
     </motion.div>
   );
