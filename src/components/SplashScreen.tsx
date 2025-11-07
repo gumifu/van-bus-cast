@@ -27,7 +27,7 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
       }}
       transition={{
         duration: 1.2,
-        delay: 3.2, // マークの左移動完了(2.6s) + ホールド(0.6s) = 3.2s
+        delay: 2.8, // マークの左移動完了(2.6s) + ホールド(0.2s) = 2.8s
         ease: "easeInOut",
       }}
       onAnimationComplete={onComplete}
