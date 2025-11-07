@@ -1557,7 +1557,15 @@ export default function BusStopDetailPanel({
                       Arrival Times
                     </h3>
                     <div className="space-y-3 max-h-[50vh] overflow-y-auto">
+                      {(() => {
+                        console.log("routeArrivals for map:", routeArrivals);
+                        return null;
+                      })()}
                       {routeArrivals.map((arrival: any, index: number) => {
+                        // デバッグログ：arrivalオブジェクトの完全な構造を確認
+                        console.log("arrival object full:", arrival);
+                        console.log("arrival keys:", Object.keys(arrival));
+                        
                         const delayMinutes =
                           arrival.predicted_delay_seconds !== null &&
                           arrival.predicted_delay_seconds !== undefined
@@ -1577,16 +1585,21 @@ export default function BusStopDetailPanel({
                         // 予測時間を計算（scheduled_arrival_timeを基準に遅延を加算）
                         let predictedTime =
                           arrival.scheduled_arrival_time || arrivalTime;
-                        
+
                         // デバッグログ：条件確認
                         console.log("predictedTime debug:", {
-                          scheduled_arrival_time: arrival.scheduled_arrival_time,
-                          predicted_delay_seconds: arrival.predicted_delay_seconds,
+                          scheduled_arrival_time:
+                            arrival.scheduled_arrival_time,
+                          predicted_delay_seconds:
+                            arrival.predicted_delay_seconds,
                           arrivalTime: arrivalTime,
                           hasScheduled: !!arrival.scheduled_arrival_time,
-                          hasDelay: arrival.predicted_delay_seconds !== null && arrival.predicted_delay_seconds !== undefined,
+                          hasDelay:
+                            arrival.predicted_delay_seconds !== null &&
+                            arrival.predicted_delay_seconds !== undefined,
+                          arrival_keys: Object.keys(arrival),
                         });
-                        
+
                         if (
                           arrival.scheduled_arrival_time &&
                           arrival.predicted_delay_seconds !== null &&
@@ -1611,7 +1624,10 @@ export default function BusStopDetailPanel({
                                 predicted: predictedTime,
                               });
                             } else {
-                              console.warn("Invalid scheduled date:", arrival.scheduled_arrival_time);
+                              console.warn(
+                                "Invalid scheduled date:",
+                                arrival.scheduled_arrival_time
+                              );
                             }
                           } catch (e) {
                             console.error(
