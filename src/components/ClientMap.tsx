@@ -144,8 +144,8 @@ export default function ClientMap({
   const formatRegionName = (regionId: string): string => {
     const nameMap: { [key: string]: string } = {
       vancouver: "Vancouver",
-      north_vancouver: "North Vancouver",
       west_vancouver: "West Vancouver",
+      north_vancouver: "North Vancouver",
       burnaby: "Burnaby",
       richmond: "Richmond",
       surrey: "Surrey",
