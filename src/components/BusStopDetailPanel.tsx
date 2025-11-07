@@ -1575,15 +1575,17 @@ export default function BusStopDetailPanel({
                           "";
 
                         // 予測時間を計算（scheduled_arrival_timeを基準に遅延を加算）
-                        let predictedTime = arrival.scheduled_arrival_time || arrivalTime;
+                        let predictedTime =
+                          arrival.scheduled_arrival_time || arrivalTime;
                         if (
                           arrival.scheduled_arrival_time &&
                           arrival.predicted_delay_seconds !== null &&
-                          arrival.predicted_delay_seconds !== undefined &&
-                          arrival.predicted_delay_seconds !== 0
+                          arrival.predicted_delay_seconds !== undefined
                         ) {
                           try {
-                            const scheduledDate = new Date(arrival.scheduled_arrival_time);
+                            const scheduledDate = new Date(
+                              arrival.scheduled_arrival_time
+                            );
                             if (!isNaN(scheduledDate.getTime())) {
                               const delayMs =
                                 arrival.predicted_delay_seconds * 1000;
@@ -1591,12 +1593,26 @@ export default function BusStopDetailPanel({
                                 scheduledDate.getTime() + delayMs
                               );
                               predictedTime = predictedDate.toISOString();
+                              // デバッグログ
+                              console.log("predictedTime calculation:", {
+                                scheduled: arrival.scheduled_arrival_time,
+                                delaySeconds: arrival.predicted_delay_seconds,
+                                delayMs: delayMs,
+                                predicted: predictedTime,
+                              });
                             }
                           } catch (e) {
-                            console.error("Error calculating predictedTime:", e, arrival.scheduled_arrival_time);
+                            console.error(
+                              "Error calculating predictedTime:",
+                              e,
+                              arrival.scheduled_arrival_time
+                            );
                             // パースに失敗した場合はScheduled時刻を使用
                           }
-                        } else if (!arrival.scheduled_arrival_time && arrivalTime) {
+                        } else if (
+                          !arrival.scheduled_arrival_time &&
+                          arrivalTime
+                        ) {
                           // scheduled_arrival_timeがない場合はarrivalTimeを使用
                           predictedTime = arrivalTime;
                         }
