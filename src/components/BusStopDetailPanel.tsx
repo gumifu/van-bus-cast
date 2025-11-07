@@ -1574,26 +1574,31 @@ export default function BusStopDetailPanel({
                           arrival.estimated_arrival_time ||
                           "";
 
-                        // 予測時間を計算（nullの場合はScheduled時刻を表示）
-                        let predictedTime = arrivalTime;
+                        // 予測時間を計算（scheduled_arrival_timeを基準に遅延を加算）
+                        let predictedTime = arrival.scheduled_arrival_time || arrivalTime;
                         if (
-                          arrivalTime &&
+                          arrival.scheduled_arrival_time &&
                           arrival.predicted_delay_seconds !== null &&
-                          arrival.predicted_delay_seconds !== undefined
+                          arrival.predicted_delay_seconds !== undefined &&
+                          arrival.predicted_delay_seconds !== 0
                         ) {
                           try {
-                            const arrivalDate = new Date(arrivalTime);
-                            if (!isNaN(arrivalDate.getTime())) {
+                            const scheduledDate = new Date(arrival.scheduled_arrival_time);
+                            if (!isNaN(scheduledDate.getTime())) {
                               const delayMs =
                                 arrival.predicted_delay_seconds * 1000;
                               const predictedDate = new Date(
-                                arrivalDate.getTime() + delayMs
+                                scheduledDate.getTime() + delayMs
                               );
                               predictedTime = predictedDate.toISOString();
                             }
                           } catch (e) {
+                            console.error("Error calculating predictedTime:", e, arrival.scheduled_arrival_time);
                             // パースに失敗した場合はScheduled時刻を使用
                           }
+                        } else if (!arrival.scheduled_arrival_time && arrivalTime) {
+                          // scheduled_arrival_timeがない場合はarrivalTimeを使用
+                          predictedTime = arrivalTime;
                         }
 
                         // 時刻をカナダ式（12時間制AM/PM）に変換（秒なし、XX:YY PM形式）
