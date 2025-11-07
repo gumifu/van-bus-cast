@@ -55,8 +55,69 @@ function DelayChart({ arrivals }: { arrivals: any[] }) {
   const chartData = useMemo(() => {
     if (!arrivals || arrivals.length === 0) return null;
 
+    // 3時間以内の到着のみをフィルタリング（ミリ秒単位）
+    const now = new Date();
+    const THREE_HOURS_MS = 3 * 60 * 60 * 1000; // 3時間 = 10,800,000ミリ秒
+
+    // 時刻をパースする関数
+    const parseTime = (timeStr: string): Date | null => {
+      if (!timeStr) return null;
+      try {
+        const isoDate = new Date(timeStr);
+        if (!isNaN(isoDate.getTime())) {
+          return isoDate;
+        }
+      } catch (e) {}
+      const timeMatch = timeStr.match(/(\d{1,2}):(\d{2})(?::\d{2})?/);
+      if (!timeMatch) return null;
+      const hour = parseInt(timeMatch[1], 10);
+      const minute = parseInt(timeMatch[2], 10);
+      const date = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        hour,
+        minute,
+        0
+      );
+      return date;
+    };
+
+    // 3時間以内の到着のみをフィルタリング
+    const filteredArrivals = arrivals.filter((arrival: any) => {
+      const rawTime =
+        arrival.scheduled_arrival_time ||
+        arrival.arrival_time ||
+        arrival.next_arrival_time ||
+        arrival.estimated_arrival_time ||
+        "";
+
+      if (!rawTime) return false;
+
+      const arrivalTime = parseTime(rawTime);
+      if (!arrivalTime) return false;
+
+      // 過去の時刻の場合は、明日の時刻として扱う
+      let actualArrivalTime: Date;
+      if (arrivalTime < now) {
+        const tomorrowTime = new Date(arrivalTime);
+        tomorrowTime.setDate(tomorrowTime.getDate() + 1);
+        if (tomorrowTime < now) {
+          tomorrowTime.setDate(tomorrowTime.getDate() + 1);
+        }
+        actualArrivalTime = tomorrowTime;
+      } else {
+        actualArrivalTime = arrivalTime;
+      }
+
+      const timeDiff = actualArrivalTime.getTime() - now.getTime();
+      return timeDiff >= 0 && timeDiff <= THREE_HOURS_MS;
+    });
+
+    if (filteredArrivals.length === 0) return null;
+
     // 秒単位の遅延を取得
-    const delaysInSeconds = arrivals
+    const delaysInSeconds = filteredArrivals
       .map((arrival) => {
         const delaySeconds = arrival.predicted_delay_seconds;
         if (delaySeconds === null || delaySeconds === undefined) return null;
@@ -67,7 +128,7 @@ function DelayChart({ arrivals }: { arrivals: any[] }) {
     if (delaysInSeconds.length === 0) return null;
 
     // 到着時刻を取得（時間表示用）
-    const labels = arrivals.map((arrival) => {
+    const labels = filteredArrivals.map((arrival) => {
       const timeStr = arrival.arrival_time || arrival.next_arrival_time || "";
       return formatCanadianTime(timeStr);
     });
@@ -105,7 +166,7 @@ function DelayChart({ arrivals }: { arrivals: any[] }) {
       yAxisMax,
       yAxisMin,
       pointBackgroundColors,
-      arrivals,
+      arrivals: filteredArrivals,
     };
   }, [arrivals]);
 
@@ -308,6 +369,7 @@ export default function BusStopDetailPanel({
   const [showForecast, setShowForecast] = useState(false);
   const [routeArrivals, setRouteArrivals] = useState<any[]>([]);
   const [loadingArrivals, setLoadingArrivals] = useState(false);
+  const [loadingRoutes, setLoadingRoutes] = useState(false);
   const [routeData, setRouteData] = useState<any>(null); // APIレスポンス全体を保存
   const [routeFirstArrivals, setRouteFirstArrivals] = useState<{
     [route: string]: {
@@ -342,12 +404,73 @@ export default function BusStopDetailPanel({
 
         const data = await response.json();
         if (data.arrivals && Array.isArray(data.arrivals)) {
-          // nullの予測値をフィルタリング
-          const filteredArrivals = data.arrivals.filter(
-            (arrival: any) =>
-              arrival.predicted_delay_seconds !== null &&
-              arrival.predicted_delay_seconds !== undefined
-          );
+          const now = new Date();
+          const THREE_HOURS_MS = 3 * 60 * 60 * 1000; // 3時間 = 10,800,000ミリ秒
+
+          // 時刻をパースする関数（fetchAllRouteFirstArrivalsと同じロジック）
+          const parseTime = (timeStr: string): Date | null => {
+            if (!timeStr) return null;
+            try {
+              const isoDate = new Date(timeStr);
+              if (!isNaN(isoDate.getTime())) {
+                return isoDate;
+              }
+            } catch (e) {}
+            const timeMatch = timeStr.match(/(\d{1,2}):(\d{2})(?::\d{2})?/);
+            if (!timeMatch) return null;
+            const hour = parseInt(timeMatch[1], 10);
+            const minute = parseInt(timeMatch[2], 10);
+            const date = new Date(
+              now.getFullYear(),
+              now.getMonth(),
+              now.getDate(),
+              hour,
+              minute,
+              0
+            );
+            return date;
+          };
+
+          // nullの予測値と3時間以内の到着のみをフィルタリング
+          const filteredArrivals = data.arrivals.filter((arrival: any) => {
+            // nullの予測値は除外
+            if (
+              arrival.predicted_delay_seconds === null ||
+              arrival.predicted_delay_seconds === undefined
+            ) {
+              return false;
+            }
+
+            // 3時間以内の到着のみをフィルタリング
+            const rawTime =
+              arrival.scheduled_arrival_time ||
+              arrival.arrival_time ||
+              arrival.next_arrival_time ||
+              arrival.estimated_arrival_time ||
+              "";
+
+            if (!rawTime) return false;
+
+            const arrivalTime = parseTime(rawTime);
+            if (!arrivalTime) return false;
+
+            // 過去の時刻の場合は、明日の時刻として扱う
+            let actualArrivalTime: Date;
+            if (arrivalTime < now) {
+              const tomorrowTime = new Date(arrivalTime);
+              tomorrowTime.setDate(tomorrowTime.getDate() + 1);
+              if (tomorrowTime < now) {
+                tomorrowTime.setDate(tomorrowTime.getDate() + 1);
+              }
+              actualArrivalTime = tomorrowTime;
+            } else {
+              actualArrivalTime = arrivalTime;
+            }
+
+            const timeDiff = actualArrivalTime.getTime() - now.getTime();
+            return timeDiff >= 0 && timeDiff <= THREE_HOURS_MS;
+          });
+
           setRouteArrivals(filteredArrivals);
           setRouteData(data); // APIレスポンス全体を保存
         } else {
@@ -374,9 +497,11 @@ export default function BusStopDetailPanel({
     const fetchAllRouteFirstArrivals = async () => {
       if (!selectedStopId || !isOpen) {
         setRouteFirstArrivals({});
+        setLoadingRoutes(false);
         return;
       }
 
+      setLoadingRoutes(true);
       try {
         const response = await fetch(
           `/api/stops/${selectedStopId}/predictions`
@@ -384,6 +509,7 @@ export default function BusStopDetailPanel({
 
         if (!response.ok) {
           console.error("Failed to fetch stop predictions:", response.status);
+          setLoadingRoutes(false);
           return;
         }
 
@@ -498,7 +624,10 @@ export default function BusStopDetailPanel({
           // クリックした時点の現在時刻を取得（useEffectの実行時点）
           const clickTime = new Date();
 
-          // 各ルートで現在時刻に最も近い未来の到着情報を選択
+          // 3時間以内の到着のみをフィルタリング（ミリ秒単位）
+          const THREE_HOURS_MS = 3 * 60 * 60 * 1000; // 3時間 = 10,800,000ミリ秒
+
+          // 各ルートで現在時刻に最も近い未来の到着情報を選択（3時間以内のみ）
           Object.keys(routeArrivalsMap).forEach((routeNumber) => {
             const arrivals = routeArrivalsMap[routeNumber];
             if (arrivals.length === 0) return;
@@ -532,6 +661,7 @@ export default function BusStopDetailPanel({
 
               // ISO形式の場合、既に正しい時刻になっている
               // HH:MM形式の場合、今日または明日の時刻として扱う
+              let actualArrivalTime: Date;
               if (arrivalTime < clickTime) {
                 // 過去の時刻の場合は、明日の時刻として扱う
                 const tomorrowTime = new Date(arrivalTime);
@@ -541,22 +671,19 @@ export default function BusStopDetailPanel({
                 if (tomorrowTime < clickTime) {
                   tomorrowTime.setDate(tomorrowTime.getDate() + 1);
                 }
-
-                const timeDiff = tomorrowTime.getTime() - clickTime.getTime();
-                if (timeDiff >= 0 && timeDiff < closestTimeDiff) {
-                  closestTimeDiff = timeDiff;
-                  closestArrival = arrival;
-                  // 使用する時刻も更新
-                  arrival._parsedTime = tomorrowTime;
-                }
+                actualArrivalTime = tomorrowTime;
               } else {
-                // 未来の時刻の場合
-                const timeDiff = arrivalTime.getTime() - clickTime.getTime();
-                if (timeDiff >= 0 && timeDiff < closestTimeDiff) {
-                  closestTimeDiff = timeDiff;
-                  closestArrival = arrival;
-                  arrival._parsedTime = arrivalTime;
-                }
+                actualArrivalTime = arrivalTime;
+              }
+
+              const timeDiff = actualArrivalTime.getTime() - clickTime.getTime();
+
+              // 3時間以内の到着のみを考慮
+              if (timeDiff >= 0 && timeDiff <= THREE_HOURS_MS && timeDiff < closestTimeDiff) {
+                closestTimeDiff = timeDiff;
+                closestArrival = arrival;
+                // 使用する時刻も更新
+                arrival._parsedTime = actualArrivalTime;
               }
             });
 
@@ -643,6 +770,8 @@ export default function BusStopDetailPanel({
         }
       } catch (error) {
         console.error("Error fetching route first arrivals:", error);
+      } finally {
+        setLoadingRoutes(false);
       }
     };
 
@@ -739,6 +868,8 @@ export default function BusStopDetailPanel({
               </button>
             </div>
           {/* Delay Status */}
+          {stopDelays[selectedStop?.properties?.stop_id] !== null &&
+           stopDelays[selectedStop?.properties?.stop_id] !== undefined && (
             <div className="bg-white/10 backdrop-blur-md rounded-lg p-3 border border-white/20 shadow-lg">
               <h3 className="font-semibold text-white mb-2 text-sm">
                 Delay Status
@@ -747,13 +878,13 @@ export default function BusStopDetailPanel({
                 <div className="flex items-center gap-2">
                   <span className="text-white font-medium">
                     {getDelayLevelName(
-                      stopDelays[selectedStop?.properties?.stop_id] || 0
+                      stopDelays[selectedStop?.properties?.stop_id]!
                     )}
                   </span>
                   <span className="text-gray-400">|</span>
                   <span className="text-2xl">
                     {getDelaySymbol(
-                      stopDelays[selectedStop?.properties?.stop_id] || 0
+                      stopDelays[selectedStop?.properties?.stop_id]!
                     )}
                   </span>
                 </div>
@@ -767,6 +898,7 @@ export default function BusStopDetailPanel({
                 })}
               </div>
             </div>
+          )}
             <div className="space-y-1 text-sm text-gray-400 mt-3">
               <div className="flex justify-between">
                 <span>Stop ID:</span>
@@ -788,11 +920,18 @@ export default function BusStopDetailPanel({
           </div>
 
           {/* 路線別遅延情報 */}
-          {getStopRoutes().length > 0 && (
-            <div className="mt-4 border-t border-white/20 pt-4">
-              <h4 className="text-white mb-3 font-semibold">Route Delays</h4>
+          <div className="mt-4 border-t border-white/20 pt-4">
+            <h4 className="text-white mb-3 font-semibold">Route Delays</h4>
+            {loadingRoutes ? (
+              <div className="text-center py-4 flex items-center justify-center gap-2">
+                <div className="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin opacity-60"></div>
+                <span className="text-gray-400 text-sm animate-pulse">Loading...</span>
+              </div>
+            ) : getStopRoutes().filter((route) => routeDelays[route] !== null && routeDelays[route] !== undefined).length > 0 ? (
               <div className="space-y-2">
-                {getStopRoutes().map((route, index) => {
+                {getStopRoutes()
+                  .filter((route) => routeDelays[route] !== null && routeDelays[route] !== undefined)
+                  .map((route, index) => {
                   const delay = routeDelays[route];
                   const hasDelayInfo = delay !== null && delay !== undefined;
                   const colors = [
@@ -855,8 +994,12 @@ export default function BusStopDetailPanel({
                   );
                 })}
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="text-center py-4 text-gray-400 text-sm">
+                No data
+              </div>
+            )}
+          </div>
 
           {/* 位置情報 */}
           <div className="border-t border-white/20 pt-4">
@@ -935,6 +1078,8 @@ export default function BusStopDetailPanel({
               </button>
             </div>
           {/* Delay Status */}
+          {stopDelays[selectedStop?.properties?.stop_id] !== null &&
+           stopDelays[selectedStop?.properties?.stop_id] !== undefined && (
           <div className="border-t border-white/20 pt-3">
               <h3 className="font-semibold text-white mb-2 text-base">
               Delay Status
@@ -944,13 +1089,13 @@ export default function BusStopDetailPanel({
                 <div className="flex items-center gap-2">
                     <span className="text-white font-medium text-base">
                       {getDelayLevelName(
-                      stopDelays[selectedStop?.properties?.stop_id] || 0
+                      stopDelays[selectedStop?.properties?.stop_id]!
                     )}
                   </span>
                     <span className="text-gray-400">|</span>
                     <span className="text-2xl">
                       {getDelaySymbol(
-                      stopDelays[selectedStop?.properties?.stop_id] || 0
+                      stopDelays[selectedStop?.properties?.stop_id]!
                     )}
                   </span>
                 </div>
@@ -965,6 +1110,7 @@ export default function BusStopDetailPanel({
                 </div>
               </div>
             </div>
+          )}
             <div className="space-y-1 text-sm text-gray-400 mt-2">
               <div className="flex justify-between">
                 <span>Stop ID:</span>
@@ -986,13 +1132,20 @@ export default function BusStopDetailPanel({
           </div>
 
           {/* 路線別遅延情報 */}
-          {getStopRoutes().length > 0 && (
-            <div className="mt-3">
-              <h4 className="text-sm font-medium text-gray-300 mb-2">
-                Route Delays
-              </h4>
+          <div className="mt-3">
+            <h4 className="text-sm font-medium text-gray-300 mb-2">
+              Route Delays
+            </h4>
+            {loadingRoutes ? (
+              <div className="text-center py-3 flex items-center justify-center gap-2">
+                <div className="w-3 h-3 border-2 border-gray-500 border-t-transparent rounded-full animate-spin opacity-60"></div>
+                <span className="text-gray-400 text-sm animate-pulse">Loading...</span>
+              </div>
+            ) : getStopRoutes().filter((route) => routeDelays[route] !== null && routeDelays[route] !== undefined).length > 0 ? (
               <div className="space-y-2">
-                {getStopRoutes().map((route, index) => {
+                {getStopRoutes()
+                  .filter((route) => routeDelays[route] !== null && routeDelays[route] !== undefined)
+                  .map((route, index) => {
                   const delay = routeDelays[route];
                   const hasDelayInfo = delay !== null && delay !== undefined;
                   const colors = [
@@ -1055,8 +1208,12 @@ export default function BusStopDetailPanel({
                   );
                 })}
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="text-center py-3 text-gray-400 text-sm">
+                No data
+              </div>
+            )}
+          </div>
 
           {/* 位置情報 */}
           <div className="border-t border-white/20 pt-3">
@@ -1081,7 +1238,7 @@ export default function BusStopDetailPanel({
         </div>
       </div>
 
-      {/* 6-Hour Forecast Modal */}
+      {/* 3-Hour Forecast Modal */}
       {showForecast && selectedRoute && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white/10 backdrop-blur-xl rounded-lg p-6 w-[90vw] max-w-6xl mx-4 max-h-[90vh] overflow-y-auto border border-white/20 shadow-2xl">
@@ -1178,13 +1335,17 @@ export default function BusStopDetailPanel({
 
                         // コピー成功のフィードバック（一時的にボタンを変更）
                         const button = e.currentTarget;
-                        const originalText = button.innerHTML;
-                        button.innerHTML = "✓";
-                        button.classList.add("text-green-400");
-                        setTimeout(() => {
-                          button.innerHTML = originalText;
-                          button.classList.remove("text-green-400");
-                        }, 2000);
+                        if (button) {
+                          const originalText = button.textContent || "";
+                          button.textContent = "✓";
+                          button.classList.add("text-green-400");
+                          setTimeout(() => {
+                            if (button) {
+                              button.textContent = originalText;
+                              button.classList.remove("text-green-400");
+                            }
+                          }, 2000);
+                        }
                       } catch (err) {
                         console.error("Failed to copy URL:", err);
                         // エラー時はpromptでURLを表示して手動コピーを促す
@@ -1212,8 +1373,9 @@ export default function BusStopDetailPanel({
               </div>
             </div>
             {loadingArrivals ? (
-              <div className="text-center py-8 text-gray-400 text-base">
-                Loading...
+              <div className="text-center py-8 flex items-center justify-center gap-2">
+                <div className="w-5 h-5 border-2 border-gray-500 border-t-transparent rounded-full animate-spin opacity-60"></div>
+                <span className="text-gray-400 text-base animate-pulse">Loading...</span>
               </div>
             ) : routeArrivals.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1279,7 +1441,7 @@ export default function BusStopDetailPanel({
                           0,
                           Math.round(arrival.predicted_delay_seconds / 60)
                         )
-                      : 0;
+                      : null;
                   const arrivalTime =
                           arrival.arrival_time ||
                           arrival.next_arrival_time ||
@@ -1385,6 +1547,7 @@ export default function BusStopDetailPanel({
                                 </div>
                               </div>
                               <div className="text-right">
+                                {delayMinutes !== null && delayMinutes !== undefined && (
                                 <div className="flex items-center gap-2 justify-end">
                                   <span className="text-gray-300 text-base md:text-sm font-medium">
                                     {getDelayLevelName(delayMinutes)}
@@ -1394,6 +1557,7 @@ export default function BusStopDetailPanel({
                           {getDelaySymbol(delayMinutes)}
                         </span>
                                 </div>
+                                )}
                               </div>
                             </div>
                             {/* 追加情報: Region, Stop, Scheduled Timeなど */}

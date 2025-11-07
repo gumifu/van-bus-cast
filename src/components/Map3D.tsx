@@ -112,7 +112,6 @@ export default function Map3D({
       setSelectedStopId(externalSelectedStopId);
     }
   }, [externalSelectedStopId]);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [showLayers, setShowLayers] = useState(false);
   const [layers, setLayers] = useState([
     { id: "traffic", name: "Traffic", enabled: true, icon: "🚦" },
@@ -541,11 +540,11 @@ export default function Map3D({
 
   const getDelaySymbol = (delay: number): string => {
     const normalizedDelay = Math.round(delay);
+    const absDelay = Math.abs(normalizedDelay);
     if (normalizedDelay === 0) return "☀️";
-    if (normalizedDelay < 0) return "⭐"; // 早く来ている（良い状態）
-    if (normalizedDelay <= 2) return "⛅";
-    if (normalizedDelay <= 5) return "☁️";
-    return "🌧️";
+    if (absDelay <= 2) return "⛅"; // 軽微な遅延と早く来ている時（2分以内）
+    if (absDelay <= 5) return "☁️"; // 中程度の遅延と早く来ている時（5分以内）
+    return "🌧️"; // 重大な遅延と早く来ている時（5分超）
   };
 
   const getDelayLevelName = (delay: number): string => {
@@ -897,8 +896,68 @@ export default function Map3D({
           // 路線番号 -> route_id（GTFS内部ID）のマッピングを作成
           const routeIdMap: { [routeNumber: string]: string } = {};
 
+          // 3時間以内の到着のみをフィルタリング（ミリ秒単位）
+          const now = new Date();
+          const THREE_HOURS_MS = 3 * 60 * 60 * 1000; // 3時間 = 10,800,000ミリ秒
+
+          // 時刻をパースする関数
+          const parseTime = (timeStr: string): Date | null => {
+            if (!timeStr) return null;
+            try {
+              const isoDate = new Date(timeStr);
+              if (!isNaN(isoDate.getTime())) {
+                return isoDate;
+              }
+            } catch (e) {}
+            const timeMatch = timeStr.match(/(\d{1,2}):(\d{2})(?::\d{2})?/);
+            if (!timeMatch) return null;
+            const hour = parseInt(timeMatch[1], 10);
+            const minute = parseInt(timeMatch[2], 10);
+            const date = new Date(
+              now.getFullYear(),
+              now.getMonth(),
+              now.getDate(),
+              hour,
+              minute,
+              0
+            );
+            return date;
+          };
+
           // 全てのarrivalsを処理（遅延予測の有無に関わらず全てのルートを含む）
+          // ただし、3時間以内の到着のみを処理
           data.arrivals.forEach((arrival: any) => {
+            // 3時間以内の到着かどうかを確認
+            const rawTime =
+              arrival.scheduled_arrival_time ||
+              arrival.arrival_time ||
+              arrival.next_arrival_time ||
+              arrival.estimated_arrival_time ||
+              "";
+
+            if (rawTime) {
+              const arrivalTime = parseTime(rawTime);
+              if (arrivalTime) {
+                // 過去の時刻の場合は、明日の時刻として扱う
+                let actualArrivalTime: Date;
+                if (arrivalTime < now) {
+                  const tomorrowTime = new Date(arrivalTime);
+                  tomorrowTime.setDate(tomorrowTime.getDate() + 1);
+                  if (tomorrowTime < now) {
+                    tomorrowTime.setDate(tomorrowTime.getDate() + 1);
+                  }
+                  actualArrivalTime = tomorrowTime;
+                } else {
+                  actualArrivalTime = arrivalTime;
+                }
+
+                const timeDiff = actualArrivalTime.getTime() - now.getTime();
+                // 3時間を超える到着はスキップ
+                if (timeDiff < 0 || timeDiff > THREE_HOURS_MS) {
+                  return;
+                }
+              }
+            }
             // trip_headsignから実際の路線番号を取得
             const routeNumber = extractRouteNumber(arrival.trip_headsign);
             if (!routeNumber) {
@@ -925,6 +984,7 @@ export default function Map3D({
               ); // 秒を分に変換、負の値は0として扱う
 
               // 同じルートの複数の予測がある場合は平均を取る
+              // ただし、既にnullが設定されている場合は、有効な予測値で上書きする
               if (routeDelayData[routeNumber] !== undefined && routeDelayData[routeNumber] !== null) {
                 routeDelayData[routeNumber] = Math.round(
                   (routeDelayData[routeNumber]! + delayMinutes) / 2
@@ -934,9 +994,11 @@ export default function Map3D({
               }
             } else {
               // 遅延予測がnullの場合は、バス番号だけ表示するためnullとして保存
+              // ただし、既に有効な予測値が設定されている場合は、nullで上書きしない
               if (routeDelayData[routeNumber] === undefined) {
                 routeDelayData[routeNumber] = null;
               }
+              // 既にnullが設定されている場合は何もしない（そのままnullを維持）
             }
           });
 
@@ -1545,7 +1607,6 @@ export default function Map3D({
         <GoogleMapsControls
           onZoomIn={() => mapRef.current?.zoomIn()}
           onZoomOut={() => mapRef.current?.zoomOut()}
-          onFullscreen={() => setIsFullscreen(!isFullscreen)}
           onMyLocation={() => {
             if (navigator.geolocation) {
               navigator.geolocation.getCurrentPosition(
@@ -1567,7 +1628,6 @@ export default function Map3D({
           }}
           onLayerToggle={() => setShowLayers(!showLayers)}
           onStreetView={() => {}}
-          isFullscreen={isFullscreen}
           showLayers={showLayers}
         />
       </div>

@@ -94,7 +94,6 @@ export default function ClientMap({
   );
 
   // Google Maps風の状態管理
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [showLayers, setShowLayers] = useState(false);
   const [layers, setLayers] = useState([
     { id: "bus-stops", name: "Bus Stops", icon: "🚌", enabled: true },
@@ -448,11 +447,11 @@ export default function ClientMap({
   // 遅延レベルに基づく天気アイコン取得
   const getDelaySymbol = (level: number) => {
     const delay = Math.round(level);
+    const absDelay = Math.abs(delay);
     if (delay === 0) return "☀️"; // On Time
-    if (delay < 0) return "⭐"; // 早く来ている（良い状態）
-    if (delay <= 2) return "🌤️"; // 軽微な遅延
-    if (delay <= 5) return "☁️"; // 中程度の遅延
-    return "⛈️"; // 重大な遅延
+    if (absDelay <= 2) return "🌤️"; // 軽微な遅延と早く来ている時（2分以内）
+    if (absDelay <= 5) return "☁️"; // 中程度の遅延と早く来ている時（5分以内）
+    return "⛈️"; // 重大な遅延と早く来ている時（5分超）
   };
 
   // 遅延レベル名を取得
@@ -668,16 +667,6 @@ export default function ClientMap({
     if (mapRef.current) {
       const currentZoom = mapRef.current.getZoom();
       mapRef.current.zoomTo(currentZoom - 1);
-    }
-  };
-
-  const handleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen();
-      setIsFullscreen(true);
-    } else {
-      document.exitFullscreen();
-      setIsFullscreen(false);
     }
   };
 
@@ -1350,6 +1339,17 @@ export default function ClientMap({
 
         const data = await response.json();
         console.log("Stop predictions data:", data);
+        console.log("Stop predictions arrivals:", data.arrivals);
+        // 各arrivalのpredicted_delay_secondsを確認
+        if (data.arrivals && Array.isArray(data.arrivals)) {
+          data.arrivals.forEach((arrival: any, index: number) => {
+            console.log(`Arrival ${index}:`, {
+              trip_headsign: arrival.trip_headsign,
+              predicted_delay_seconds: arrival.predicted_delay_seconds,
+              route_id: arrival.route_id,
+            });
+          });
+        }
 
         // バス停の平均遅延を計算（arrivalsから）
         if (
@@ -1394,8 +1394,68 @@ export default function ClientMap({
           // 路線番号 -> route_id（GTFS内部ID）のマッピングを作成
           const routeIdMap: { [routeNumber: string]: string } = {};
 
+          // 3時間以内の到着のみをフィルタリング（ミリ秒単位）
+          const now = new Date();
+          const THREE_HOURS_MS = 3 * 60 * 60 * 1000; // 3時間 = 10,800,000ミリ秒
+
+          // 時刻をパースする関数
+          const parseTime = (timeStr: string): Date | null => {
+            if (!timeStr) return null;
+            try {
+              const isoDate = new Date(timeStr);
+              if (!isNaN(isoDate.getTime())) {
+                return isoDate;
+              }
+            } catch (e) {}
+            const timeMatch = timeStr.match(/(\d{1,2}):(\d{2})(?::\d{2})?/);
+            if (!timeMatch) return null;
+            const hour = parseInt(timeMatch[1], 10);
+            const minute = parseInt(timeMatch[2], 10);
+            const date = new Date(
+              now.getFullYear(),
+              now.getMonth(),
+              now.getDate(),
+              hour,
+              minute,
+              0
+            );
+            return date;
+          };
+
           // 全てのarrivalsを処理（遅延予測の有無に関わらず全てのルートを含む）
+          // ただし、3時間以内の到着のみを処理
           data.arrivals.forEach((arrival: any) => {
+            // 3時間以内の到着かどうかを確認
+            const rawTime =
+              arrival.scheduled_arrival_time ||
+              arrival.arrival_time ||
+              arrival.next_arrival_time ||
+              arrival.estimated_arrival_time ||
+              "";
+
+            if (rawTime) {
+              const arrivalTime = parseTime(rawTime);
+              if (arrivalTime) {
+                // 過去の時刻の場合は、明日の時刻として扱う
+                let actualArrivalTime: Date;
+                if (arrivalTime < now) {
+                  const tomorrowTime = new Date(arrivalTime);
+                  tomorrowTime.setDate(tomorrowTime.getDate() + 1);
+                  if (tomorrowTime < now) {
+                    tomorrowTime.setDate(tomorrowTime.getDate() + 1);
+                  }
+                  actualArrivalTime = tomorrowTime;
+                } else {
+                  actualArrivalTime = arrivalTime;
+                }
+
+                const timeDiff = actualArrivalTime.getTime() - now.getTime();
+                // 3時間を超える到着はスキップ
+                if (timeDiff < 0 || timeDiff > THREE_HOURS_MS) {
+                  return;
+                }
+              }
+            }
             // trip_headsignから実際の路線番号を取得
             const routeNumber = extractRouteNumber(arrival.trip_headsign);
             if (!routeNumber) {
@@ -1422,6 +1482,7 @@ export default function ClientMap({
               ); // 秒を分に変換、負の値は0として扱う
 
               // 同じルートの複数の予測がある場合は平均を取る
+              // ただし、既にnullが設定されている場合は、有効な予測値で上書きする
               if (
                 routeDelayData[routeNumber] !== undefined &&
                 routeDelayData[routeNumber] !== null
@@ -1434,9 +1495,11 @@ export default function ClientMap({
               }
             } else {
               // 遅延予測がnullの場合は、バス番号だけ表示するためnullとして保存
+              // ただし、既に有効な予測値が設定されている場合は、nullで上書きしない
               if (routeDelayData[routeNumber] === undefined) {
                 routeDelayData[routeNumber] = null;
               }
+              // 既にnullが設定されている場合は何もしない（そのままnullを維持）
             }
           });
 
@@ -1445,6 +1508,14 @@ export default function ClientMap({
 
           console.log("ClientMap: Route delay data:", routeDelayData);
           console.log("ClientMap: Selected stop ID:", selectedStopId);
+          // nullの予測値があるルートを確認
+          Object.keys(routeDelayData).forEach((route) => {
+            if (routeDelayData[route] === null) {
+              console.log(
+                `ClientMap: Route ${route} has null delay prediction`
+              );
+            }
+          });
 
           // 選択されたバス停のルート情報のみを設定（以前のバス停のルート情報はクリア）
           setRouteDelays(routeDelayData);
@@ -1930,11 +2001,9 @@ export default function ClientMap({
       <GoogleMapsControls
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
-        onFullscreen={handleFullscreen}
         onMyLocation={handleMyLocation}
         onLayerToggle={handleLayerToggle}
         onStreetView={handleStreetView}
-        isFullscreen={isFullscreen}
         showLayers={showLayers}
       />
 

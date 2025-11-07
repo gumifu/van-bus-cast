@@ -5,11 +5,36 @@ import { useSearchParams, useRouter } from "next/navigation";
 import ClientMap from "../components/ClientMap";
 import Map3D from "../components/Map3D";
 import Logo from "../components/Logo";
+import SplashScreen from "../components/SplashScreen";
 
 function HomeContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [is3DMode, setIs3DMode] = useState(false);
+  const [showSplash, setShowSplash] = useState(false);
+
+  // キャッシュがない時のみスプラッシュスクリーンを表示
+  useEffect(() => {
+    // キャッシュ（localStorage）の有無をチェック
+    const splashCache = localStorage.getItem("splashCache");
+
+    if (!splashCache) {
+      // キャッシュがない場合は表示
+      setShowSplash(true);
+    }
+
+    // スーパーリロード時も表示（sessionStorageでこのセッション内の表示を管理）
+    const navigationType = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+    const isReload = navigationType?.type === 'reload';
+
+    if (isReload) {
+      const hasSeenInSession = sessionStorage.getItem("hasSeenSplashInSession");
+      if (!hasSeenInSession) {
+        setShowSplash(true);
+        sessionStorage.setItem("hasSeenSplashInSession", "true");
+      }
+    }
+  }, []);
 
   // 共有状態
   const [selectedStop, setSelectedStop] = useState<any>(null);
@@ -148,6 +173,21 @@ function HomeContent() {
 
   return (
     <main className="h-dvh w-full bg-black text-white relative">
+      {showSplash && (
+        <SplashScreen
+          onComplete={() => {
+            setShowSplash(false);
+            // キャッシュを保存（スプラッシュスクリーンを見たことを記録）
+            const navigationType = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+            const isReload = navigationType?.type === 'reload';
+
+            // 通常の訪問時のみキャッシュを保存（リロード時は保存しない）
+            if (!isReload) {
+              localStorage.setItem("splashCache", "true");
+            }
+          }}
+        />
+      )}
       <div className="h-full flex flex-col">
         {/* 3D表示トグル - デスクトップでは右端、スマホでは非表示（ClientMap/Map3D内で表示） */}
         <div className="hidden md:block absolute top-4 right-4 z-20">
