@@ -113,6 +113,7 @@ export default function Map3D({
     }
   }, [externalSelectedStopId]);
   const [showLayers, setShowLayers] = useState(false);
+  const [showLogoShine, setShowLogoShine] = useState(false);
   const [layers, setLayers] = useState([
     { id: "traffic", name: "Traffic", enabled: true, icon: "🚦" },
     { id: "transit", name: "Transit", enabled: true, icon: "🚌" },
@@ -828,6 +829,26 @@ export default function Map3D({
     }
   }, [selectedStopId]);
 
+  // 10秒ごとにロゴに光沢アニメーションを実行（テスト用）
+  useEffect(() => {
+    // 初回は即座に実行（テスト用）
+    const initialTimer = setTimeout(() => {
+      setShowLogoShine(true);
+      setTimeout(() => setShowLogoShine(false), 6000); // 6秒後にアニメーション終了
+    }, 1000); // 1秒後
+
+    // 10秒ごとに繰り返し
+    const interval = setInterval(() => {
+      setShowLogoShine(true);
+      setTimeout(() => setShowLogoShine(false), 6000); // 6秒後にアニメーション終了
+    }, 10000); // 10秒
+
+    return () => {
+      clearTimeout(initialTimer);
+      clearInterval(interval);
+    };
+  }, []);
+
   // 選択されたバス停の遅延予測をAPIから取得
   useEffect(() => {
     const fetchStopPredictions = async () => {
@@ -1488,22 +1509,40 @@ export default function Map3D({
             {/* ロゴ */}
             <button
               onClick={onMapToggle}
-              className="flex-shrink-0 hover:opacity-80 transition-opacity cursor-pointer"
+              className="flex-shrink-0 hover:opacity-80 transition-opacity cursor-pointer relative"
               aria-label={is3DMode ? "Switch to 2D view" : "Switch to 3D view"}
               title={is3DMode ? "Switch to 2D view" : "Switch to 3D view"}
             >
-              <svg
-                className="h-[40px] w-auto"
-                viewBox="0 0 907 1000"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                style={{ aspectRatio: "907/1000" }}
-              >
+              <div className="relative">
+                <svg
+                  className="h-[40px] w-auto relative z-10"
+                  viewBox="0 0 907 1000"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  style={{ aspectRatio: "907/1000" }}
+                >
               <defs>
                 <linearGradient id="logoGradient3D" x1="-369.066" y1="39.6431" x2="1084.85" y2="933.776" gradientUnits="userSpaceOnUse">
                   <stop offset="0.254808" stopColor="#FF6B00" />
                   <stop offset="0.538462" stopColor="#D9D9D9" />
                   <stop offset="0.850962" stopColor="#266AD1" />
+                </linearGradient>
+                {/* ロゴの形状に合わせたクリップパス */}
+                <clipPath id="logoClip3D">
+                  <path d="M0 308.882C0.000134738 265.214 23.2974 224.863 61.1152 203.029L383.92 16.6568L384.808 16.149C422.169 -5.00845 467.902 -5.00786 505.263 16.15L506.15 16.6578L845.388 212.519C883.205 234.353 906.502 274.705 906.502 318.373V691.117C906.502 734.785 883.205 775.136 845.388 796.97L522.582 983.342C484.764 1005.18 438.17 1005.18 400.352 983.341L61.1143 787.48C23.2968 765.646 0.000145072 725.295 0 681.626V308.882Z" />
+                </clipPath>
+                {/* 光沢用のグラデーション */}
+                <linearGradient
+                  id="shineGradient3D"
+                  x1="0%"
+                  y1="0%"
+                  x2="100%"
+                  y2="100%"
+                  gradientUnits="userSpaceOnUse"
+                >
+                  <stop offset="0%" stopColor="transparent" stopOpacity="0" />
+                  <stop offset="50%" stopColor="white" stopOpacity="0.3" />
+                  <stop offset="100%" stopColor="transparent" stopOpacity="0" />
                 </linearGradient>
               </defs>
               {/* 内側の六角形 */}
@@ -1540,18 +1579,33 @@ export default function Map3D({
               />
               <path
                 d="M782.911 664.162C783.441 653.253 781.347 643.473 777.766 636.509C774.122 629.423 769.449 626.073 765.064 625.86C760.678 625.647 755.703 628.528 751.389 635.228C747.149 641.811 744.118 651.343 743.588 662.252C743.058 673.161 745.151 682.941 748.732 689.905C752.376 696.991 757.049 700.342 761.435 700.555L761.216 705.046C747.878 704.397 737.974 685.14 739.097 662.034C740.22 638.927 751.943 620.721 765.282 621.369C778.621 622.017 788.524 641.274 787.401 664.381C786.279 687.487 774.555 705.694 761.216 705.046L761.435 700.555C765.82 700.768 770.796 697.886 775.11 691.187C779.349 684.603 782.381 675.071 782.911 664.162Z"
-                fill="white"
-              />
-              </svg>
+                  fill="white"
+                />
+                {/* ロゴ内の光沢アニメーション */}
+                {showLogoShine && (
+                  <rect
+                    x="0"
+                    y="0"
+                    width="907"
+                    height="1000"
+                    fill="url(#shineGradient3D)"
+                    clipPath="url(#logoClip3D)"
+                    style={{
+                      animation: "logoShine 6s ease-in-out",
+                    }}
+                  />
+                )}
+                </svg>
+              </div>
             </button>
-            {/* 検索バー */}
+        {/* 検索バー */}
             <div className="flex-1 min-w-0">
-              <GoogleMapsSearchBar
-                onSearch={handleSearch}
-                onSearchStart={handleSearchStart}
-                onSearchEnd={handleSearchEnd}
-                placeholder="Search places (e.g., Downtown, Richmond)"
-              />
+          <GoogleMapsSearchBar
+            onSearch={handleSearch}
+            onSearchStart={handleSearchStart}
+            onSearchEnd={handleSearchEnd}
+            placeholder="Search places (e.g., Downtown, Richmond)"
+          />
             </div>
           </div>
         </div>
@@ -1631,6 +1685,30 @@ export default function Map3D({
           showLayers={showLayers}
         />
       </div>
+
+      {/* ロゴ光沢アニメーション用のスタイル */}
+      <style jsx global>{`
+        @keyframes logoShine {
+          0% {
+            transform: translateX(-100%) translateY(-100%);
+            opacity: 0;
+          }
+          20% {
+            opacity: 1;
+          }
+          30% {
+            opacity: 1;
+          }
+          50% {
+            transform: translateX(100%) translateY(100%);
+            opacity: 0;
+          }
+          100% {
+            transform: translateX(100%) translateY(100%);
+            opacity: 0;
+          }
+        }
+      `}</style>
 
       {/* レイヤーパネル */}
       {showLayers && (
