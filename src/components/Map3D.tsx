@@ -86,7 +86,9 @@ export default function Map3D({
     {}
   );
   const [stopDelays, setStopDelays] = useState<{ [key: string]: number }>({});
-  const [routeDelays, setRouteDelays] = useState<{ [key: string]: number | null }>({});
+  const [routeDelays, setRouteDelays] = useState<{
+    [key: string]: number | null;
+  }>({});
   const [routeIdMapping, setRouteIdMapping] = useState<{
     [routeNumber: string]: string;
   }>({}); // 路線番号 -> route_id（GTFS内部ID）
@@ -236,7 +238,7 @@ export default function Map3D({
             let center: [number, number];
             let zoom: number;
 
-          if (region.center_lat && region.center_lon) {
+            if (region.center_lat && region.center_lon) {
               center = [region.center_lon, region.center_lat];
               zoom = 12;
             } else {
@@ -367,56 +369,56 @@ export default function Map3D({
       setRegionDelays(regionDelayData);
 
       // フォールバック: 主要な街8つ
-    setRegions([
-      {
-        id: "vancouver",
-        name: "Vancouver",
-        center: [-123.1207, 49.2827],
-        zoom: 11,
-      },
-      {
-        id: "richmond",
-        name: "Richmond",
-        center: [-123.1338, 49.1666],
-        zoom: 12,
-      },
-      {
-        id: "burnaby",
-        name: "Burnaby",
-        center: [-122.9749, 49.2488],
-        zoom: 12,
-      },
-      {
-        id: "surrey",
-        name: "Surrey",
-        center: [-122.849, 49.1913],
-        zoom: 12,
-      },
-      {
-        id: "coquitlam",
-        name: "Coquitlam",
-        center: [-122.8289, 49.2838],
-        zoom: 12,
-      },
-      {
-        id: "delta",
-        name: "Delta",
-        center: [-123.0857, 49.0847],
-        zoom: 12,
-      },
-      {
-        id: "langley",
-        name: "Langley",
-        center: [-122.6585, 49.1041],
-        zoom: 12,
-      },
-      {
-        id: "new_westminster",
-        name: "New Westminster",
-        center: [-122.9119, 49.2057],
-        zoom: 12,
-      },
-    ]);
+      setRegions([
+        {
+          id: "vancouver",
+          name: "Vancouver",
+          center: [-123.1207, 49.2827],
+          zoom: 11,
+        },
+        {
+          id: "richmond",
+          name: "Richmond",
+          center: [-123.1338, 49.1666],
+          zoom: 12,
+        },
+        {
+          id: "burnaby",
+          name: "Burnaby",
+          center: [-122.9749, 49.2488],
+          zoom: 12,
+        },
+        {
+          id: "surrey",
+          name: "Surrey",
+          center: [-122.849, 49.1913],
+          zoom: 12,
+        },
+        {
+          id: "coquitlam",
+          name: "Coquitlam",
+          center: [-122.8289, 49.2838],
+          zoom: 12,
+        },
+        {
+          id: "delta",
+          name: "Delta",
+          center: [-123.0857, 49.0847],
+          zoom: 12,
+        },
+        {
+          id: "langley",
+          name: "Langley",
+          center: [-122.6585, 49.1041],
+          zoom: 12,
+        },
+        {
+          id: "new_westminster",
+          name: "New Westminster",
+          center: [-122.9119, 49.2057],
+          zoom: 12,
+        },
+      ]);
     }
 
     // 路線別遅延予測（デモデータ）
@@ -600,8 +602,8 @@ export default function Map3D({
       return;
     }
 
-      mapboxgl.accessToken = token;
-      console.log("Map3D: Mapbox token set");
+    mapboxgl.accessToken = token;
+    console.log("Map3D: Mapbox token set");
 
     // 遅延予測データを初期化
     generateDelayPredictions();
@@ -649,23 +651,23 @@ export default function Map3D({
             }
             return;
           }
-    }
+        }
 
-    const map = new mapboxgl.Map({
+        const map = new mapboxgl.Map({
           container: container,
-      style: "mapbox://styles/mapbox/dark-v11", // 黒いダークスタイル
-      center: initialCenter || VANCOUVER,
-      zoom: initialZoom || 16, // 3D表示に適した初期ズームレベル
-      pitch: 45, // 初期ピッチを3D効果のある角度に
-      bearing: 0,
-      antialias: true, // アンチエイリアスを有効化
+          style: "mapbox://styles/mapbox/dark-v11", // 黒いダークスタイル
+          center: initialCenter || VANCOUVER,
+          zoom: initialZoom || 16, // 3D表示に適した初期ズームレベル
+          pitch: 45, // 初期ピッチを3D効果のある角度に
+          bearing: 0,
+          antialias: true, // アンチエイリアスを有効化
           // モバイル向けの最適化
           renderWorldCopies: true,
           maxTileCacheSize: 50, // モバイル向けにキャッシュサイズを制限
-    });
+        });
 
-    mapRef.current = map;
-    console.log("Map3D: Map created");
+        mapRef.current = map;
+        console.log("Map3D: Map created");
 
         // エラーハンドリング（タイルエラーは通常ログに記録しない）
         // Mapboxのタイルロードエラーは自動的にリトライされるため、ログに記録する必要がない
@@ -727,43 +729,43 @@ export default function Map3D({
           console.warn("Map3D: Style image missing:", e.id);
         });
 
-    // マップが読み込まれた後の処理
-    map.on("load", () => {
-      console.log("Map3D: Map loaded, adding layers...");
+        // マップが読み込まれた後の処理
+        map.on("load", () => {
+          console.log("Map3D: Map loaded, adding layers...");
 
-      // 初期3Dモードを有効化
-      setIs3DEnabled(true);
+          // 初期3Dモードを有効化
+          setIs3DEnabled(true);
 
-      // 3D建物レイヤーを追加
-      add3DBuildings(map);
+          // 3D建物レイヤーを追加
+          add3DBuildings(map);
 
-      // 地形の3D表示を有効化
-      enableTerrain3D(map);
+          // 地形の3D表示を有効化
+          enableTerrain3D(map);
 
-      // バス停レイヤーを追加
-      addBusStopsLayer(map);
+          // バス停レイヤーを追加
+          addBusStopsLayer(map);
 
-      if (onMapReady) {
-        onMapReady(map);
-      }
+          if (onMapReady) {
+            onMapReady(map);
+          }
 
-      // ユーザーの位置情報を取得（マップ読み込み後）
-      getUserLocation();
+          // ユーザーの位置情報を取得（マップ読み込み後）
+          getUserLocation();
 
-      console.log("Map3D: All layers added");
-    });
+          console.log("Map3D: All layers added");
+        });
 
-    // ピンデータを読み込み
-    loadPinnedStops();
+        // ピンデータを読み込み
+        loadPinnedStops();
 
-    // ピッチとベアリングの変更を監視
-    map.on("pitch", () => {
-      setPitch(map.getPitch());
-    });
+        // ピッチとベアリングの変更を監視
+        map.on("pitch", () => {
+          setPitch(map.getPitch());
+        });
 
-    map.on("rotate", () => {
-      setBearing(map.getBearing());
-    });
+        map.on("rotate", () => {
+          setBearing(map.getBearing());
+        });
 
         // iOS Safari向け：マップが読み込まれた後に明示的にリサイズ
         setTimeout(() => {
@@ -772,27 +774,27 @@ export default function Map3D({
           }
         }, 300);
 
-    return () => {
-      console.log("Map3D: Cleaning up map");
-      if (mapRef.current) {
-        // ユーザー位置レイヤーをクリーンアップ
-        if (mapRef.current.getSource("user-location")) {
-          if (mapRef.current.getLayer("user-location-pulse")) {
-            mapRef.current.removeLayer("user-location-pulse");
-          }
-          if (mapRef.current.getLayer("user-location-pulse-2")) {
-            mapRef.current.removeLayer("user-location-pulse-2");
-          }
-          if (mapRef.current.getLayer("user-location-center")) {
-            mapRef.current.removeLayer("user-location-center");
-          }
-          mapRef.current.removeSource("user-location");
-        }
+        return () => {
+          console.log("Map3D: Cleaning up map");
+          if (mapRef.current) {
+            // ユーザー位置レイヤーをクリーンアップ
+            if (mapRef.current.getSource("user-location")) {
+              if (mapRef.current.getLayer("user-location-pulse")) {
+                mapRef.current.removeLayer("user-location-pulse");
+              }
+              if (mapRef.current.getLayer("user-location-pulse-2")) {
+                mapRef.current.removeLayer("user-location-pulse-2");
+              }
+              if (mapRef.current.getLayer("user-location-center")) {
+                mapRef.current.removeLayer("user-location-center");
+              }
+              mapRef.current.removeSource("user-location");
+            }
 
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
-    };
+            mapRef.current.remove();
+            mapRef.current = null;
+          }
+        };
       };
 
       // 初期化を実行（すべてのブラウザで即座に初期化を試行）
@@ -1006,7 +1008,10 @@ export default function Map3D({
 
               // 同じルートの複数の予測がある場合は平均を取る
               // ただし、既にnullが設定されている場合は、有効な予測値で上書きする
-              if (routeDelayData[routeNumber] !== undefined && routeDelayData[routeNumber] !== null) {
+              if (
+                routeDelayData[routeNumber] !== undefined &&
+                routeDelayData[routeNumber] !== null
+              ) {
                 routeDelayData[routeNumber] = Math.round(
                   (routeDelayData[routeNumber]! + delayMinutes) / 2
                 );
@@ -1267,7 +1272,9 @@ export default function Map3D({
 
       if (features && features.length > 0) {
         // メインレイヤーのフィーチャーを優先
-        const feature = features.find((f) => f.layer?.id === "bus-stops-unclustered") || features[0];
+        const feature =
+          features.find((f) => f.layer?.id === "bus-stops-unclustered") ||
+          features[0];
         const geometry = feature.geometry as {
           type: "Point";
           coordinates: [number, number];
@@ -1350,16 +1357,12 @@ export default function Map3D({
           hoveredStopIdRef.current = stopId;
           // ホバー中のマーカーのみ背景を表示
           if (map.getLayer("bus-stops-unclustered-bg")) {
-            map.setPaintProperty(
-              "bus-stops-unclustered-bg",
-              "circle-color",
-              [
-                "case",
-                ["==", ["get", "stop_id"], stopId],
-                "rgba(255, 255, 255, 0.4)",
-                "rgba(255, 255, 255, 0.0)",
-              ]
-            );
+            map.setPaintProperty("bus-stops-unclustered-bg", "circle-color", [
+              "case",
+              ["==", ["get", "stop_id"], stopId],
+              "rgba(255, 255, 255, 0.4)",
+              "rgba(255, 255, 255, 0.0)",
+            ]);
           }
         }
       }
@@ -1374,16 +1377,12 @@ export default function Map3D({
           if (stopId) {
             hoveredStopIdRef.current = stopId;
             // ホバー中のマーカーのみ背景を表示
-            map.setPaintProperty(
-              "bus-stops-unclustered-bg",
-              "circle-color",
-              [
-                "case",
-                ["==", ["get", "stop_id"], stopId],
-                "rgba(255, 255, 255, 0.4)",
-                "rgba(255, 255, 255, 0.0)",
-              ]
-            );
+            map.setPaintProperty("bus-stops-unclustered-bg", "circle-color", [
+              "case",
+              ["==", ["get", "stop_id"], stopId],
+              "rgba(255, 255, 255, 0.4)",
+              "rgba(255, 255, 255, 0.0)",
+            ]);
           }
         }
       });
@@ -1474,27 +1473,39 @@ export default function Map3D({
         "#3b82f6", // 青色（通常のバス停）
       ]);
       // マーカーのサイズを更新
-      mapRef.current.setPaintProperty("bus-stops-unclustered", "circle-radius", [
-        "case",
-        ["==", ["get", "stop_id"], selectedStopId || ""],
-        10, // 選択されたバス停は大きく
-        6, // 通常のバス停
-      ]);
-      // ストロークの太さを更新
-      mapRef.current.setPaintProperty("bus-stops-unclustered", "circle-stroke-width", [
-        "case",
-        ["==", ["get", "stop_id"], selectedStopId || ""],
-        3, // 選択されたバス停は太め
-        2, // 通常のバス停
-      ]);
-      // 背景レイヤーのサイズを更新
-      if (mapRef.current.getLayer("bus-stops-unclustered-bg")) {
-        mapRef.current.setPaintProperty("bus-stops-unclustered-bg", "circle-radius", [
+      mapRef.current.setPaintProperty(
+        "bus-stops-unclustered",
+        "circle-radius",
+        [
           "case",
           ["==", ["get", "stop_id"], selectedStopId || ""],
-          16, // 選択されたバス停は大きめ
-          12, // 通常のバス停
-        ]);
+          10, // 選択されたバス停は大きく
+          6, // 通常のバス停
+        ]
+      );
+      // ストロークの太さを更新
+      mapRef.current.setPaintProperty(
+        "bus-stops-unclustered",
+        "circle-stroke-width",
+        [
+          "case",
+          ["==", ["get", "stop_id"], selectedStopId || ""],
+          3, // 選択されたバス停は太め
+          2, // 通常のバス停
+        ]
+      );
+      // 背景レイヤーのサイズを更新
+      if (mapRef.current.getLayer("bus-stops-unclustered-bg")) {
+        mapRef.current.setPaintProperty(
+          "bus-stops-unclustered-bg",
+          "circle-radius",
+          [
+            "case",
+            ["==", ["get", "stop_id"], selectedStopId || ""],
+            16, // 選択されたバス停は大きめ
+            12, // 通常のバス停
+          ]
+        );
       }
     }
   }, [selectedStopId]);
@@ -1521,91 +1532,106 @@ export default function Map3D({
                   xmlns="http://www.w3.org/2000/svg"
                   style={{ aspectRatio: "907/1000" }}
                 >
-              <defs>
-                <linearGradient id="logoGradient3D" x1="-369.066" y1="39.6431" x2="1084.85" y2="933.776" gradientUnits="userSpaceOnUse">
-                  <stop offset="0.254808" stopColor="#FF6B00" />
-                  <stop offset="0.538462" stopColor="#D9D9D9" />
-                  <stop offset="0.850962" stopColor="#266AD1" />
-                </linearGradient>
-                {/* ロゴの形状に合わせたクリップパス */}
-                <clipPath id="logoClip3D">
-                  <path d="M0 308.882C0.000134738 265.214 23.2974 224.863 61.1152 203.029L383.92 16.6568L384.808 16.149C422.169 -5.00845 467.902 -5.00786 505.263 16.15L506.15 16.6578L845.388 212.519C883.205 234.353 906.502 274.705 906.502 318.373V691.117C906.502 734.785 883.205 775.136 845.388 796.97L522.582 983.342C484.764 1005.18 438.17 1005.18 400.352 983.341L61.1143 787.48C23.2968 765.646 0.000145072 725.295 0 681.626V308.882Z" />
-                </clipPath>
-                {/* 光沢用のグラデーション */}
-                <linearGradient
-                  id="shineGradient3D"
-                  x1="0%"
-                  y1="0%"
-                  x2="100%"
-                  y2="100%"
-                  gradientUnits="userSpaceOnUse"
-                >
-                  <stop offset="0%" stopColor="transparent" stopOpacity="0" />
-                  <stop offset="50%" stopColor="white" stopOpacity="0.3" />
-                  <stop offset="100%" stopColor="transparent" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              {/* 内側の六角形 */}
-              <path
-                d="M421.43 81.6275C436.037 73.1944 454.033 73.1945 468.639 81.6276L807.877 277.489C822.483 285.922 831.481 301.507 831.481 318.373V691.116C831.481 707.982 822.483 723.567 807.877 732L485.072 918.371C470.465 926.804 452.469 926.804 437.863 918.371L98.6255 722.51C84.0193 714.077 75.0215 698.492 75.0215 681.626V308.883C75.0215 292.017 84.0194 276.432 98.6257 267.999L421.43 81.6275Z"
-                fill="#181A1E"
-              />
-              {/* 外側の六角形の枠（グラデーション） */}
-              <path
-                d="M0 308.882C0.000134738 265.214 23.2974 224.863 61.1152 203.029L383.92 16.6568L384.808 16.149C422.169 -5.00845 467.902 -5.00786 505.263 16.15L506.15 16.6578L845.388 212.519C883.205 234.353 906.502 274.705 906.502 318.373V691.117C906.502 734.785 883.205 775.136 845.388 796.97L522.582 983.342C484.764 1005.18 438.17 1005.18 400.352 983.341L61.1143 787.48C23.2968 765.646 0.000145072 725.295 0 681.626V308.882ZM75.0215 681.626C75.0216 698.492 84.0192 714.076 98.625 722.509L437.863 918.372C452.241 926.673 469.904 926.802 484.385 918.76L485.071 918.372L807.877 732C822.255 723.698 831.199 708.467 831.475 691.906L831.48 691.117V318.373C831.48 301.771 822.762 286.41 808.558 277.89L807.877 277.49L468.639 81.6275C454.032 73.1947 436.037 73.1947 421.431 81.6275L98.626 267.999C84.0197 276.431 75.0216 292.017 75.0215 308.882V681.626Z"
-                fill="url(#logoGradient3D)"
-              />
-              {/* ディスプレイ要素 */}
-              <path
-                d="M495.069 475.942C495.012 474.214 495.95 472.607 497.482 471.807L781.613 323.518C784.607 321.956 788.19 324.128 788.19 327.504V537.024C788.19 538.684 787.275 540.209 785.811 540.991L508.597 688.988C505.659 690.557 502.096 688.499 501.986 685.171L495.069 475.942Z"
-                fill="#D9D9D9"
-              />
-              <path
-                d="M499.562 475.793L506.479 685.022L783.693 537.024V327.504L499.562 475.793ZM788.189 537.024L788.179 537.334C788.073 538.871 787.184 540.257 785.811 540.99L508.597 688.988C505.751 690.507 502.317 688.623 502.006 685.478L501.985 685.171L495.069 475.941C495.016 474.322 495.837 472.808 497.202 471.967L497.482 471.806L781.613 323.518C784.607 321.956 788.189 324.127 788.189 327.504V537.024Z"
-                fill="white"
-              />
-              {/* ボタン要素 */}
-              <path
-                d="M577.018 780.891C575.748 807.015 562.494 827.598 547.413 826.866C532.333 826.133 521.136 804.361 522.406 778.237C523.675 752.113 536.929 731.53 552.01 732.262C567.09 732.995 578.287 754.767 577.018 780.891Z"
-                fill="#D9D9D9"
-              />
-              <path
-                d="M572.527 780.672C573.13 768.255 570.751 757.091 566.647 749.111C562.48 741.009 557.048 737.008 551.791 736.753C546.535 736.498 540.741 739.953 535.809 747.612C530.951 755.157 527.5 766.038 526.896 778.455C526.293 790.873 528.673 802.037 532.777 810.017C536.943 818.119 542.375 822.119 547.631 822.375L547.413 826.865C532.332 826.132 521.136 804.361 522.406 778.237C523.675 752.113 536.929 731.53 552.009 732.262C567.09 732.995 578.287 754.767 577.018 780.891L576.95 782.111C575.334 807.653 562.258 827.587 547.413 826.865L547.631 822.375C552.888 822.63 558.682 819.176 563.614 811.515C568.473 803.971 571.924 793.09 572.527 780.672Z"
-                fill="white"
-              />
-              <path
-                d="M787.401 664.381C786.279 687.487 774.555 705.694 761.216 705.046C747.878 704.397 737.974 685.14 739.097 662.034C740.22 638.927 751.943 620.721 765.282 621.369C778.621 622.017 788.524 641.274 787.401 664.381Z"
-                fill="#D9D9D9"
-              />
-              <path
-                d="M782.911 664.162C783.441 653.253 781.347 643.473 777.766 636.509C774.122 629.423 769.449 626.073 765.064 625.86C760.678 625.647 755.703 628.528 751.389 635.228C747.149 641.811 744.118 651.343 743.588 662.252C743.058 673.161 745.151 682.941 748.732 689.905C752.376 696.991 757.049 700.342 761.435 700.555L761.216 705.046C747.878 704.397 737.974 685.14 739.097 662.034C740.22 638.927 751.943 620.721 765.282 621.369C778.621 622.017 788.524 641.274 787.401 664.381C786.279 687.487 774.555 705.694 761.216 705.046L761.435 700.555C765.82 700.768 770.796 697.886 775.11 691.187C779.349 684.603 782.381 675.071 782.911 664.162Z"
-                  fill="white"
-                />
-                {/* ロゴ内の光沢アニメーション */}
-                {showLogoShine && (
-                  <rect
-                    x="0"
-                    y="0"
-                    width="907"
-                    height="1000"
-                    fill="url(#shineGradient3D)"
-                    clipPath="url(#logoClip3D)"
-                    style={{
-                      animation: "logoShine 6s ease-in-out",
-                    }}
+                  <defs>
+                    <linearGradient
+                      id="logoGradient3D"
+                      x1="-369.066"
+                      y1="39.6431"
+                      x2="1084.85"
+                      y2="933.776"
+                      gradientUnits="userSpaceOnUse"
+                    >
+                      <stop offset="0.254808" stopColor="#FF6B00" />
+                      <stop offset="0.538462" stopColor="#D9D9D9" />
+                      <stop offset="0.850962" stopColor="#266AD1" />
+                    </linearGradient>
+                    {/* ロゴの形状に合わせたクリップパス */}
+                    <clipPath id="logoClip3D">
+                      <path d="M0 308.882C0.000134738 265.214 23.2974 224.863 61.1152 203.029L383.92 16.6568L384.808 16.149C422.169 -5.00845 467.902 -5.00786 505.263 16.15L506.15 16.6578L845.388 212.519C883.205 234.353 906.502 274.705 906.502 318.373V691.117C906.502 734.785 883.205 775.136 845.388 796.97L522.582 983.342C484.764 1005.18 438.17 1005.18 400.352 983.341L61.1143 787.48C23.2968 765.646 0.000145072 725.295 0 681.626V308.882Z" />
+                    </clipPath>
+                    {/* 光沢用のグラデーション */}
+                    <linearGradient
+                      id="shineGradient3D"
+                      x1="0%"
+                      y1="0%"
+                      x2="100%"
+                      y2="100%"
+                      gradientUnits="userSpaceOnUse"
+                    >
+                      <stop
+                        offset="0%"
+                        stopColor="transparent"
+                        stopOpacity="0"
+                      />
+                      <stop offset="50%" stopColor="white" stopOpacity="0.3" />
+                      <stop
+                        offset="100%"
+                        stopColor="transparent"
+                        stopOpacity="0"
+                      />
+                    </linearGradient>
+                  </defs>
+                  {/* 内側の六角形 */}
+                  <path
+                    d="M421.43 81.6275C436.037 73.1944 454.033 73.1945 468.639 81.6276L807.877 277.489C822.483 285.922 831.481 301.507 831.481 318.373V691.116C831.481 707.982 822.483 723.567 807.877 732L485.072 918.371C470.465 926.804 452.469 926.804 437.863 918.371L98.6255 722.51C84.0193 714.077 75.0215 698.492 75.0215 681.626V308.883C75.0215 292.017 84.0194 276.432 98.6257 267.999L421.43 81.6275Z"
+                    fill="#181A1E"
                   />
-                )}
+                  {/* 外側の六角形の枠（グラデーション） */}
+                  <path
+                    d="M0 308.882C0.000134738 265.214 23.2974 224.863 61.1152 203.029L383.92 16.6568L384.808 16.149C422.169 -5.00845 467.902 -5.00786 505.263 16.15L506.15 16.6578L845.388 212.519C883.205 234.353 906.502 274.705 906.502 318.373V691.117C906.502 734.785 883.205 775.136 845.388 796.97L522.582 983.342C484.764 1005.18 438.17 1005.18 400.352 983.341L61.1143 787.48C23.2968 765.646 0.000145072 725.295 0 681.626V308.882ZM75.0215 681.626C75.0216 698.492 84.0192 714.076 98.625 722.509L437.863 918.372C452.241 926.673 469.904 926.802 484.385 918.76L485.071 918.372L807.877 732C822.255 723.698 831.199 708.467 831.475 691.906L831.48 691.117V318.373C831.48 301.771 822.762 286.41 808.558 277.89L807.877 277.49L468.639 81.6275C454.032 73.1947 436.037 73.1947 421.431 81.6275L98.626 267.999C84.0197 276.431 75.0216 292.017 75.0215 308.882V681.626Z"
+                    fill="url(#logoGradient3D)"
+                  />
+                  {/* ディスプレイ要素 */}
+                  <path
+                    d="M495.069 475.942C495.012 474.214 495.95 472.607 497.482 471.807L781.613 323.518C784.607 321.956 788.19 324.128 788.19 327.504V537.024C788.19 538.684 787.275 540.209 785.811 540.991L508.597 688.988C505.659 690.557 502.096 688.499 501.986 685.171L495.069 475.942Z"
+                    fill="#D9D9D9"
+                  />
+                  <path
+                    d="M499.562 475.793L506.479 685.022L783.693 537.024V327.504L499.562 475.793ZM788.189 537.024L788.179 537.334C788.073 538.871 787.184 540.257 785.811 540.99L508.597 688.988C505.751 690.507 502.317 688.623 502.006 685.478L501.985 685.171L495.069 475.941C495.016 474.322 495.837 472.808 497.202 471.967L497.482 471.806L781.613 323.518C784.607 321.956 788.189 324.127 788.189 327.504V537.024Z"
+                    fill="white"
+                  />
+                  {/* ボタン要素 */}
+                  <path
+                    d="M577.018 780.891C575.748 807.015 562.494 827.598 547.413 826.866C532.333 826.133 521.136 804.361 522.406 778.237C523.675 752.113 536.929 731.53 552.01 732.262C567.09 732.995 578.287 754.767 577.018 780.891Z"
+                    fill="#D9D9D9"
+                  />
+                  <path
+                    d="M572.527 780.672C573.13 768.255 570.751 757.091 566.647 749.111C562.48 741.009 557.048 737.008 551.791 736.753C546.535 736.498 540.741 739.953 535.809 747.612C530.951 755.157 527.5 766.038 526.896 778.455C526.293 790.873 528.673 802.037 532.777 810.017C536.943 818.119 542.375 822.119 547.631 822.375L547.413 826.865C532.332 826.132 521.136 804.361 522.406 778.237C523.675 752.113 536.929 731.53 552.009 732.262C567.09 732.995 578.287 754.767 577.018 780.891L576.95 782.111C575.334 807.653 562.258 827.587 547.413 826.865L547.631 822.375C552.888 822.63 558.682 819.176 563.614 811.515C568.473 803.971 571.924 793.09 572.527 780.672Z"
+                    fill="white"
+                  />
+                  <path
+                    d="M787.401 664.381C786.279 687.487 774.555 705.694 761.216 705.046C747.878 704.397 737.974 685.14 739.097 662.034C740.22 638.927 751.943 620.721 765.282 621.369C778.621 622.017 788.524 641.274 787.401 664.381Z"
+                    fill="#D9D9D9"
+                  />
+                  <path
+                    d="M782.911 664.162C783.441 653.253 781.347 643.473 777.766 636.509C774.122 629.423 769.449 626.073 765.064 625.86C760.678 625.647 755.703 628.528 751.389 635.228C747.149 641.811 744.118 651.343 743.588 662.252C743.058 673.161 745.151 682.941 748.732 689.905C752.376 696.991 757.049 700.342 761.435 700.555L761.216 705.046C747.878 704.397 737.974 685.14 739.097 662.034C740.22 638.927 751.943 620.721 765.282 621.369C778.621 622.017 788.524 641.274 787.401 664.381C786.279 687.487 774.555 705.694 761.216 705.046L761.435 700.555C765.82 700.768 770.796 697.886 775.11 691.187C779.349 684.603 782.381 675.071 782.911 664.162Z"
+                    fill="white"
+                  />
+                  {/* ロゴ内の光沢アニメーション */}
+                  {showLogoShine && (
+                    <rect
+                      x="0"
+                      y="0"
+                      width="907"
+                      height="1000"
+                      fill="url(#shineGradient3D)"
+                      clipPath="url(#logoClip3D)"
+                      style={{
+                        animation: "logoShine 6s ease-in-out",
+                      }}
+                    />
+                  )}
                 </svg>
               </div>
             </button>
-        {/* 検索バー */}
+            {/* 検索バー */}
             <div className="flex-1 min-w-0">
-          <GoogleMapsSearchBar
-            onSearch={handleSearch}
-            onSearchStart={handleSearchStart}
-            onSearchEnd={handleSearchEnd}
-            placeholder="Search places (e.g., Downtown, Richmond)"
-          />
+              <GoogleMapsSearchBar
+                onSearch={handleSearch}
+                onSearchStart={handleSearchStart}
+                onSearchEnd={handleSearchEnd}
+                placeholder="Search places (e.g., Downtown, Richmond)"
+              />
             </div>
           </div>
         </div>
@@ -1733,58 +1759,58 @@ export default function Map3D({
       {/* バス停詳細パネル */}
       {(isPanelOpen || externalIsPanelOpen) &&
         (selectedStop || externalSelectedStop) && (
-        <BusStopDetailPanel
+          <BusStopDetailPanel
             isOpen={isPanelOpen || externalIsPanelOpen || false}
-          onClose={() => {
-            setIsPanelOpen(false);
+            onClose={() => {
+              setIsPanelOpen(false);
               if (externalSetIsPanelOpen) {
                 externalSetIsPanelOpen(false);
               }
-            setSelectedStop(null);
+              setSelectedStop(null);
               if (externalSetSelectedStop) {
                 externalSetSelectedStop(null);
               }
-            setSelectedStopId(null);
+              setSelectedStopId(null);
               if (externalSetSelectedStopId) {
                 externalSetSelectedStopId(null);
               }
-          }}
+            }}
             selectedStop={selectedStop || externalSelectedStop}
-          regionDelays={regionDelays}
-          stopDelays={stopDelays}
-          routeDelays={routeDelays}
-          routeIdMapping={routeIdMapping}
+            regionDelays={regionDelays}
+            stopDelays={stopDelays}
+            routeDelays={routeDelays}
+            routeIdMapping={routeIdMapping}
             selectedStopId={selectedStopId || externalSelectedStopId || null}
-          getDelaySymbol={getDelaySymbol}
-          getDelayLevelName={getDelayLevelName}
-          pinnedStops={pinnedStops}
-          onTogglePin={(stopId, stopData) => {
-            const newPinnedStops = new Set(pinnedStops);
-            if (newPinnedStops.has(stopId)) {
-              newPinnedStops.delete(stopId);
-              const newPinnedData = { ...pinnedStopsData };
-              delete newPinnedData[stopId];
-              setPinnedStopsData(newPinnedData);
-            } else {
-              newPinnedStops.add(stopId);
-              setPinnedStopsData((prev) => ({
-                ...prev,
-                [stopId]: stopData,
-              }));
-            }
-            setPinnedStops(newPinnedStops);
-            localStorage.setItem(
-              "pinnedStops",
-              JSON.stringify({
-                ids: Array.from(newPinnedStops),
-                data: newPinnedStops.has(stopId)
-                  ? { ...pinnedStopsData, [stopId]: stopData }
-                  : pinnedStopsData,
-              })
-            );
-          }}
-        />
-      )}
+            getDelaySymbol={getDelaySymbol}
+            getDelayLevelName={getDelayLevelName}
+            pinnedStops={pinnedStops}
+            onTogglePin={(stopId, stopData) => {
+              const newPinnedStops = new Set(pinnedStops);
+              if (newPinnedStops.has(stopId)) {
+                newPinnedStops.delete(stopId);
+                const newPinnedData = { ...pinnedStopsData };
+                delete newPinnedData[stopId];
+                setPinnedStopsData(newPinnedData);
+              } else {
+                newPinnedStops.add(stopId);
+                setPinnedStopsData((prev) => ({
+                  ...prev,
+                  [stopId]: stopData,
+                }));
+              }
+              setPinnedStops(newPinnedStops);
+              localStorage.setItem(
+                "pinnedStops",
+                JSON.stringify({
+                  ids: Array.from(newPinnedStops),
+                  data: newPinnedStops.has(stopId)
+                    ? { ...pinnedStopsData, [stopId]: stopData }
+                    : pinnedStopsData,
+                })
+              );
+            }}
+          />
+        )}
 
       {/* Map Markers */}
       <MapMarkers

@@ -220,7 +220,7 @@ export default function GoogleMapsSearchBar({
               className="px-4 h-[48px] bg-white/20 text-white hover:bg-white/30 transition-colors cursor-pointer self-stretch flex items-center justify-center"
             >
               <svg
-                className="w-5 h-5 text-gray-400"
+                className="w-5 h-5 text-gray-50"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
