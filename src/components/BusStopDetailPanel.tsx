@@ -995,15 +995,13 @@ export default function BusStopDetailPanel({
           <div className="mt-4 border-t border-white/20 pt-4">
             <h4 className="text-white mb-3 font-semibold">Route Delays</h4>
             {loadingRoutes ? (
-              <div 
+              <div
                 className="text-center py-4 flex items-center justify-center gap-2"
                 style={{
                   animation: "fadeIn 0.3s ease-in",
                 }}
               >
-                <span className="text-gray-400 text-sm">
-                  Loading...
-                </span>
+                <span className="text-gray-400 text-sm">Loading...</span>
               </div>
             ) : getStopRoutes().length > 0 ? (
               <div className="space-y-2">
@@ -1235,15 +1233,13 @@ export default function BusStopDetailPanel({
               Route Delays
             </h4>
             {loadingRoutes ? (
-              <div 
+              <div
                 className="text-center py-3 flex items-center justify-center gap-2"
                 style={{
                   animation: "fadeIn 0.3s ease-in",
                 }}
               >
-                <span className="text-gray-400 text-sm">
-                  Loading...
-                </span>
+                <span className="text-gray-400 text-sm">Loading...</span>
               </div>
             ) : getStopRoutes().length > 0 ? (
               <div className="space-y-2">
@@ -1650,9 +1646,7 @@ export default function BusStopDetailPanel({
                               <div className="flex items-center gap-3 flex-1">
                                 <div>
                                   <div className="text-white font-medium text-base md:text-base">
-                                    {formatCanadianTime(
-                                      predictedTime || arrivalTime
-                                    )}
+                                    {formatCanadianTime(predictedTime)}
                                   </div>
                                   <div className="text-gray-400 text-base md:text-sm">
                                     {arrival.trip_headsign || "Unknown"}
