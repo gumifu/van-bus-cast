@@ -260,7 +260,7 @@ export default function Home() {
     <Suspense
       fallback={
         <main className="h-dvh w-full bg-black text-white flex items-center justify-center">
-          <div>Loading...</div>
+          {/* Loadingテキストを非表示 */}
         </main>
       }
     >
