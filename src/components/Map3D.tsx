@@ -174,7 +174,6 @@ export default function Map3D({
     try {
       // Next.jsのAPIルート経由でアクセス（CORS問題を回避）
       const apiEndpoint = "/api/regional-status";
-      console.log("Map3D: Fetching delay predictions from API:", apiEndpoint);
 
       // APIから地域別遅延情報を取得
       const response = await fetch(apiEndpoint, {
@@ -194,7 +193,6 @@ export default function Map3D({
       }
 
       const data = await response.json();
-      console.log("Map3D: API response:", data);
 
       // APIレスポンスから地域別遅延データを抽出
       const regionDelayData: { [key: string]: number } = {};
@@ -353,7 +351,6 @@ export default function Map3D({
         console.error("Map3D: Error stack:", error.stack);
       }
       console.error("Map3D: API URL attempted:", "/api/regional-status");
-      console.log("Map3D: Falling back to mock data");
 
       // エラー時はモックデータを使用
       const regionDelayData = {
@@ -450,7 +447,6 @@ export default function Map3D({
           if (externalSetUserLocation) {
             externalSetUserLocation(location);
           }
-          console.log("Map3D: User location:", location);
 
           // マップが読み込まれている場合は、現在地を中心に移動（3D表示に適したズームレベル）
           if (mapRef.current) {
@@ -463,7 +459,6 @@ export default function Map3D({
               essential: true,
             });
             setIs3DEnabled(true); // 3Dモードを自動的に有効化
-            console.log("Map3D: Map moved to user location with 3D zoom");
           }
 
           // 現在地マーカーはMapMarkersコンポーネントで管理
@@ -485,7 +480,6 @@ export default function Map3D({
         }
       );
     } else {
-      console.log("Map3D: Geolocation not supported");
       setUserLocation(VANCOUVER);
       // 現在地マーカーはMapMarkersコンポーネントで管理
     }
@@ -499,7 +493,6 @@ export default function Map3D({
         const pinnedData = JSON.parse(saved);
         setPinnedStops(new Set(pinnedData.ids || []));
         setPinnedStopsData(pinnedData.data || {});
-        console.log("Map3D: Pinned stops loaded:", pinnedData);
       }
     } catch (error) {
       console.error("Map3D: Error loading pinned stops:", error);
@@ -508,7 +501,6 @@ export default function Map3D({
 
   // 検索ハンドラー
   const handleSearch = (query: string) => {
-    console.log("Map3D: Search query:", query);
     // 検索ロジックを実装
   };
 
@@ -564,7 +556,6 @@ export default function Map3D({
   useEffect(() => {
     if (!ref.current || mapRef.current) return;
 
-    console.log("Map3D: Initializing map...");
 
     // WebGLサポートチェック
     if (!mapboxgl.supported()) {
@@ -603,7 +594,6 @@ export default function Map3D({
     }
 
     mapboxgl.accessToken = token;
-    console.log("Map3D: Mapbox token set");
 
     // 遅延予測データを初期化
     generateDelayPredictions();
@@ -667,7 +657,6 @@ export default function Map3D({
         });
 
         mapRef.current = map;
-        console.log("Map3D: Map created");
 
         // エラーハンドリング（タイルエラーは通常ログに記録しない）
         // Mapboxのタイルロードエラーは自動的にリトライされるため、ログに記録する必要がない
@@ -722,7 +711,6 @@ export default function Map3D({
         });
 
         map.on("style.load", () => {
-          console.log("Map3D: Style loaded successfully");
         });
 
         map.on("styleimagemissing", (e) => {
@@ -731,7 +719,6 @@ export default function Map3D({
 
         // マップが読み込まれた後の処理
         map.on("load", () => {
-          console.log("Map3D: Map loaded, adding layers...");
 
           // 初期3Dモードを有効化
           setIs3DEnabled(true);
@@ -752,7 +739,6 @@ export default function Map3D({
           // ユーザーの位置情報を取得（マップ読み込み後）
           getUserLocation();
 
-          console.log("Map3D: All layers added");
         });
 
         // ピンデータを読み込み
@@ -775,7 +761,6 @@ export default function Map3D({
         }, 300);
 
         return () => {
-          console.log("Map3D: Cleaning up map");
           if (mapRef.current) {
             // ユーザー位置レイヤーをクリーンアップ
             if (mapRef.current.getSource("user-location")) {
@@ -857,10 +842,6 @@ export default function Map3D({
       if (!selectedStopId) return;
 
       try {
-        console.log(
-          "Map3D: Fetching stop predictions for stop:",
-          selectedStopId
-        );
         const response = await fetch(
           `/api/stops/${selectedStopId}/predictions`
         );
@@ -874,37 +855,38 @@ export default function Map3D({
         }
 
         const data = await response.json();
-        console.log("Map3D: Stop predictions data:", data);
 
-        // バス停の平均遅延を計算（arrivalsから）
+        // バス停の平均遅延を計算（arrivalsから、nullの場合は0として扱う）
         if (
           data.arrivals &&
           Array.isArray(data.arrivals) &&
           data.arrivals.length > 0
         ) {
-          const delays = data.arrivals
-            .map((arrival: any) => arrival.predicted_delay_seconds)
-            .filter((delay: any) => delay !== null && delay !== undefined);
+          // nullの遅延予測も0として扱う
+          const delays = data.arrivals.map((arrival: any) => {
+            const delaySeconds = arrival.predicted_delay_seconds;
+            return delaySeconds !== null && delaySeconds !== undefined
+              ? delaySeconds
+              : 0; // nullの場合は0（On Time）として扱う
+          });
 
-          if (delays.length > 0) {
-            const avgDelaySeconds =
-              delays.reduce((sum: number, delay: number) => sum + delay, 0) /
-              delays.length;
-            const avgDelayMinutes = Math.max(
-              0,
-              Math.round(avgDelaySeconds / 60)
-            ); // 秒を分に変換、負の値は0として扱う
+          const avgDelaySeconds =
+            delays.reduce((sum: number, delay: number) => sum + delay, 0) /
+            delays.length;
+          const avgDelayMinutes = Math.max(
+            0,
+            Math.round(avgDelaySeconds / 60)
+          ); // 秒を分に変換、負の値は0として扱う
 
-            setStopDelays((prev) => ({
-              ...prev,
-              [selectedStopId]: avgDelayMinutes,
-            }));
-          }
+          setStopDelays((prev) => ({
+            ...prev,
+            [String(selectedStopId)]: avgDelayMinutes,
+          }));
         }
 
         // ルート別遅延データを更新
         if (data.arrivals && Array.isArray(data.arrivals)) {
-          const routeDelayData: { [key: string]: number | null } = {};
+          const routeDelayData: { [key: string]: number } = {};
 
           // trip_headsignから路線番号を抽出するヘルパー関数
           const extractRouteNumber = (
@@ -984,10 +966,6 @@ export default function Map3D({
             // trip_headsignから実際の路線番号を取得
             const routeNumber = extractRouteNumber(arrival.trip_headsign);
             if (!routeNumber) {
-              console.warn(
-                "Map3D: Could not extract route number from trip_headsign:",
-                arrival.trip_headsign
-              );
               return;
             }
 
@@ -996,50 +974,28 @@ export default function Map3D({
               routeIdMap[routeNumber] = arrival.route_id;
             }
 
-            // 遅延予測がある場合は計算、nullの場合はバス番号だけ表示するためnullとして保存
-            if (
-              arrival.predicted_delay_seconds !== null &&
-              arrival.predicted_delay_seconds !== undefined
-            ) {
-              const delayMinutes = Math.max(
-                0,
-                Math.round(arrival.predicted_delay_seconds / 60)
-              ); // 秒を分に変換、負の値は0として扱う
+            // 遅延予測を計算（nullの場合は0（On Time）として扱う）
+            const delaySeconds = arrival.predicted_delay_seconds;
+            const delayMinutes =
+              delaySeconds !== null && delaySeconds !== undefined
+                ? Math.max(0, Math.round(delaySeconds / 60))
+                : 0; // nullの場合は0（On Time）として扱う
 
-              // 同じルートの複数の予測がある場合は平均を取る
-              // ただし、既にnullが設定されている場合は、有効な予測値で上書きする
-              if (
-                routeDelayData[routeNumber] !== undefined &&
-                routeDelayData[routeNumber] !== null
-              ) {
-                routeDelayData[routeNumber] = Math.round(
-                  (routeDelayData[routeNumber]! + delayMinutes) / 2
-                );
-              } else {
-                routeDelayData[routeNumber] = delayMinutes;
-              }
+            // 同じルートの複数の予測がある場合は平均を取る
+            if (routeDelayData[routeNumber] !== undefined) {
+              routeDelayData[routeNumber] = Math.round(
+                (routeDelayData[routeNumber]! + delayMinutes) / 2
+              );
             } else {
-              // 遅延予測がnullの場合は、バス番号だけ表示するためnullとして保存
-              // ただし、既に有効な予測値が設定されている場合は、nullで上書きしない
-              if (routeDelayData[routeNumber] === undefined) {
-                routeDelayData[routeNumber] = null;
-              }
-              // 既にnullが設定されている場合は何もしない（そのままnullを維持）
+              routeDelayData[routeNumber] = delayMinutes;
             }
           });
 
           // route_idマッピングを保存
           setRouteIdMapping(routeIdMap);
 
-          console.log("Map3D: Route delay data:", routeDelayData);
-          console.log("Map3D: Selected stop ID:", selectedStopId);
-
           // 選択されたバス停のルート情報のみを設定（以前のバス停のルート情報はクリア）
           setRouteDelays(routeDelayData);
-          console.log(
-            "Map3D: Updated route delays (replaced):",
-            routeDelayData
-          );
         }
       } catch (error) {
         console.error("Map3D: Error fetching stop predictions:", error);
@@ -1051,7 +1007,6 @@ export default function Map3D({
 
   // 3D建物レイヤーを追加
   const add3DBuildings = (map: Map) => {
-    console.log("Map3D: Adding 3D buildings...");
 
     // 建物の3Dレイヤーを追加（streets-v12スタイルの建物レイヤーを使用）
     if (!map.getLayer("3d-buildings")) {
@@ -1084,13 +1039,11 @@ export default function Map3D({
           "fill-extrusion-opacity": 0.8,
         },
       });
-      console.log("Map3D: 3D buildings layer added");
     }
   };
 
   // 地形の3D表示を有効化
   const enableTerrain3D = (map: Map) => {
-    console.log("Map3D: Enabling terrain 3D...");
 
     // 地形ソースを追加（既に存在する場合はスキップ）
     if (!map.getSource("mapbox-dem")) {
@@ -1104,12 +1057,10 @@ export default function Map3D({
 
     // 地形レイヤーを追加
     map.setTerrain({ source: "mapbox-dem", exaggeration: 1.0 });
-    console.log("Map3D: Terrain 3D enabled");
   };
 
   // バス停レイヤーを追加
   const addBusStopsLayer = (map: Map) => {
-    console.log("Map3D: Adding bus stops layer...");
 
     // バス停のソースを追加（既に存在する場合はスキップ）
     if (!map.getSource("bus-stops")) {
@@ -1261,7 +1212,6 @@ export default function Map3D({
 
     // 個別バス停のクリックイベント（背景レイヤーにも設定してクリック領域を拡大）
     const handleBusStopClick = (e: any) => {
-      console.log("Map3D: Bus stop clicked!", e);
       // イベントの伝播を停止
       e.preventDefault();
 
@@ -1284,7 +1234,6 @@ export default function Map3D({
           const coordinates = geometry.coordinates.slice() as [number, number];
           const properties = feature.properties;
 
-          console.log("Map3D: Bus stop properties:", properties);
 
           if (properties) {
             // 選択されたバス停の情報を設定
@@ -1296,7 +1245,6 @@ export default function Map3D({
               },
             };
 
-            console.log("Map3D: Setting selected stop:", selectedStopData);
 
             // 外部のハンドラーを優先して使用（URL更新のため）
             const stopId = properties.stop_id;
@@ -1319,7 +1267,6 @@ export default function Map3D({
             }
             setIsPanelOpen(true);
 
-            console.log("Map3D: Panel should be open now");
 
             // バス停を画面中央に移動
             map.flyTo({
@@ -1414,14 +1361,7 @@ export default function Map3D({
       });
     }
 
-    console.log("Map3D: Bus stops layer added successfully");
-    console.log(
-      "Map3D: Available layers:",
-      map
-        .getStyle()
-        .layers.map((l) => l.id)
-        .filter((id) => id.includes("bus"))
-    );
+    // バス停レイヤー追加完了
   };
 
   // ピンアイコンをマップに追加

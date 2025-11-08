@@ -179,7 +179,6 @@ export default function ClientMap({
     try {
       // Next.jsのAPIルート経由でアクセス（CORS問題を回避）
       const apiEndpoint = "/api/regional-status";
-      console.log("Fetching delay predictions from API:", apiEndpoint);
 
       // APIから地域別遅延情報を取得
       const response = await fetch(apiEndpoint, {
@@ -199,7 +198,6 @@ export default function ClientMap({
       }
 
       const data = await response.json();
-      console.log("API response:", data);
 
       // APIレスポンスから地域別遅延データを抽出
       const regionDelayData: { [key: string]: number } = {};
@@ -358,7 +356,6 @@ export default function ClientMap({
         console.error("Error stack:", error.stack);
       }
       console.error("API URL attempted:", "/api/regional-status");
-      console.log("Falling back to mock data");
 
       // エラー時はモックデータを使用（主要な街6つのみ）
       const regionDelayData = {
@@ -478,7 +475,6 @@ export default function ClientMap({
 
   // Google Maps風のコントロール関数
   const handleSearch = async (query: string) => {
-    console.log("Search:", query);
     setSearchQuery(query);
 
     if (!mapRef.current) return;
@@ -530,10 +526,7 @@ export default function ClientMap({
 
           // 検索結果をハイライト表示
           highlightSearchResults(filteredStops);
-
-          console.log(`Found ${filteredStops.length} bus stops`);
         } else {
-          console.log("No search results found");
           // 検索結果がない場合のハイライトをクリア
           clearSearchHighlights();
         }
@@ -688,31 +681,17 @@ export default function ClientMap({
   };
 
   const handleStreetView = () => {
-    console.log("Street View");
     // ストリートビュー機能の実装（必要に応じて）
   };
 
   // ローカルストレージからピンデータを読み込み
   const loadPinnedStops = () => {
     try {
-      console.log("=== ローカルストレージの状況確認 ===");
-
-      // 全てのローカルストレージキーを確認
-      console.log("全てのローカルストレージキー:");
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key) {
-          console.log(key + ":", localStorage.getItem(key));
-        }
-      }
-
       const savedPins = localStorage.getItem("pinnedBusStops");
       if (savedPins) {
         const pinsData = JSON.parse(savedPins);
-        console.log("ピン留めデータが存在します:", pinsData);
 
         const pinnedSet = new Set<string>(pinsData.stopIds);
-        console.log("ピン留めされたバス停ID:", Array.from(pinnedSet));
 
         // データ構造を修正：stopsDataをオブジェクト形式に変換
         const pinnedDataMap: { [key: string]: any } = {};
@@ -724,19 +703,15 @@ export default function ClientMap({
           });
         }
 
-        console.log("処理後のピンデータマップ:", pinnedDataMap);
         setPinnedStops(pinnedSet);
         setPinnedStopsData(pinnedDataMap);
 
         // ピンマーカーを復元（遅延実行）
         setTimeout(() => {
-          console.log("ピンマーカーを復元中...");
           Object.values(pinnedDataMap).forEach((stopData: any) => {
             addPinnedMarker(stopData.stopId, stopData);
           });
         }, 1500);
-      } else {
-        console.log("ピン留めデータが見つかりません");
       }
     } catch (error) {
       console.error("Error loading pinned stops:", error);
@@ -794,8 +769,6 @@ export default function ClientMap({
   const handlePinnedStopClick = async (stopData: any) => {
     if (!mapRef.current) return;
 
-    console.log("handlePinnedStopClick - stopData:", stopData);
-
     // データ構造を確認して適切にアクセス
     const coordinates = stopData.geometry?.coordinates || stopData.coordinates;
     const properties = stopData.properties || stopData;
@@ -824,7 +797,6 @@ export default function ClientMap({
       };
 
       if (fullStopData) {
-        console.log("Found full stop data:", fullStopData);
       } else {
         console.warn("Full stop data not found, using saved data");
       }
@@ -914,8 +886,6 @@ export default function ClientMap({
       return;
     }
 
-    console.log("Adding pinned marker for stop:", stopId, stopData);
-
     // ピン留めマーカーを追加
     const coordinates = stopData.geometry.coordinates;
 
@@ -970,7 +940,6 @@ export default function ClientMap({
             "icon-opacity": 0.9,
           },
         });
-        console.log(`Pinned marker added for stop ${stopId} at:`, coordinates);
       } else {
         // ピンアイコンがまだ読み込まれていない場合は少し待って再試行
         setTimeout(addPinnedLayer, 100);
@@ -1043,7 +1012,6 @@ export default function ClientMap({
           if (externalSetUserLocation) {
             externalSetUserLocation(location);
           }
-          console.log("User location:", lat, lng);
 
           // マップが読み込まれている場合は、現在地を中心に移動（3D表示に適したズームレベル）
           if (mapRef.current) {
@@ -1053,7 +1021,6 @@ export default function ClientMap({
               duration: 1500,
               essential: true,
             });
-            console.log("ClientMap: Map moved to user location with zoom 16");
           }
 
           // 現在地マーカーはMapMarkersコンポーネントで管理
@@ -1075,7 +1042,6 @@ export default function ClientMap({
         }
       );
     } else {
-      console.log("Geolocation not supported");
       setUserLocation(VANCOUVER);
       // 現在地マーカーはMapMarkersコンポーネントで管理
     }
@@ -1085,8 +1051,6 @@ export default function ClientMap({
 
   useEffect(() => {
     if (!ref.current || mapRef.current) return;
-
-    console.log("ClientMap: Initializing map...");
 
     // WebGLサポートチェック
     if (!mapboxgl.supported()) {
@@ -1125,7 +1089,6 @@ export default function ClientMap({
     }
 
     mapboxgl.accessToken = token;
-    console.log("ClientMap: Mapbox token set");
 
     // 遅延予測データを初期化
     generateDelayPredictions();
@@ -1185,8 +1148,6 @@ export default function ClientMap({
           maxTileCacheSize: 50, // モバイル向けにキャッシュサイズを制限
         });
 
-        console.log("ClientMap: Map created");
-
         // Mapboxのデフォルトコントロールは削除（Google Maps風のカスタムコントロールを使用）
         mapRef.current = map;
 
@@ -1242,9 +1203,7 @@ export default function ClientMap({
           // その他のエラー（タイルエラーなど）は完全に無視
         });
 
-        map.on("style.load", () => {
-          console.log("ClientMap: Style loaded successfully");
-        });
+        map.on("style.load", () => {});
 
         map.on("styleimagemissing", (e) => {
           console.warn("ClientMap: Style image missing:", e.id);
@@ -1262,7 +1221,6 @@ export default function ClientMap({
 
         // マップが読み込まれた後にリサイズとレイヤー追加
         map.on("load", () => {
-          console.log("ClientMap: Map loaded, adding layers...");
           setTimeout(resizeMap, 100);
 
           // バス停レイヤーを追加
@@ -1270,8 +1228,6 @@ export default function ClientMap({
 
           // ユーザーの位置情報を取得（マップ読み込み後）
           getUserLocation();
-
-          console.log("ClientMap: All layers added");
         });
 
         // ピンデータを読み込み
@@ -1348,7 +1304,6 @@ export default function ClientMap({
       if (!selectedStopId) return;
 
       try {
-        console.log("Fetching stop predictions for stop:", selectedStopId);
         const response = await fetch(
           `/api/stops/${selectedStopId}/predictions`
         );
@@ -1359,48 +1314,47 @@ export default function ClientMap({
         }
 
         const data = await response.json();
-        console.log("Stop predictions data:", data);
-        console.log("Stop predictions arrivals:", data.arrivals);
-        // 各arrivalのpredicted_delay_secondsを確認
-        if (data.arrivals && Array.isArray(data.arrivals)) {
-          data.arrivals.forEach((arrival: any, index: number) => {
-            console.log(`Arrival ${index}:`, {
-              trip_headsign: arrival.trip_headsign,
-              predicted_delay_seconds: arrival.predicted_delay_seconds,
-              route_id: arrival.route_id,
-            });
-          });
-        }
 
-        // バス停の平均遅延を計算（arrivalsから）
+        // バス停の平均遅延を計算（arrivalsから、nullの場合は0として扱う）
         if (
           data.arrivals &&
           Array.isArray(data.arrivals) &&
           data.arrivals.length > 0
         ) {
-          const delays = data.arrivals
-            .map((arrival: any) => arrival.predicted_delay_seconds)
-            .filter((delay: any) => delay !== null && delay !== undefined);
+          // nullの遅延予測も0として扱う
+          const delays = data.arrivals.map((arrival: any) => {
+            const delaySeconds = arrival.predicted_delay_seconds;
+            return delaySeconds !== null && delaySeconds !== undefined
+              ? delaySeconds
+              : 0; // nullの場合は0（On Time）として扱う
+          });
 
-          if (delays.length > 0) {
-            const avgDelaySeconds =
-              delays.reduce((sum: number, delay: number) => sum + delay, 0) /
-              delays.length;
-            const avgDelayMinutes = Math.max(
-              0,
-              Math.round(avgDelaySeconds / 60)
-            ); // 秒を分に変換、負の値は0として扱う
+          const avgDelaySeconds =
+            delays.reduce((sum: number, delay: number) => sum + delay, 0) /
+            delays.length;
+          const avgDelayMinutes = Math.max(0, Math.round(avgDelaySeconds / 60)); // 秒を分に変換、負の値は0として扱う
 
-            setStopDelays((prev) => ({
+          setStopDelays((prev) => {
+            const updated = {
               ...prev,
-              [selectedStopId]: avgDelayMinutes,
-            }));
-          }
+              [String(selectedStopId)]: avgDelayMinutes,
+            };
+            console.log(
+              "ClientMap: Setting stop delay:",
+              String(selectedStopId),
+              "=",
+              avgDelayMinutes,
+              "(from",
+              delays.length,
+              "arrivals)"
+            );
+            return updated;
+          });
         }
 
         // ルート別遅延データを更新
         if (data.arrivals && Array.isArray(data.arrivals)) {
-          const routeDelayData: { [key: string]: number | null } = {};
+          const routeDelayData: { [key: string]: number } = {};
 
           // trip_headsignから路線番号を抽出するヘルパー関数
           const extractRouteNumber = (
@@ -1481,7 +1435,7 @@ export default function ClientMap({
             const routeNumber = extractRouteNumber(arrival.trip_headsign);
             if (!routeNumber) {
               console.warn(
-                "Could not extract route number from trip_headsign:",
+                "ClientMap: Could not extract route number from:",
                 arrival.trip_headsign
               );
               return;
@@ -1492,57 +1446,42 @@ export default function ClientMap({
               routeIdMap[routeNumber] = arrival.route_id;
             }
 
-            // 遅延予測がある場合は計算、nullの場合はバス番号だけ表示するためnullとして保存
-            if (
-              arrival.predicted_delay_seconds !== null &&
-              arrival.predicted_delay_seconds !== undefined
-            ) {
-              const delayMinutes = Math.max(
-                0,
-                Math.round(arrival.predicted_delay_seconds / 60)
-              ); // 秒を分に変換、負の値は0として扱う
+            // 遅延予測を計算（nullの場合は0（On Time）として扱う）
+            const delaySeconds = arrival.predicted_delay_seconds;
+            const delayMinutes =
+              delaySeconds !== null && delaySeconds !== undefined
+                ? Math.max(0, Math.round(delaySeconds / 60))
+                : 0; // nullの場合は0（On Time）として扱う
 
-              // 同じルートの複数の予測がある場合は平均を取る
-              // ただし、既にnullが設定されている場合は、有効な予測値で上書きする
-              if (
-                routeDelayData[routeNumber] !== undefined &&
-                routeDelayData[routeNumber] !== null
-              ) {
-                routeDelayData[routeNumber] = Math.round(
-                  (routeDelayData[routeNumber]! + delayMinutes) / 2
-                );
-              } else {
-                routeDelayData[routeNumber] = delayMinutes;
-              }
+            // 同じルートの複数の予測がある場合は平均を取る
+            if (routeDelayData[routeNumber] !== undefined) {
+              routeDelayData[routeNumber] = Math.round(
+                (routeDelayData[routeNumber]! + delayMinutes) / 2
+              );
             } else {
-              // 遅延予測がnullの場合は、バス番号だけ表示するためnullとして保存
-              // ただし、既に有効な予測値が設定されている場合は、nullで上書きしない
-              if (routeDelayData[routeNumber] === undefined) {
-                routeDelayData[routeNumber] = null;
-              }
-              // 既にnullが設定されている場合は何もしない（そのままnullを維持）
+              routeDelayData[routeNumber] = delayMinutes;
             }
           });
 
           // route_idマッピングを保存
           setRouteIdMapping(routeIdMap);
 
-          console.log("ClientMap: Route delay data:", routeDelayData);
-          console.log("ClientMap: Selected stop ID:", selectedStopId);
-          // nullの予測値があるルートを確認
-          Object.keys(routeDelayData).forEach((route) => {
-            if (routeDelayData[route] === null) {
-              console.log(
-                `ClientMap: Route ${route} has null delay prediction`
-              );
-            }
-          });
-
           // 選択されたバス停のルート情報のみを設定（以前のバス停のルート情報はクリア）
           setRouteDelays(routeDelayData);
+
+          // デバッグ: 設定されたデータを確認
+          console.log("ClientMap: Route delays set:", routeDelayData);
           console.log(
-            "ClientMap: Updated route delays (replaced):",
-            routeDelayData
+            "ClientMap: Route delays keys:",
+            Object.keys(routeDelayData)
+          );
+          console.log(
+            "ClientMap: Stop delay for",
+            selectedStopId,
+            "(as string:",
+            String(selectedStopId),
+            "):",
+            stopDelays[String(selectedStopId)]
           );
         }
       } catch (error) {
@@ -1737,7 +1676,8 @@ export default function ClientMap({
                 coordinates: coordinates,
               },
             });
-            setSelectedStopId(properties.stop_id);
+            // stop_idを文字列に統一
+            setSelectedStopId(String(properties.stop_id));
             setIsPanelOpen(true);
 
             // バス停を画面中央に移動
