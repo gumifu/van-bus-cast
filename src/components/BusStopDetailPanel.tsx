@@ -1818,21 +1818,21 @@ export default function BusStopDetailPanel({
                                     {arrival.trip_headsign || "Unknown"}
                                   </div>
                                   {/* Scheduled時刻を表示（予測時間がある場合は区別する） */}
-                                  {arrival.scheduled_arrival_time && (
+                                  {/* {arrival.scheduled_arrival_time && (
                                     <div className="text-gray-500 text-sm md:text-xs mt-1">
                                       Scheduled:{" "}
                                       {formatCanadianTime(
                                         arrival.scheduled_arrival_time
                                       )}
                                     </div>
-                                  )}
-                                  {!arrival.scheduled_arrival_time &&
+                                  )} */}
+                                  {/* {!arrival.scheduled_arrival_time &&
                                     arrivalTime && (
                                       <div className="text-gray-500 text-sm md:text-xs mt-1">
                                         Scheduled:{" "}
                                         {formatCanadianTime(arrivalTime)}
                                       </div>
-                                    )}
+                                    )} */}
                                 </div>
                               </div>
                               <div className="text-right">

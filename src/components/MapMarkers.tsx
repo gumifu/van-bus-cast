@@ -20,7 +20,6 @@ export const MapMarkers = ({
       return;
     }
 
-    console.log("Creating SF Symbols style pin icon...");
 
     // 既存のアイコンを削除
     if (map.hasImage("pin-icon")) {
@@ -80,18 +79,15 @@ export const MapMarkers = ({
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     map.addImage("pin-icon", imageData);
     pinIconAddedRef.current = true;
-    console.log("SF Symbols style pin icon added successfully");
   };
 
   // ユーザーの位置をMapboxレイヤーとして追加
   const addUserLocationMarker = (location: [number, number]) => {
     if (!map || !map.isStyleLoaded()) {
-      console.log("Map not ready, retrying in 1 second...");
       setTimeout(() => addUserLocationMarker(location), 1000);
       return;
     }
 
-    console.log("Adding user location marker at:", location);
 
     // ピンアイコンを追加
     addPinIcon();
@@ -259,7 +255,6 @@ export const MapMarkers = ({
       },
     });
 
-    console.log("User location marker added at:", location);
 
     // アニメーション効果を追加
     let startTime = Date.now();

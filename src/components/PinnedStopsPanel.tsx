@@ -33,16 +33,11 @@ export default function PinnedStopsPanel({
 }: PinnedStopsPanelProps) {
   const pinnedStopsList = Array.from(pinnedStops).map((stopId) => {
     const stopData = pinnedStopsData[stopId];
-    console.log(`Pinned stop ${stopId}:`, stopData);
     return {
       stopId,
       ...stopData,
     };
   });
-
-  console.log("PinnedStopsPanel - pinnedStops:", pinnedStops);
-  console.log("PinnedStopsPanel - pinnedStopsData:", pinnedStopsData);
-  console.log("PinnedStopsPanel - pinnedStopsList:", pinnedStopsList);
 
   return (
     <>

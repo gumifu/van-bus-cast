@@ -284,9 +284,9 @@ export default function GoogleMapsSearchBar({
                       )}
                     </div>
                   </div>
-                  <div className="text-gray-500 text-xs">
+                  {/* <div className="text-gray-500 text-xs">
                     {suggestion.type === "Region" ? "🗺️" : "📍"}
-                  </div>
+                  </div> */}
                 </div>
               </button>
             ))
