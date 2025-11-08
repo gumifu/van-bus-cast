@@ -1054,10 +1054,16 @@ export default function BusStopDetailPanel({
                           </div>
                         )}
                       </div>
+                      {/* バス停名を表示 */}
+                      {/* {selectedStop.properties?.stop_name && (
+                        <div className="mt-1 text-xs text-gray-200">
+                          {selectedStop.properties.stop_name}
+                        </div>
+                      )} */}
                       {routeFirstArrivals[route] && (
                         <div className="mt-2 pt-2 border-t border-white/10 space-y-1">
                           <div className="flex items-center justify-between text-xs">
-                            <span className="text-gray-400">Scheduled:</span>
+                            <span className="text-gray-200">Scheduled:</span>
                             <span className="text-white font-medium">
                               {routeFirstArrivals[route].scheduledTime}
                             </span>
@@ -1066,7 +1072,7 @@ export default function BusStopDetailPanel({
                             routeFirstArrivals[route].predictedTime !==
                               routeFirstArrivals[route].scheduledTime && (
                               <div className="flex items-center justify-between text-xs">
-                                <span className="text-gray-400">
+                                <span className="text-gray-200">
                                   Predicted:
                                 </span>
                                 <span className="text-white font-medium">
@@ -1292,10 +1298,16 @@ export default function BusStopDetailPanel({
                           </div>
                         )}
                       </div>
+                      {/* バス停名を表示 */}
+                      {selectedStop.properties?.stop_name && (
+                        <div className="mt-1 text-xs text-gray-400">
+                          {selectedStop.properties.stop_name}
+                        </div>
+                      )}
                       {routeFirstArrivals[route] && (
                         <div className="mt-1.5 pt-1.5 border-t border-white/10 space-y-1">
                           <div className="flex items-center justify-between text-sm">
-                            <span className="text-gray-400">Scheduled:</span>
+                            <span className="text-gray-200">Scheduled:</span>
                             <span className="text-white font-medium text-sm">
                               {routeFirstArrivals[route].scheduledTime}
                             </span>
@@ -1363,56 +1375,67 @@ export default function BusStopDetailPanel({
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white/10 backdrop-blur-xl rounded-lg p-6 w-[90vw] max-w-6xl mx-4 max-h-[90vh] overflow-y-auto border border-white/20 shadow-2xl">
             <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center gap-2">
-                {/* 路線番号バッジ */}
-                {(() => {
-                  // メインパネルと同じ色配列
-                  const colors = [
-                    "#0066CC", // 青
-                    "#FF6600", // オレンジ
-                    "#00AA44", // 緑
-                    "#CC0066", // ピンク
-                    "#6600CC", // 紫
-                    "#00CCAA", // シアン
-                  ];
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  {/* 路線番号バッジ */}
+                  {(() => {
+                    // メインパネルと同じ色配列
+                    const colors = [
+                      "#0066CC", // 青
+                      "#FF6600", // オレンジ
+                      "#00AA44", // 緑
+                      "#CC0066", // ピンク
+                      "#6600CC", // 紫
+                      "#00CCAA", // シアン
+                    ];
 
-                  // 選択された路線のインデックスを取得
-                  const stopRoutes = getStopRoutes();
-                  const routeIndex = stopRoutes.indexOf(selectedRoute || "");
-                  const color =
-                    routeIndex >= 0
-                      ? colors[routeIndex % colors.length]
-                      : "#0066CC"; // デフォルト色
+                    // 選択された路線のインデックスを取得
+                    const stopRoutes = getStopRoutes();
+                    const routeIndex = stopRoutes.indexOf(selectedRoute || "");
+                    const color =
+                      routeIndex >= 0
+                        ? colors[routeIndex % colors.length]
+                        : "#0066CC"; // デフォルト色
 
-                  return (
-                    <span
-                      className="px-3 py-1 rounded-md font-bold text-base md:text-sm text-white"
-                      style={{ backgroundColor: color }}
-                    >
-                      {selectedRoute}
+                    return (
+                      <span
+                        className="px-3 py-1 rounded-md font-bold text-base md:text-sm text-white"
+                        style={{ backgroundColor: color }}
+                      >
+                        {selectedRoute}
+                      </span>
+                    );
+                  })()}
+                  {/* 目的地 */}
+                  {routeFirstArrivals[selectedRoute]?.destination && (
+                    <span className="text-white font-medium text-base md:text-base">
+                      {routeFirstArrivals[selectedRoute].destination}
                     </span>
-                  );
-                })()}
-                {/* 目的地 */}
-                {routeFirstArrivals[selectedRoute]?.destination && (
-                  <span className="text-white font-medium text-base md:text-base">
-                    {routeFirstArrivals[selectedRoute].destination}
-                  </span>
-                )}
-                {/* 遅延ステータス */}
-                {selectedRoute &&
-                  routeDelays[selectedRoute] !== undefined &&
-                  routeDelays[selectedRoute] !== null && (
-                    <>
-                      <span className="text-gray-400 text-base md:text-sm">
-                        {getDelayLevelName(routeDelays[selectedRoute]!)}
-                      </span>
-                      <span className="text-gray-400">|</span>
-                      <span className="text-xl md:text-lg">
-                        {getDelaySymbol(routeDelays[selectedRoute]!)}
-                      </span>
-                    </>
                   )}
+                </div>
+                {/* バス停名と遅延ステータスを表示 */}
+                {selectedStop.properties?.stop_name && (
+                  <div className="flex items-center gap-2">
+                    <div className="text-gray-50 text-sm md:text-xs">
+                      Bus stop : {selectedStop.properties.stop_name}
+                    </div>
+                    {/* 遅延ステータス */}
+                    {selectedRoute &&
+                      routeDelays[selectedRoute] !== undefined &&
+                      routeDelays[selectedRoute] !== null && (
+                        <>
+                          <span className="text-gray-400">|</span>
+                          <span className="text-gray-400 text-sm md:text-xs">
+                            {getDelayLevelName(routeDelays[selectedRoute]!)}
+                          </span>
+                          {/* <span className="text-gray-400">|</span> */}
+                          <span className="text-lg md:text-base">
+                            {getDelaySymbol(routeDelays[selectedRoute]!)}
+                          </span>
+                        </>
+                      )}
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 {/* URLコピーボタン */}
@@ -1706,7 +1729,7 @@ export default function BusStopDetailPanel({
                                   </div>
                                 ) : (
                                   <div className="flex items-center gap-2 justify-end">
-                                    <span className="text-gray-300 text-base md:text-sm font-medium">
+                                    <span className="text-gray-200 text-base md:text-sm font-medium">
                                       Scheduled
                                     </span>
                                   </div>
