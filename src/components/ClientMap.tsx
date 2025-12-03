@@ -1362,7 +1362,7 @@ export default function ClientMap({
           ): string | null => {
             if (!tripHeadsign) return null;
             // "44 UBC"のような形式から"44"を抽出
-            const match = tripHeadsign.match(/^(\d+)/);
+            const match = tripHeadsign.match(/^([A-Za-z0-9]+)/);
             return match ? match[1] : null;
           };
 
